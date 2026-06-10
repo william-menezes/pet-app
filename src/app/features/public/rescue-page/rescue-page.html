@@ -1,0 +1,10 @@
+<main class="rescue" data-testid="public-rescue-page">
+  @if (perdido()) {
+    <p class="rescue__lost-band" data-testid="public-rescue-lost-band">
+      Este pet está em <strong>modo perdido</strong>. Se você o encontrou, obrigado por ajudar!
+    </p>
+  }
+  <h1>Perfil de resgate</h1>
+  <p>Código da tag: <span class="mono">{{ codigo() }}</span></p>
+  <p>Placeholder — o perfil público de resgate será implementado na feature de resgate.</p>
+</main>
