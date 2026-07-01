@@ -44,3 +44,11 @@ __screenshots__/
 Thumbs.db
 
 design/*
+
+# Supabase local secrets (NUNCA commitar — contém service_role key e segredos OAuth)
+supabase/.env.local
+supabase/.env.*.local
+# Artefatos locais do Supabase CLI
+supabase/.branches/
+supabase/.temp/
+

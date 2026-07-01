@@ -1,0 +1,244 @@
+/* login.css — T029 (refatorado para componentes nativos PrimeNG, 2026-07-01)
+   Paleta C / FaroPreset / Aura. PrimeNG cobre input/senha/checkbox/botão/banner/divisor;
+   este arquivo cuida só do layout de página/card/marca/rodapé/campo.
+   Mobile-first. Alvos de toque ≥ 44px. Sem verde-lima, sem âmbar.
+   Foco visível: já vem do tema Aura (FaroPreset) nos componentes nativos.
+*/
+
+/* ─── Layout de página ─── */
+.login-page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  background: var(--surface-0, #ffffff);
+}
+
+@media (min-width: 480px) {
+  .login-page {
+    background: var(--app, #f7f8f8);
+  }
+}
+
+.login-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+}
+
+/* ─── Card ─── */
+.login-card {
+  width: 100%;
+  max-width: 440px;
+  background: var(--surface-0, #ffffff);
+  padding: 32px 16px;
+}
+
+@media (min-width: 480px) {
+  .login-card {
+    border-radius: var(--r-lg, 20px);
+    box-shadow: var(--shadow-card, 0 1px 3px rgba(19, 32, 30, 0.08), 0 4px 12px rgba(19, 32, 30, 0.06));
+    border: 1px solid var(--border, #e2e5e7);
+    padding: 32px;
+  }
+}
+
+/* ─── Marca ─── */
+.login-brand {
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+@media (min-width: 480px) {
+  .login-brand {
+    text-align: left;
+  }
+}
+
+.login-logo {
+  display: inline-block;
+  height: 44px;
+  width: auto;
+}
+
+/* Troca de logo por tema: light por padrão, dark sob .faro-dark */
+.login-logo--dark {
+  display: none;
+}
+
+:host-context(.faro-dark) .login-logo--light {
+  display: none;
+}
+
+:host-context(.faro-dark) .login-logo--dark {
+  display: inline-block;
+}
+
+/* ─── Título e subtítulo ─── */
+.login-title {
+  font-family: "Poppins", system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 22px;
+  color: var(--text-strong, #13201e);
+  margin: 0 0 6px;
+  text-align: center;
+}
+
+@media (min-width: 480px) {
+  .login-title {
+    text-align: left;
+  }
+}
+
+.login-subtitle {
+  font-family: "Inter", system-ui, sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  color: var(--muted, #5e6c69);
+  margin: 0 0 24px;
+  text-align: center;
+}
+
+@media (min-width: 480px) {
+  .login-subtitle {
+    text-align: left;
+  }
+}
+
+/* ─── Banners (p-message) — só espaçamento; visual vem do tema Aura ─── */
+:host ::ng-deep .login-banner {
+  margin-bottom: 16px;
+  width: 100%;
+}
+
+:host ::ng-deep .login-banner .p-message-text {
+  width: 100%;
+}
+
+.login-banner__body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.login-banner__text {
+  margin: 0;
+}
+
+/* ─── Formulário ─── */
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ─── Campo (label acima + control + erro inline) ─── */
+.login-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Rótulo fora da caixa do input (decisão do tutor 2026-07-01) */
+.login-label {
+  font-family: "Inter", system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-strong, #13201e);
+  line-height: 1.4;
+}
+
+/* p-password com fluid deve ocupar 100% da largura do campo */
+:host ::ng-deep .login-field p-password {
+  display: block;
+  width: 100%;
+}
+
+/* ─── Checkbox "manter conectado" ─── */
+.login-remember {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: var(--tap, 44px);
+}
+
+.login-remember__text {
+  font-family: "Inter", system-ui, sans-serif;
+  font-size: 14px;
+  color: var(--text-strong, #13201e);
+  cursor: pointer;
+  user-select: none;
+}
+
+/* ─── Botão Google — variante outlined específica da marca ─── */
+.login-btn--google {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 48px;
+  font-family: "Inter", system-ui, sans-serif;
+  font-weight: 600;
+}
+
+/* ─── Links auxiliares ─── */
+.login-links {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.login-link {
+  font-family: "Inter", system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--primary, #3a4fd6);
+  text-decoration: none;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 4px;
+  border-radius: 4px;
+  transition: color 0.15s;
+}
+
+.login-link:hover {
+  color: var(--primary-hover, #2d3cac);
+  text-decoration: underline;
+}
+
+.login-link:focus-visible {
+  outline: 2px solid var(--primary, #3a4fd6);
+  outline-offset: 2px;
+}
+
+.login-links__signup {
+  font-family: "Inter", system-ui, sans-serif;
+  font-size: 14px;
+  color: var(--muted, #5e6c69);
+  margin: 0;
+}
+
+/* ─── Rodapé ─── */
+.login-footer {
+  margin-top: 24px;
+  text-align: center;
+}
+
+.login-footer p {
+  font-family: "Inter", system-ui, sans-serif;
+  font-size: 12px;
+  color: var(--muted, #5e6c69);
+  margin: 0;
+}
+
+/* ─── Estado desabilitado global (durante loading) ─── */
+.login-page--loading .login-form {
+  pointer-events: none;
+  opacity: 0.75;
+}

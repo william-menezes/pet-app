@@ -1,0 +1,41 @@
+/* pets.css — placeholder para o painel autenticado */
+.pets-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  background: var(--surface-0, #ffffff);
+  border-bottom: 1px solid var(--border, #e2e5e7);
+  min-height: 56px;
+}
+
+.pets-header__title {
+  font-family: "Poppins", system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 17px;
+  color: var(--text-strong, #13201e);
+}
+
+.pets-logout-btn {
+  background: none;
+  border: 1.5px solid var(--border, #e2e5e7);
+  border-radius: 8px;
+  padding: 6px 16px;
+  font-family: "Inter", system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text, #33403d);
+  cursor: pointer;
+  min-height: 36px;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.pets-logout-btn:hover {
+  background: var(--app, #f7f8f8);
+  border-color: var(--indigo-300, #7b8ce4);
+}
+
+.pets-logout-btn:focus-visible {
+  outline: 2px solid var(--primary, #3a4fd6);
+  outline-offset: 2px;
+}

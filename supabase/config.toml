@@ -1,0 +1,66 @@
+# Supabase local development configuration — Faro
+# Secrets (GOOGLE_OAUTH_CLIENT_ID, GOOGLE_OAUTH_SECRET, HASH_SALT, service_role)
+# live in .env.local (NOT committed). See supabase/.env.local.example.
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "storage", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 15
+
+[studio]
+enabled = true
+port = 54323
+
+[inbucket]
+enabled = true
+port = 54324
+
+[storage]
+enabled = true
+
+[auth]
+enabled = true
+port = 54321
+site_url = "http://localhost:4200"
+additional_redirect_urls = ["http://localhost:4200/auth/callback"]
+jwt_expiry = 3600
+
+# E-mail + senha com confirmação obrigatória (FR-024).
+# em local dev, confirmação é auto-confirmada para facilitar testes; setar enable_confirmations=true em staging/prod.
+enable_confirmations = false    # dev: false | staging/prod: true
+
+# Rate-limit nativo do GoTrue — camada ampla (FR-018, defesa em duas camadas).
+# A segunda camada é a tabela auth_login_attempts + Edge login-guard.
+[auth.rate_limit]
+# Ajuste conforme a política do GoTrue disponível na versão usada.
+# Os valores abaixo são defaults conservadores para dev/staging.
+email_sent_per_hour = 10
+token_refresh_per_hour = 30
+
+[auth.email]
+enable_signup = true
+double_confirm_changes = true
+enable_confirmations = true   # GoTrue: exige link de confirmação antes de liberar sessão
+
+# Google OAuth (FR-016/Princípio III): client id/secret NUNCA commitados.
+# Configure via `supabase secrets set GOOGLE_OAUTH_CLIENT_ID=... GOOGLE_OAUTH_SECRET=...`
+# ou no painel do Supabase em Authentication → Providers → Google.
+[auth.external.google]
+enabled = false           # dev: false; staging/prod: true + envs abaixo
+client_id = "env(GOOGLE_OAUTH_CLIENT_ID)"
+secret = "env(GOOGLE_OAUTH_SECRET)"
+redirect_uri = "http://localhost:54321/auth/v1/callback"
+
+[analytics]
+enabled = false
+
+[functions]
+# Edge Functions servidas localmente em supabase functions serve
+verify_jwt = true

@@ -1,4 +1,240 @@
-<section data-testid="auth-login">
-  <h1>Entrar</h1>
-  <p>Autenticação (CSR). Placeholder — implementado na feature de auth.</p>
-</section>
+<!-- login.html — T028 (refatorado para 100% componentes nativos PrimeNG, 2026-07-01)
+     Tela de login do painel Faro.
+     data-testid conforme ui-ux.md §8 (mapa completo).
+     A11y: WCAG 2.1 AA, aria-live, aria-describedby, targets ≥ 44px.
+     Paleta C / FaroPreset / Aura — sem verde-lima, sem âmbar de modo perdido.
+-->
+<p-toast position="top-center" />
+
+<div class="login-page" [class.login-page--loading]="isLoading()">
+  <main class="login-main" aria-labelledby="login-heading">
+
+    <!-- Card de login -->
+    <div class="login-card">
+
+      <!-- Marca — logo full; troca por tema (light/dark) via CSS -->
+      <div class="login-brand">
+        <img
+          class="login-logo login-logo--light"
+          src="/logos/logo-full-light.svg"
+          alt="Faro"
+          width="118"
+          height="44" />
+        <img
+          class="login-logo login-logo--dark"
+          src="/logos/logo-full-dark.svg"
+          alt="Faro"
+          width="118"
+          height="44" />
+      </div>
+
+      <!-- Título (único h1 na página) -->
+      <h1 id="login-heading" class="login-title">Bem-vindo de volta</h1>
+      <p class="login-subtitle">Entre na sua conta para acessar o Faro.</p>
+
+      <!-- ── Banner: sessão expirada (FR-012) ── -->
+      @if (showSessionExpired()) {
+        <p-message
+          severity="info"
+          [pt]="{ root: { role: 'status', 'aria-live': 'polite' }, text: { 'data-testid': 'login-session-expired' } }"
+          styleClass="login-banner">
+          Sua sessão expirou. Entre de novo para continuar de onde parou.
+        </p-message>
+      }
+
+      <!-- ── Banner: logout confirmado (FR-010) ── -->
+      @if (showLoggedOut()) {
+        <p-message
+          severity="success"
+          [pt]="{ root: { role: 'status', 'aria-live': 'polite' }, text: { 'data-testid': 'login-logged-out' } }"
+          styleClass="login-banner">
+          Você saiu com segurança.
+        </p-message>
+      }
+
+      <!-- ── Banner de erro de formulário (FR-014/019/018) ── -->
+      @if (formError() && !isUnconfirmed()) {
+        <p-message
+          [severity]="bannerSeverity"
+          [pt]="{ text: { 'data-testid': 'login-error' } }"
+          styleClass="login-banner">
+          {{ errorBannerMessage() }}
+        </p-message>
+      }
+
+      <!-- ── Banner: e-mail não confirmado (FR-024) ── -->
+      @if (isUnconfirmed()) {
+        <p-message
+          severity="info"
+          [pt]="{ text: { 'data-testid': 'login-unconfirmed-notice' } }"
+          styleClass="login-banner">
+          <div class="login-banner__body">
+            <p class="login-banner__text">
+              Confirme seu e-mail para entrar. Não recebeu o e-mail de confirmação?
+            </p>
+            <button
+              type="button"
+              pButton
+              text
+              (click)="onResendConfirmation()"
+              data-testid="login-resend-confirmation">
+              Reenviar e-mail de confirmação
+            </button>
+          </div>
+        </p-message>
+      }
+
+      <!-- ── Formulário ── -->
+      <form
+        class="login-form"
+        [formGroup]="form"
+        (ngSubmit)="onSubmit()"
+        novalidate
+        aria-label="Formulário de login">
+
+        <!-- Campo E-mail -->
+        <div class="login-field">
+          <label for="login-email-input" class="login-label">E-mail</label>
+          <input
+            id="login-email-input"
+            type="email"
+            pInputText
+            fluid
+            formControlName="email"
+            autocomplete="email"
+            inputmode="email"
+            aria-required="true"
+            [invalid]="emailCtrl.touched && emailCtrl.invalid"
+            [attr.aria-invalid]="emailCtrl.touched && emailCtrl.invalid ? 'true' : null"
+            [attr.aria-describedby]="emailCtrl.touched && emailCtrl.invalid ? 'login-email-input-error' : null"
+            data-testid="login-email" />
+          @if (emailFieldError) {
+            <p-message
+              severity="error"
+              size="small"
+              variant="simple"
+              [id]="'login-email-input-error'"
+              [pt]="{ text: { 'data-testid': 'login-email-error' } }">
+              {{ emailFieldError }}
+            </p-message>
+          }
+        </div>
+
+        <!-- Campo Senha -->
+        <div class="login-field">
+          <label for="login-password-input" class="login-label">Senha</label>
+          <p-password
+            inputId="login-password-input"
+            formControlName="password"
+            [toggleMask]="true"
+            [feedback]="false"
+            fluid
+            autocomplete="current-password"
+            aria-required="true"
+            [invalid]="passwordCtrl.touched && passwordCtrl.invalid"
+            [attr.aria-invalid]="passwordCtrl.touched && passwordCtrl.invalid ? 'true' : null"
+            [attr.aria-describedby]="passwordCtrl.touched && passwordCtrl.invalid ? 'login-password-input-error' : null"
+            [pt]="{
+              pcInputText: { root: { 'data-testid': 'login-password' } },
+              maskIcon: { 'data-testid': 'login-password-toggle' },
+              unmaskIcon: { 'data-testid': 'login-password-toggle' }
+            }">
+          </p-password>
+          @if (passwordFieldError) {
+            <p-message
+              severity="error"
+              size="small"
+              variant="simple"
+              [id]="'login-password-input-error'"
+              [pt]="{ text: { 'data-testid': 'login-password-error' } }">
+              {{ passwordFieldError }}
+            </p-message>
+          }
+        </div>
+
+        <!-- Checkbox "Manter conectado" (FR-007) -->
+        <div class="login-remember">
+          <p-checkbox
+            binary
+            formControlName="rememberMe"
+            inputId="login-remember-input"
+            ariaLabel="Manter conectado"
+            data-testid="login-remember" />
+          <label for="login-remember-input" class="login-remember__text">Manter conectado</label>
+        </div>
+
+        <!-- Botão "Entrar" (ação primária) -->
+        <p-button
+          type="submit"
+          label="Entrar"
+          [fluid]="true"
+          [loading]="isLoading()"
+          loadingIcon="pi pi-spin pi-spinner"
+          [disabled]="submitButtonDisabled"
+          [attr.aria-busy]="isLoading()"
+          styleClass="login-btn login-btn--primary"
+          data-testid="login-submit" />
+
+        <!-- Divisor "ou" -->
+        <p-divider align="center" type="solid">ou</p-divider>
+
+        <!-- Botão "Entrar com Google" (US2) -->
+        <button
+          type="button"
+          pButton
+          outlined
+          fluid
+          class="login-btn login-btn--google"
+          [disabled]="isLoading() || isGoogleDisabled()"
+          (click)="onGoogleLogin()"
+          aria-label="Entrar com Google"
+          data-testid="login-google">
+          <!-- Ícone G do Google (SVG inline, sem dependência externa) -->
+          <svg
+            aria-hidden="true"
+            width="20"
+            height="20"
+            viewBox="0 0 48 48"
+            fill="none">
+            <path d="M43.6 20.5H42V20H24v8h11.3C33.65 32.55 29.27 35 24 35c-6.63 0-12-5.37-12-12s5.37-12 12-12c3.06 0 5.84 1.16 7.96 3.04l5.66-5.66C34.1 5.52 29.3 3 24 3 12.95 3 4 11.95 4 23s8.95 20 20 20c11.05 0 20-8.95 20-20 0-1.34-.14-2.65-.4-3.5Z" fill="#FFC107"/>
+            <path d="m6.3 14.09 6.58 4.83C14.56 15.08 18.96 12 24 12c3.06 0 5.84 1.16 7.96 3.04l5.66-5.66C34.1 5.52 29.3 3 24 3 16.32 3 9.66 7.63 6.3 14.09Z" fill="#FF3D00"/>
+            <path d="M24 43c5.17 0 9.88-1.97 13.44-5.18l-6.2-5.25A12 12 0 0 1 24 35c-5.25 0-9.62-3.43-11.29-8.17l-6.53 5.03C9.52 38.23 16.23 43 24 43Z" fill="#4CAF50"/>
+            <path d="M43.6 20.5H42V20H24v8h11.3a12.04 12.04 0 0 1-4.07 5.57l6.2 5.25C37.12 42.35 44 37 44 24c0-1.34-.14-2.65-.4-3.5Z" fill="#1976D2"/>
+          </svg>
+          <span>Entrar com Google</span>
+        </button>
+
+      </form>
+
+      <!-- Links auxiliares -->
+      <nav class="login-links" aria-label="Links auxiliares">
+        <a
+          href="#"
+          class="login-link"
+          (click)="onProvisionalLink($event)"
+          aria-label="Esqueceu a senha? (em breve)"
+          data-testid="login-forgot-link">
+          Esqueceu a senha?
+        </a>
+        <p class="login-links__signup">
+          Ainda não tem conta?
+          <a
+            href="#"
+            class="login-link"
+            (click)="onProvisionalLink($event)"
+            aria-label="Criar conta (em breve)"
+            data-testid="login-signup-link">
+            Criar conta
+          </a>
+        </p>
+      </nav>
+
+    </div><!-- /login-card -->
+
+    <!-- Rodapé -->
+    <footer class="login-footer">
+      <p>Protegido por Faro &#x1F43E;</p>
+    </footer>
+
+  </main>
+</div>

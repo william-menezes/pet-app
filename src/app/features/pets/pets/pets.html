@@ -1,4 +1,21 @@
-<section data-testid="pets-home">
-  <h1>Meus pets</h1>
-  <p>Painel autenticado (CSR). Placeholder — implementado na feature de pets.</p>
-</section>
+<!-- pets.html — shell do painel autenticado (placeholder).
+     Contém o botão de logout (T042, FR-010) com data-testid="login-logout".
+     Implementação completa do painel virá na feature de pets. -->
+<header class="pets-header">
+  <span class="pets-header__title">Faro — Meus pets</span>
+  <button
+    type="button"
+    class="pets-logout-btn"
+    (click)="signOut()"
+    aria-label="Sair da conta"
+    data-testid="login-logout">
+    Sair
+  </button>
+</header>
+
+<main>
+  <section data-testid="pets-home" style="padding: 24px;">
+    <h1>Meus pets</h1>
+    <p>Painel autenticado (CSR). Placeholder — implementado na feature de pets.</p>
+  </section>
+</main>

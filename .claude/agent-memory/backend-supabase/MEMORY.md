@@ -1,0 +1,2 @@
+- [Feature 001-login: backend implementado](project-001-login-backend.md) — migrations 0001–0007, Edge login-guard, testes pgTAP (T019/T020/T024/T023)
+- [RLS matriz feature 001](rls-matrix-feature-001.md) — tabela de acesso anon/tutor/admin/service_role para perfis, auth_audit_log, auth_login_attempts + helpers is_admin()/current_user_role()

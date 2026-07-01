@@ -98,6 +98,11 @@ supabase functions serve       # rodar Edge Functions localmente
 - **Lembrete (Reminder)** / **Notificação** — agendamento (vacina/consulta/vermífugo) e entrega (in-app/e-mail).
 - **CoTutor** — compartilhamento de um pet (plano Família).
 - **Admin** — backoffice (pool de códigos, planos, suporte, realocação, fila de scans de planos inativos).
+- **Conta / Usuário (Account/User)** — identidade autenticável no Faro; titular dos dados (LGPD). Materializa-se como **Tutor** ou **Admin** conforme o **Papel**. Atributos de login: e-mail, credencial de senha (quando aplicável) e vínculo a uma ou mais identidades externas.
+- **Papel (Role)** — classificação da Conta que determina o destino pós-login e o escopo de acesso: tutor → painel do tutor; admin → backoffice. (origem da spec `001-login`.)
+- **Sessão (Session)** — vínculo temporário de acesso autenticado entre a Conta e o painel; estado `ativa | expirada | encerrada`; duração **curta** (sem "manter conectado") vs. **persistente** (com "manter conectado", com renovação automática).
+- **Identidade Externa (External Identity)** — vínculo entre a Conta do Faro e uma conta de provedor social (ex.: **Google**) usada como método de autenticação alternativo; provedor entrega o e-mail já verificado.
+- **Evento de Auditoria de Autenticação (AuthAuditEvent)** — registro estruturado de evento sensível de login (sucesso, falha, bloqueio por rate-limit, logout), com timestamp e contexto mínimo (minimização LGPD); subtipo do log de **Auditoria** (Princípio VII).
 - *(Fase 2)* **Prestador (Provider)**, **AssinaturaPrestador**, **Anúncio (Ad)**, **ServiceListing** — marketplace.
 
 ## Code Style
@@ -139,6 +144,7 @@ Pipeline completo em [docs/dev-pipeline.md](docs/dev-pipeline.md). Subagentes em
 - 2026-06-05: Cobrança = **Freemium híbrido** (Grátis/Pro/Família); infra = **manter Vercel + Supabase**; constituição → **v1.1.0** (Princípio I refinado).
 - 2026-06-09: Projeto consolidado numa raiz única (fim do duplo-aninhamento `pet-app/pet-app`); 6 subagentes movidos para o `.claude/agents/` do repositório.
 - 2026-06-10: **Bootstrap (spec `000-bootstrap`) executado** — app **Angular 21** (zoneless, SSR híbrido), **PrimeNG 21 + `@primeuix/themes`** (FaroPreset/Aura), `@supabase/supabase-js`, ESLint flat + boundary Rescue-First, Vitest, Playwright (Chromium), `@angular/localize` (PT-BR), PWA. `ng build`/`lint`/`test` verdes. ⚠️ Tema do PrimeNG migrou de `@primeng/themes` (deprecado no v21) para **`@primeuix/themes`**.
+- 2026-06-29: **Spec `001-login`** criada (product-owner) e clarificada (Sessão 2026-06-29): login **e-mail/senha + Google**, mesma porta para **Tutor/Admin** com roteamento por papel, **"manter conectado"**, e requisitos de segurança agnósticos de stack (anti-injeção, token de sessão protegido contra XSS, rate-limit **5/15min por identidade+origem**, anti-enumeração, auditoria, LGPD); confirmação de e-mail exigida para e-mail/senha (Google já verificado); MFA fora do MVP mas arquitetura aberta a ele. Glossário ampliado: **Conta/Usuário, Papel (Role), Sessão, Identidade Externa, Evento de Auditoria de Autenticação**. Próximo: `/speckit.plan`.
 
 <!-- MANUAL ADDITIONS START -->
 <!-- MANUAL ADDITIONS END -->

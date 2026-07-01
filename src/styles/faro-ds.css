@@ -18,7 +18,11 @@ body {
   text-rendering: optimizeLegibility;
 }
 img, svg { display: block; max-width: 100%; }
-button, input, select, textarea { font: inherit; color: inherit; }
+button, input, select, textarea { font: inherit; }
+/* color: inherit para controles nativos, mas NÃO para botões do PrimeNG:
+   este reset é unlayered e venceria o @layer primeng, escurecendo o rótulo
+   do botão primário (que já traz a cor de contraste AA do FaroPreset). */
+input, select, textarea, button:not(.p-button) { color: inherit; }
 h1, h2, h3, h4 { font-family: "Poppins", system-ui, sans-serif; margin: 0; line-height: 1.15; letter-spacing: -0.01em; color: var(--text-strong); }
 p { margin: 0; text-wrap: pretty; }
 a { color: var(--indigo-600); text-underline-offset: 2px; }
