@@ -1,8 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "version": 2,
+  "framework": "angular",
   "buildCommand": "npm run build",
-  "outputDirectory": "dist/pet-app/browser",
   "headers": [
     {
       "source": "/(.*)",
@@ -28,12 +27,6 @@
           "value": "geolocation=(self), camera=(), microphone=()"
         }
       ]
-    }
-  ],
-  "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
     }
   ]
 }
