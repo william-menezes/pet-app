@@ -122,6 +122,10 @@ supabase functions serve       # rodar Edge Functions localmente
 4. `/speckit.tasks` — quebra em tarefas por user story.
 5. `/speckit.implement` — implementa.
 
+## Git Workflow
+
+Fluxo de três branches com promoção em cadeia: `feature` → **`develop`** → **`homolog`** → **`master`** (produção na Vercel). Features partem de `develop`; o código sobe um degrau por vez; nunca commite direto em `homolog`/`master`. Comandos e convenções em [docs/git-workflow.md](docs/git-workflow.md).
+
 ## Esteira & Subagentes
 
 Pipeline completo em [docs/dev-pipeline.md](docs/dev-pipeline.md). Subagentes em `.claude/agents/`: **product-owner** (spec) → **tech-lead-planner** (plan+tasks, Constitution Check) → **ui-ux-designer** (blueprint de telas + identidade) ∥ **backend-supabase** (migrations/RLS/Edge; usa **MCP Supabase** de `.mcp.json`) → **frontend-angular** (implementa UI) → **qa-engineer** (testes + gate de segurança/RLS) → gate humano `/security-review` + `/code-review`. As skills `speckit-*` são *user-invocable-only* (os agentes executam o procedimento lendo os templates); `angular-developer` é pré-carregada no frontend/QA. Após criar/editar agentes, **reinicie a sessão** (ou use `/agents`) para carregá-los.
@@ -145,6 +149,7 @@ Pipeline completo em [docs/dev-pipeline.md](docs/dev-pipeline.md). Subagentes em
 - 2026-06-09: Projeto consolidado numa raiz única (fim do duplo-aninhamento `pet-app/pet-app`); 6 subagentes movidos para o `.claude/agents/` do repositório.
 - 2026-06-10: **Bootstrap (spec `000-bootstrap`) executado** — app **Angular 21** (zoneless, SSR híbrido), **PrimeNG 21 + `@primeuix/themes`** (FaroPreset/Aura), `@supabase/supabase-js`, ESLint flat + boundary Rescue-First, Vitest, Playwright (Chromium), `@angular/localize` (PT-BR), PWA. `ng build`/`lint`/`test` verdes. ⚠️ Tema do PrimeNG migrou de `@primeng/themes` (deprecado no v21) para **`@primeuix/themes`**.
 - 2026-06-29: **Spec `001-login`** criada (product-owner) e clarificada (Sessão 2026-06-29): login **e-mail/senha + Google**, mesma porta para **Tutor/Admin** com roteamento por papel, **"manter conectado"**, e requisitos de segurança agnósticos de stack (anti-injeção, token de sessão protegido contra XSS, rate-limit **5/15min por identidade+origem**, anti-enumeração, auditoria, LGPD); confirmação de e-mail exigida para e-mail/senha (Google já verificado); MFA fora do MVP mas arquitetura aberta a ele. Glossário ampliado: **Conta/Usuário, Papel (Role), Sessão, Identidade Externa, Evento de Auditoria de Autenticação**. Próximo: `/speckit.plan`.
+- 2026-07-01: **Fluxo de trabalho Git** definido — três branches (`develop` → `homolog` → `master`/produção Vercel), features partindo de `develop`, promoção um degrau por vez. Documentado em [docs/git-workflow.md](docs/git-workflow.md).
 
 <!-- MANUAL ADDITIONS START -->
 <!-- MANUAL ADDITIONS END -->
