@@ -12,10 +12,8 @@ import {
   withIncrementalHydration,
 } from '@angular/platform-browser';
 import { provideServiceWorker } from '@angular/service-worker';
-import { providePrimeNG } from 'primeng/config';
 
 import { routes } from './app.routes';
-import { FaroPreset } from '../theme/faro-preset';
 import { GlobalErrorHandler } from './core/error/global-error-handler';
 import { provideZard } from '@/shared/core/provider/providezard';
 import { provideIcons } from '@ng-icons/core';
@@ -34,18 +32,6 @@ export const appConfig: ApplicationConfig = {
     // SSR híbrido: hidratação incremental (mantém o painel longe da rota pública) +
     // event replay (não perde o clique no CTA de resgate antes da hidratação).
     provideClientHydration(withIncrementalHydration(), withEventReplay()),
-
-    // Tema PrimeNG (Aura via FaroPreset, Paleta C). PrimeNG isolado em @layer primeng;
-    // faro-ds.css (unlayered) sobrepõe quando precisa. darkMode via classe .faro-dark.
-    providePrimeNG({
-      theme: {
-        preset: FaroPreset,
-        options: {
-          darkModeSelector: '.faro-dark',
-          cssLayer: { name: 'primeng', order: 'primeng' },
-        },
-      },
-    }),
 
     // PWA: service worker só fora de dev.
     provideServiceWorker('ngsw-worker.js', {

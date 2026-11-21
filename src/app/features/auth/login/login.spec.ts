@@ -171,7 +171,7 @@ describe('Login', () => {
 
   // ── Spec 002: apresentação com ZardUI ──
 
-  it('não deve ter nenhum componente do PrimeNG no DOM', () => {
+  it('não deve ter nenhum componente p-* da pilha antiga no DOM', () => {
     const el: HTMLElement = fixture.nativeElement;
     for (const tag of ['p-button', 'p-password', 'p-checkbox', 'p-message', 'p-toast']) {
       expect(el.querySelector(tag)).toBeNull();

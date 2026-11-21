@@ -637,7 +637,7 @@ e visível em `/dev/ui/components`.
   - **Feito quando**: a busca por `var(--` e `Poppins` em `features/pets/` não acha nada;
     `npm test -- --watch=false` passa.
 
-- [ ] T037 [US2] Remover o PrimeNG do projeto: `src/app/app.config.ts`, `angular.json`, `package.json`; apagar `src/theme/faro-preset.ts`, `src/styles/faro-ds.css`, `src/styles/faro-shells.css`, `src/styles/README.md` (depende de T031 a T036)
+- [x] T037 [US2] Remover o PrimeNG do projeto: `src/app/app.config.ts`, `angular.json`, `package.json`; apagar `src/theme/faro-preset.ts`, `src/styles/faro-ds.css`, `src/styles/faro-shells.css`, `src/styles/README.md` (depende de T031 a T036)
   - **Faça**:
     1. `app.config.ts`: tire o import de `providePrimeNG`, o import de `FaroPreset`, o bloco
        `providePrimeNG({...})` e o comentário dele. **Não** tire o `provideServiceWorker` ainda

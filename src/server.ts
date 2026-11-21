@@ -4,9 +4,9 @@
  * T020a: CSP estrita espelhada aqui (além de vercel.json).
  * - script-src: 'self' sem unsafe-inline/unsafe-eval.
  * - connect-src: 'self' + domínio Supabase (anon key/auth/realtime).
- * - style-src: 'self' 'unsafe-inline' (necessário para PrimeNG inline styles; o risco de
+ * - style-src: 'self' 'unsafe-inline' (necessário para estilos inline do CDK e do ngx-sonner; o risco de
  *   XSS via CSS é baixo comparado a script — aceitável no MVP; revisar com nonce se necessário).
- * - font-src: 'self' (fontes Poppins/Inter são self-hosted ou importadas no bundle).
+ * - font-src: 'self' (fontes Outfit/Inter são self-hosted em public/fonts).
  * - img-src: 'self' data: blob:.
  * - frame-ancestors: 'none' (impede clickjacking).
  * - Sem unsafe-eval → bloqueia eval(), new Function() dinâmicos.
