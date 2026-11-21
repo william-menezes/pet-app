@@ -371,7 +371,7 @@ fundo lima, sem uso no código); os arquivos `.css` vazios `src/app/app.css`,
     `package.json` não contém `lucide`; `npm run build`, `npm run lint` e
     `npm test -- --watch=false` passam.
 
-- [ ] T012 Tirar as classes de foco dos componentes copiados (`src/app/shared/components/**/*.variants.ts` e `*.component.ts`, exceto `faro/`)
+- [x] T012 Tirar as classes de foco dos componentes copiados (`src/app/shared/components/**/*.variants.ts` e `*.component.ts`, exceto `faro/`)
   - **Referência**: `contracts/design-tokens.contract.md` §4.
   - **Faça**: remova das cadeias de classes toda ocorrência de `focus-visible:ring-…`,
     `focus:ring-…`, `focus-visible:border-ring`, `focus-visible:outline-…`, `ring-offset-…`,

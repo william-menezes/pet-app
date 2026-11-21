@@ -10,8 +10,7 @@ export const itemSeparatorVariants = cva('bg-border my-2 block h-px w-full shrin
 
 export const itemVariants = cva(
   mergeClasses(
-    'group/item flex w-full flex-wrap items-center rounded-lg border text-sm transition-colors duration-100 outline-none',
-    'focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50',
+    'group/item flex w-full flex-wrap items-center rounded-lg border text-sm transition-colors duration-100',
     '[a]:transition-colors [a]:hover:bg-muted',
   ),
   {
