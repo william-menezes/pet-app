@@ -289,6 +289,42 @@ No painel de marca da casca de fluxo (variante `flow`, `xl`), o focinho gigante 
 
 Só o deslocamento horizontal mudou (largura e topo iguais); a variante `page` não foi tocada. Proteção: `e2e/ui-shells.spec.ts` (bloco "painel de marca da casca de fluxo", 1280 e 1440) exige respiro de pelo menos 24px entre as caixas; `brand-panel.spec.ts` guarda as classes das duas variantes.
 
+### Checkpoint da Phase 6 (2026-11-21)
+
+| Comando | Resultado |
+|---|---|
+| `npm run build` | passou; sem aviso de orçamento; pacote inicial 403,06 kB (108,15 kB transferidos); antes da fase: 402,89 kB |
+| `npm run lint` | passou ("All files pass linting.") |
+| `npm test -- --watch=false` | passou: 47 arquivos, 232 testes (215 + 10 do `ThemeService` + 5 de tema na casca + 2 do painel de marca) |
+| `npx playwright test e2e/smoke.spec.ts` | passou (rodado com `ui-theme`, `ui-shells`, `login-ui`, `dev-gallery` e `ui-identity`: 84 testes verdes) |
+| `npx playwright test e2e/ui-theme.spec.ts` | passou: 10 testes |
+| `npm run check:ui` | passou: 65 variáveis, 46 pares; `check:stack` ok (com as regras 8 e 9); `check:boundary` ok |
+
+### Fase 7 (T057 a T062), desvios e decisões
+
+- **Commits**: T057 em `1774b71`; T058 em `25c6af7`; T059 em `922a4e6`; T060 em `3aeaa99`; T061 em `0d40c9e`; T062 em `c9bed6c`.
+- **T057**: seguida na ordem (copiar o `safety-worker.js` antes de desinstalar). `npm rm @angular/service-worker` saiu sem conflito. `app.config.ts` perdeu também o `isDevMode` (ficou sem uso). No build, `dist/faro/browser/` tem só `ngsw-worker.js` (1.112 bytes, o arquivo de desligamento com o comentário de três linhas); `ngsw.json`, `safety-worker.js` e `worker-basic.min.js` sumiram.
+- **T058**: `unregisterServiceWorkers` roda em `main.ts` antes do `bootstrapApplication`; cada passo (registros, caches) tem o próprio `try/catch`, então uma falha no primeiro não impede o segundo.
+- **T059**: o primeiro teste registra `/ngsw-worker.js` na página aberta; quem cancela o registro é o arquivo de desligamento. Em dev, o servidor serve o arquivo de `public/`.
+- **T060**: PNGs conferidos a olho (focinho lima sobre navy; versão maskable com margem maior). `public/icons/` ficou com exatamente os seis arquivos pedidos; `favicon.ico` tem 1.931 bytes e começa por `00 00 01 00`. Os seis PNGs antigos foram removidos com `git rm`, sem tocar em mais nada.
+- **T061**: `theme-color` já estava em `#25337A` desde a T038; só conferido.
+- **T062**: a regra 13 varre `src/` inteiro, incluindo `*.spec.ts`. A palavra `ngsw` continua em `src/app/core/pwa/unregister-service-workers*.ts`, só como prefixo dos caches a apagar (a T058 manda); a regra 13 não proíbe `ngsw`. Provada ao contrário: `provideServiceWorker` numa sonda, ícone do manifest ausente e `public/ngsw-worker.js` ausente, cada um fez o script sair com 1 (sondas desfeitas).
+- Regras de lint desligadas nesta fase: nenhuma.
+
+### Checkpoint da Phase 7 (2026-11-21)
+
+| Comando | Resultado |
+|---|---|
+| `npm run build` | passou; sem aviso de orçamento; pacote inicial 397,33 kB (106,51 kB transferidos); antes da fase: 403,06 kB |
+| `npm run lint` | passou |
+| `npm test -- --watch=false` | passou: 48 arquivos, 238 testes |
+| `npx playwright test e2e/smoke.spec.ts` | passou (suíte inteira: 87 testes verdes, incluindo `legacy-sw` e `ui-theme`) |
+| `npx playwright test e2e/legacy-sw.spec.ts` | passou: 3 testes |
+| `npm run check:ui` | passou: tokens, stack (regras 8 a 15) e boundary |
+| `npm run build:stats` e `npm run check:bundle` | saíram com 0 |
+
+Tamanhos (`dist/faro/browser/`): soma dos `.js` 741.188 bytes (linha de base 936.345 sem os scripts do service worker; 1.022.009 com eles); soma dos `.css` 58.452 bytes (linha de base 35.752). Arquivo de service worker no pacote: só o `ngsw-worker.js` de desligamento.
+
 ## Regras de lint desligadas
 
 Bloco em `eslint.config.js` com `files` = `src/app/shared/core/**/*.ts`, `src/app/shared/utils/**/*.ts`, `src/app/shared/components/**/*.ts` e `ignores` = `src/app/shared/components/faro/**`:
