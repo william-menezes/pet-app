@@ -747,7 +747,7 @@ vestígio de PrimeNG.
     o rodapé mostra "Tag " + código só quando `code` é informado; `npm test -- --watch=false`
     passa.
 
-- [ ] T045 [US3] Ligar as cascas às rotas: `src/app/shared/shells/shell-fallback/shell-fallback.ts`, `src/app/features/pets/tutor-app/tutor-app.ts`, `src/app/features/admin/admin-app/admin-app.ts`, `src/app/app.routes.ts`, `src/app/app.routes.server.ts`, `src/app/features/pets/pets/pets.html`, `src/app/features/admin/admin/admin.html` (depende de T041 e T043)
+- [x] T045 [US3] Ligar as cascas às rotas: `src/app/shared/shells/shell-fallback/shell-fallback.ts`, `src/app/features/pets/tutor-app/tutor-app.ts`, `src/app/features/admin/admin-app/admin-app.ts`, `src/app/app.routes.ts`, `src/app/app.routes.server.ts`, `src/app/features/pets/pets/pets.html`, `src/app/features/admin/admin/admin.html` (depende de T041 e T043)
   - **Referência**: `contracts/shells.contract.md` §7.
   - **Faça**: crie `ShellFallback`, `TutorApp` e `AdminApp` como no contrato (o `<z-toaster>` fica
     nos dois hospedeiros). Em `app.routes.ts`, `app` e `admin` passam a ter `loadComponent` do
@@ -759,7 +759,7 @@ vestígio de PrimeNG.
   - **Feito quando**: os quatro comandos da regra 5 passam (em especial `guards.spec.ts`,
     `pets.spec.ts` e `admin.spec.ts`).
 
-- [ ] T046 [US3] Página inicial com a estrutura pública: `src/app/features/public/landing/landing.ts`, `landing.html` (depende de T044)
+- [x] T046 [US3] Página inicial com a estrutura pública: `src/app/features/public/landing/landing.ts`, `landing.html` (depende de T044)
   - **Referência**: `contracts/shells.contract.md` §5 e §7.
   - **Faça**: `<app-public-layout media="band">` com `<app-brand-panel>` em `[media]` (frase e
     apoio padrão no desktop), o `<h1>` e o parágrafo da T035 no conteúdo, o botão "Entrar"

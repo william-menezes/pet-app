@@ -11,6 +11,8 @@ export const serverRoutes: ServerRoute[] = [
   { path: '', renderMode: RenderMode.Prerender },
 
   { path: 'app', renderMode: RenderMode.Client },
+  { path: 'app/**', renderMode: RenderMode.Client },
+  { path: 'admin/**', renderMode: RenderMode.Client },
   { path: 'admin', renderMode: RenderMode.Client },
   { path: 'auth/login', renderMode: RenderMode.Client },
   { path: 'auth/callback', renderMode: RenderMode.Client },

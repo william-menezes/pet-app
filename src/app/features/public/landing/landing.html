@@ -1,9 +1,17 @@
-<main class="flex min-h-dvh flex-col items-start justify-center gap-4 bg-background px-5 py-10 md:px-12" data-testid="public-landing">
-  <h1 class="font-display text-[40px] leading-[1.02] font-bold tracking-[-0.03em] text-foreground md:text-[52px]" i18n>
-    O caminho de volta para casa.
-  </h1>
-  <p class="max-w-[420px] text-base leading-[1.45] text-text" i18n>
-    A tag com QR Code que ajuda quem achou o seu pet a falar com você.
-  </p>
-  <a z-button routerLink="/auth/login" data-testid="public-landing-cta" i18n>Entrar</a>
-</main>
+<app-public-layout media="band">
+  <app-brand-panel media variant="page" [headline]="brandHeadline" [sub]="brandSub" />
+
+  <div class="flex flex-1 flex-col items-start gap-4 pt-2 xl:flex-none" data-testid="public-landing">
+    <h1
+      class="font-display text-[40px] leading-[1.02] font-bold tracking-[-0.03em] text-foreground md:text-[52px]"
+      i18n>
+      O caminho de volta para casa.
+    </h1>
+    <p class="max-w-[420px] text-base leading-[1.45] text-text" i18n>
+      A tag com QR Code que ajuda quem achou o seu pet a falar com você.
+    </p>
+    <a z-button zSize="lg" routerLink="/auth/login" data-testid="public-landing-cta" i18n>Entrar</a>
+  </div>
+
+  <app-public-footer footer trust="Faro é a tag de identificação do seu pet." i18n-trust />
+</app-public-layout>

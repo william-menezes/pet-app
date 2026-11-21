@@ -1,8 +1,9 @@
-<!-- pets.html — casca provisória do painel autenticado.
+<!-- pets.html — tela provisória do app do tutor (a casca vem de TutorApp).
      Contém o botão de logout (T042, FR-010) com data-testid="login-logout".
      O painel de verdade vem na feature de pets. -->
-<header class="flex items-center justify-between gap-3 border-b border-border bg-card px-5 py-3">
-  <span class="font-display text-lg font-semibold text-foreground" i18n>Faro — Meus pets</span>
+<section class="flex flex-col items-start gap-3" data-testid="pets-home">
+  <h1 class="font-display text-[32px] leading-tight font-bold tracking-[-0.03em] text-foreground" i18n>Meus pets</h1>
+  <p class="text-base text-text" i18n>Painel autenticado (CSR). Provisório: implementado na feature de pets.</p>
   <button
     type="button"
     z-button
@@ -15,11 +16,4 @@
     i18n>
     Sair
   </button>
-</header>
-
-<main>
-  <section class="p-6" data-testid="pets-home">
-    <h1 class="font-display text-[32px] leading-tight font-bold tracking-[-0.03em] text-foreground" i18n>Meus pets</h1>
-    <p class="mt-2 text-base text-text" i18n>Painel autenticado (CSR). Provisório: implementado na feature de pets.</p>
-  </section>
-</main>
+</section>
