@@ -942,7 +942,7 @@ vestígio de PrimeNG.
     comando imprime `ok`:
     `node -e "const fs=require('fs');const d='dist/faro/browser/';if(!fs.readFileSync(d+'ngsw-worker.js','utf8').includes('registration.unregister'))throw new Error('arquivo de desligamento ausente');if(fs.existsSync(d+'ngsw.json'))throw new Error('ngsw.json ainda existe');console.log('ok')"`
 
-- [ ] T058 [US5] Limpeza de service workers no carregamento: `src/app/core/pwa/unregister-service-workers.ts`, `unregister-service-workers.spec.ts`, `src/main.ts`
+- [x] T058 [US5] Limpeza de service workers no carregamento: `src/app/core/pwa/unregister-service-workers.ts`, `unregister-service-workers.spec.ts`, `src/main.ts`
   - **Referência**: `research.md` §R12 (camada 2).
   - **Faça**: função `unregisterServiceWorkers(): Promise<void>` que, se existir
     `navigator.serviceWorker`, cancela todos os registros (`getRegistrations()` + `unregister()`)
