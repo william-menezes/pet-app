@@ -1,0 +1,100 @@
+<div class="flex min-h-dvh flex-col bg-background text-text md:flex-row">
+  <a
+    href="#conteudo"
+    class="sr-only z-50 rounded-full bg-card px-4 py-2 font-semibold text-foreground focus:not-sr-only focus:absolute focus:top-3 focus:left-3"
+    data-testid="tutor-shell-skip"
+    (click)="skipToContent($event, main)"
+    i18n
+  >
+    Pular para o conteúdo
+  </a>
+
+  <!-- Tablet: trilho com ícones -->
+  <nav
+    class="sticky top-0 hidden h-dvh w-[88px] shrink-0 flex-col items-center gap-2 bg-card py-[22px] md:flex xl:hidden"
+    aria-label="Navegação principal"
+    i18n-aria-label
+    data-testid="tutor-shell-rail"
+  >
+    <app-focinho class="mb-[18px] w-[34px] text-primary" label="Faro" />
+    @for (item of items(); track item.id) {
+      <a
+        #rla="routerLinkActive"
+        [routerLink]="item.link"
+        routerLinkActive
+        ariaCurrentWhenActive="page"
+        [routerLinkActiveOptions]="{ exact: item.exact ?? false }"
+        [class]="railItem + ' ' + (rla.isActive ? active : 'text-muted-foreground')"
+        [attr.data-testid]="'tutor-nav-' + item.id"
+      >
+        <ng-icon [name]="item.icon" size="22" aria-hidden="true" />
+        <span>{{ item.label }}</span>
+      </a>
+    }
+  </nav>
+
+  <!-- Desktop: menu lateral -->
+  <nav
+    class="sticky top-0 hidden h-dvh w-[264px] shrink-0 flex-col gap-1.5 bg-card px-5 py-6 xl:flex"
+    aria-label="Navegação principal"
+    i18n-aria-label
+    data-testid="tutor-shell-sidebar"
+  >
+    <app-logo class="mb-[22px]" [height]="48" />
+    @for (item of items(); track item.id) {
+      <a
+        #rla="routerLinkActive"
+        [routerLink]="item.link"
+        routerLinkActive
+        ariaCurrentWhenActive="page"
+        [routerLinkActiveOptions]="{ exact: item.exact ?? false }"
+        [class]="sideItem + ' ' + (rla.isActive ? active : 'text-text')"
+        [attr.data-testid]="'tutor-nav-' + item.id"
+      >
+        <ng-icon [name]="item.icon" size="20" aria-hidden="true" />
+        <span>{{ item.label }}</span>
+      </a>
+    }
+    <div class="mt-auto flex items-center gap-3 pt-4" data-testid="tutor-shell-user">
+      <span
+        class="flex size-11 shrink-0 items-center justify-center rounded-full bg-foreground font-display text-lg font-semibold text-background"
+        aria-hidden="true"
+      >
+        {{ initial() }}
+      </span>
+      <span class="flex min-w-0 flex-col">
+        <span class="truncate text-[15px] font-semibold text-foreground">{{ userName() }}</span>
+        <span class="truncate text-[13px] text-muted-foreground">{{ userEmail() }}</span>
+      </span>
+    </div>
+  </nav>
+
+  <main #main id="conteudo" tabindex="-1" [class]="mainClass()" data-testid="tutor-shell-main">
+    <ng-content />
+  </main>
+
+  <!-- Celular: barra em pílula, só nas telas-raiz -->
+  @if (bottomNav()) {
+    <nav
+      class="fixed inset-x-4 bottom-[max(1rem,env(safe-area-inset-bottom))] z-40 grid grid-cols-4 gap-1 rounded-full bg-card p-1.5 shadow-pop md:hidden"
+      aria-label="Navegação principal"
+      i18n-aria-label
+      data-testid="tutor-shell-bottom-nav"
+    >
+      @for (item of items(); track item.id) {
+        <a
+          #rla="routerLinkActive"
+          [routerLink]="item.link"
+          routerLinkActive
+          ariaCurrentWhenActive="page"
+          [routerLinkActiveOptions]="{ exact: item.exact ?? false }"
+          [class]="bottomItem + ' ' + (rla.isActive ? active : 'text-muted-foreground')"
+          [attr.data-testid]="'tutor-nav-' + item.id"
+        >
+          <ng-icon [name]="item.icon" size="20" aria-hidden="true" />
+          <span>{{ item.label }}</span>
+        </a>
+      }
+    </nav>
+  }
+</div>

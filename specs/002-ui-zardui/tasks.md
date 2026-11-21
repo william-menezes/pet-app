@@ -708,7 +708,7 @@ vestígio de PrimeNG.
 **Independent Test**: `npx playwright test e2e/ui-shells.spec.ts`, `npm run check:boundary`,
 `npm run build:stats` e `npm run check:bundle`.
 
-- [ ] T040 [US3] Peças comuns das cascas: `src/app/shared/shells/nav-item.ts`, `src/app/shared/shells/leaf-route-data.ts` (+ `.spec.ts`), `src/app/shared/shells/screen-header/screen-header.ts` (+ `.spec.ts`)
+- [x] T040 [US3] Peças comuns das cascas: `src/app/shared/shells/nav-item.ts`, `src/app/shared/shells/leaf-route-data.ts` (+ `.spec.ts`), `src/app/shared/shells/screen-header/screen-header.ts` (+ `.spec.ts`)
   - **Referência**: `contracts/shells.contract.md` §1, §2.3, §2.4.
   - **Faça**: `NavItem`; `leafRouteData<T>(key)` (um `Signal` com `data[key]` da rota-folha
     ativa, atualizado a cada `NavigationEnd`; use `toSignal`); `app-screen-header` com `title`,
@@ -717,7 +717,7 @@ vestígio de PrimeNG.
     `data: { hub: true }` e `undefined` em outra, e que o cabeçalho mostra o botão com
     `aria-label="Voltar"` ou `"Fechar"` conforme `back`; `npm test -- --watch=false` passa.
 
-- [ ] T041 [US3] Casca do app do tutor: `src/app/shared/shells/tutor-shell/tutor-shell.ts`, `tutor-shell.html`, `tutor-nav.ts`, `tutor-shell.spec.ts` (depende de T040)
+- [x] T041 [US3] Casca do app do tutor: `src/app/shared/shells/tutor-shell/tutor-shell.ts`, `tutor-shell.html`, `tutor-nav.ts`, `tutor-shell.spec.ts` (depende de T040)
   - **Referência**: `contracts/shells.contract.md` §2.1, §2.2 (tabela por largura).
   - **Faça**: as três navegações no DOM, com as classes de visibilidade por largura; item ativo
     com `aria-current="page"` e `bg-foreground text-background`; barra inferior só com
@@ -728,19 +728,19 @@ vestígio de PrimeNG.
     `bottomNav=false` não existe `tutor-shell-bottom-nav`; com `true`, existe; a inicial do nome
     aparece em `tutor-shell-user`; `npm test -- --watch=false` passa.
 
-- [ ] T042 [P] [US3] Casca dos fluxos: `src/app/shared/shells/flow-shell/flow-shell.ts`, `flow-shell.html`, `flow-shell.spec.ts` (depende de T040)
+- [x] T042 [P] [US3] Casca dos fluxos: `src/app/shared/shells/flow-shell/flow-shell.ts`, `flow-shell.html`, `flow-shell.spec.ts` (depende de T040)
   - **Referência**: `contracts/shells.contract.md` §3.
   - **Feito quando**: os testes conferem a projeção do corpo e de `[footer]`, que `step` mostra
     `app-steps`, e que o painel de marca tem `data-testid="flow-shell-brand-panel"`;
     `npm test -- --watch=false` passa.
 
-- [ ] T043 [P] [US3] Casca do admin: `src/app/shared/shells/admin-shell/admin-shell.ts`, `admin-shell.html`, `admin-nav.ts`, `admin-shell.spec.ts` (depende de T040)
+- [x] T043 [P] [US3] Casca do admin: `src/app/shared/shells/admin-shell/admin-shell.ts`, `admin-shell.html`, `admin-nav.ts`, `admin-shell.spec.ts` (depende de T040)
   - **Referência**: `contracts/shells.contract.md` §4.
   - **Feito quando**: os testes conferem as duas navegações (`admin-shell-topbar`,
     `admin-shell-sidebar`), o selo "Admin" e os quatro `admin-nav-<id>`;
     `npm test -- --watch=false` passa.
 
-- [ ] T044 [P] [US3] Páginas públicas: `src/app/shared/shells/public-layout/public-layout.ts`, `public-footer.ts`, `public-layout.spec.ts`
+- [x] T044 [P] [US3] Páginas públicas: `src/app/shared/shells/public-layout/public-layout.ts`, `public-footer.ts`, `public-layout.spec.ts`
   - **Referência**: `contracts/shells.contract.md` §5.
   - **Faça**: nenhum import de `core/`, nenhum overlay, nenhum uso de `window`/`document`.
   - **Feito quando**: os testes conferem as três projeções, as alturas da faixa por `media` e que
