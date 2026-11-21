@@ -13,8 +13,7 @@ import {
   ViewEncapsulation,
 } from '@angular/core';
 
-import { NgIcon, provideIcons } from '@ng-icons/core';
-import { lucideCircleCheck, lucideInfo, lucideLoader2, lucideOctagonX, lucideTriangleAlert } from '@ng-icons/lucide';
+import { NgIcon } from '@ng-icons/core';
 import type { ClassValue } from 'clsx';
 import { NgxSonnerToaster, toastState, type ToasterProps } from 'ngx-sonner';
 
@@ -55,11 +54,11 @@ const DEFAULT_TOAST_OPTIONS: ToasterProps['toastOptions'] = {
       [toastOptions]="resolvedToastOptions()"
       [dir]="resolvedDir()"
     >
-      <ng-icon loading-icon name="lucideLoader2" class="size-4 [&>svg]:animate-spin" />
-      <ng-icon success-icon name="lucideCircleCheck" class="size-4" />
-      <ng-icon error-icon name="lucideOctagonX" class="size-4" />
-      <ng-icon warning-icon name="lucideTriangleAlert" class="size-4" />
-      <ng-icon info-icon name="lucideInfo" class="size-4" />
+      <ng-icon loading-icon name="loader" class="size-4 [&>svg]:animate-spin" />
+      <ng-icon success-icon name="checkCircle" class="size-4" />
+      <ng-icon error-icon name="alert" class="size-4" />
+      <ng-icon warning-icon name="warn" class="size-4" />
+      <ng-icon info-icon name="info" class="size-4" />
     </ngx-sonner-toaster>
   `,
   styles: `
@@ -86,7 +85,6 @@ const DEFAULT_TOAST_OPTIONS: ToasterProps['toastOptions'] = {
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
   encapsulation: ViewEncapsulation.None,
-  viewProviders: [provideIcons({ lucideCircleCheck, lucideInfo, lucideLoader2, lucideOctagonX, lucideTriangleAlert })],
   host: {
     'data-slot': 'sonner',
   },

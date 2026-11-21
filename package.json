@@ -28,7 +28,6 @@
     "@angular/ssr": "^21.2.14",
     "@boxicons/js": "^1.0.1",
     "@ng-icons/core": "^34.0.0",
-    "@ng-icons/lucide": "^34.0.0",
     "@primeuix/themes": "^2.0.3",
     "@supabase/supabase-js": "^2.108.1",
     "class-variance-authority": "^0.7.1",

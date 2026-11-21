@@ -1,7 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input, TemplateRef, ViewEncapsulation } from '@angular/core';
 
-import { NgIcon, provideIcons } from '@ng-icons/core';
-import { lucideCircleAlert } from '@ng-icons/lucide';
+import { NgIcon } from '@ng-icons/core';
 import type { ClassValue } from 'clsx';
 
 import { ZardStringTemplateOutletDirective } from '@/shared/core/directives/string-template-outlet.directive';
@@ -50,7 +49,6 @@ import {
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
   encapsulation: ViewEncapsulation.None,
-  viewProviders: [provideIcons({ lucideCircleAlert })],
   host: {
     '[attr.role]': 'role()',
     '[class]': 'classes()',
@@ -81,7 +79,7 @@ export class ZardAlertComponent {
     }
 
     if (this.zType() === 'destructive') {
-      return 'lucideCircleAlert';
+      return 'alert';
     }
 
     return undefined;

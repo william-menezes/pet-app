@@ -360,7 +360,7 @@ fundo lima, sem uso no código); os arquivos `.css` vazios `src/app/app.css`,
   - **Feito quando**: `npm test -- --watch=false` e `npm run build` passam; `npm ls @ng-icons/core`
     mostra 34.x.
 
-- [ ] T011 Trocar os ícones Lucide dos componentes copiados pelos nomes do Faro e desinstalar `@ng-icons/lucide`
+- [x] T011 Trocar os ícones Lucide dos componentes copiados pelos nomes do Faro e desinstalar `@ng-icons/lucide`
   - **Referência**: `contracts/shared-components.contract.md` §2 (mapa `lucide*` → nome do Faro).
   - **Faça**: procure `@ng-icons/lucide` em `src/`. Em cada arquivo: remova o import, remova o
     `provideIcons({...})` local (em `providers` ou `viewProviders`) e troque o `name="lucide…"`

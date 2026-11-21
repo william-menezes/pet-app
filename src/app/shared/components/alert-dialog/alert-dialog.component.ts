@@ -51,7 +51,7 @@ const ESCAPE_KEYS = ['Escape', 'Esc'];
  * ```html
  * <z-alert-dialog [(zVisible)]="visible">
  *   <z-alert-dialog-header>
- *     <z-alert-dialog-media><ng-icon name="lucideTrash2" /></z-alert-dialog-media>
+ *     <z-alert-dialog-media><ng-icon name="warn" /></z-alert-dialog-media>
  *     <z-alert-dialog-title>Delete chat?</z-alert-dialog-title>
  *     <z-alert-dialog-description>This cannot be undone.</z-alert-dialog-description>
  *   </z-alert-dialog-header>
