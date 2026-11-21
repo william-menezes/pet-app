@@ -291,7 +291,7 @@ fundo lima, sem uso no código); os arquivos `.css` vazios `src/app/app.css`,
     para satisfazer regra de estilo.
   - **Feito quando**: `npm run lint` passa.
 
-- [ ] T007 Escrever o tema do Faro em `src/styles.css`
+- [x] T007 Escrever o tema do Faro em `src/styles.css`
   - **Referência**: `contracts/design-tokens.contract.md` §3 (o bloco é o arquivo inteiro).
   - **Faça**: substitua o conteúdo de `src/styles.css` pelo bloco do contrato. **Mantenha a linha
     `@import` do `zard.css` exatamente como o `init` escreveu** (se o caminho for diferente do
