@@ -4,7 +4,7 @@ import type { ClassValue } from 'clsx';
 
 import { mergeClasses } from '@/shared/utils/merge-classes';
 
-import { badgeVariants, type ZardBadgeTypeVariants } from './badge.variants';
+import { badgeVariants, type ZardBadgeSizeVariants, type ZardBadgeTypeVariants } from './badge.variants';
 
 @Component({
   selector: 'z-badge, a[z-badge]',
@@ -21,9 +21,10 @@ import { badgeVariants, type ZardBadgeTypeVariants } from './badge.variants';
   exportAs: 'zBadge',
 })
 export class ZardBadgeComponent {
-  readonly zType = input<ZardBadgeTypeVariants>('default');
+  readonly zType = input<ZardBadgeTypeVariants>('neutral');
+  readonly zSize = input<ZardBadgeSizeVariants>('default');
 
   readonly class = input<ClassValue>('');
 
-  protected readonly classes = computed(() => mergeClasses(badgeVariants({ zType: this.zType() }), this.class()));
+  protected readonly classes = computed(() => mergeClasses(badgeVariants({ zType: this.zType(), zSize: this.zSize() }), this.class()));
 }

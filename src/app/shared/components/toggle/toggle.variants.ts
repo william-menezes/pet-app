@@ -1,17 +1,24 @@
 import { cva, type VariantProps } from 'class-variance-authority';
 
+/**
+ * Chip (contrato §3.4): 38px de altura, área de toque de 44px pelo `after`. Escolhido é tinta
+ * (`bg-foreground text-background`), nunca lima. O tipo `segmented` é a opção do controle segmentado
+ * (a trilha vem de `toggle-group.variants.ts`). O foco é o da regra global.
+ */
 export const toggleVariants = cva(
-  "group/toggle inline-flex items-center justify-center gap-1 rounded-lg text-sm font-medium whitespace-nowrap transition-all hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-pressed:bg-muted data-[state=on]:bg-muted [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 cursor-pointer",
+  "relative inline-flex h-[38px] cursor-pointer items-center justify-center gap-1.5 rounded-full border px-3.5 text-[13px] font-semibold whitespace-nowrap transition-colors duration-150 after:absolute after:inset-x-0 after:-inset-y-[3px] after:content-[''] disabled:pointer-events-none disabled:border-transparent disabled:bg-disabled disabled:text-disabled-foreground aria-invalid:border-destructive [&_ng-icon]:shrink-0",
   {
     variants: {
       zType: {
-        default: 'bg-transparent',
-        outline: 'border border-input bg-transparent',
+        default:
+          'border-border bg-card text-foreground hover:bg-background data-[state=on]:border-foreground data-[state=on]:bg-foreground data-[state=on]:text-background',
+        outline:
+          'border-input bg-card text-foreground hover:bg-background data-[state=on]:border-foreground data-[state=on]:bg-foreground data-[state=on]:text-background',
+        segmented:
+          'h-10 border-0 bg-transparent px-3 text-sm text-foreground after:-inset-y-0.5 data-[state=on]:bg-foreground data-[state=on]:text-background',
       },
       zSize: {
-        default: 'h-8 min-w-8 px-2.5 has-data-[icon=inline-end]:pe-2 has-data-[icon=inline-start]:ps-2',
-        sm: "h-7 min-w-7 rounded-[min(var(--radius-md),12px)] px-2.5 text-[0.8rem] has-data-[icon=inline-end]:pe-1.5 has-data-[icon=inline-start]:ps-1.5 [&_svg:not([class*='size-'])]:size-3.5",
-        lg: 'h-9 min-w-9 px-2.5 has-data-[icon=inline-end]:pe-2 has-data-[icon=inline-start]:ps-2',
+        default: '',
       },
     },
     defaultVariants: {

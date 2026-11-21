@@ -1,23 +1,32 @@
 import { cva, type VariantProps } from 'class-variance-authority';
 
+/**
+ * Selo (contrato §3.4): pílula sem borda, `font-semibold`. Âmbar só aparece no tipo `warning`, que é
+ * do modo perdido e do selo "Bloqueado" do admin.
+ */
 export const badgeVariants = cva(
-  'inline-flex w-fit shrink-0 items-center justify-center gap-1 overflow-hidden rounded-full border border-transparent px-2 py-0.5 text-xs font-medium whitespace-nowrap transition-[color,box-shadow] aria-invalid:border-destructive [&>svg]:pointer-events-none [&>svg]:size-3',
+  'inline-flex w-fit shrink-0 items-center justify-center gap-1 overflow-hidden rounded-full font-semibold whitespace-nowrap [&>ng-icon]:shrink-0',
   {
     variants: {
       zType: {
-        default: 'bg-primary text-primary-foreground [a&]:hover:bg-primary/90',
-        secondary: 'bg-secondary text-secondary-foreground [a&]:hover:bg-secondary/90',
-        destructive:
-          'bg-destructive/10 text-destructive dark:bg-destructive/20 [a]:hover:bg-destructive/20',
-        outline: 'border-border text-foreground [a&]:hover:bg-accent [a&]:hover:text-accent-foreground',
-        ghost: '[a&]:hover:bg-accent [a&]:hover:text-accent-foreground',
-        link: 'text-primary underline-offset-4 [a&]:hover:underline',
+        neutral: 'bg-neutral-soft text-neutral-foreground',
+        success: 'bg-success-soft text-success-foreground',
+        warning: 'bg-warning-soft text-warning-foreground',
+        danger: 'bg-danger-soft text-danger-foreground',
+        ink: 'bg-foreground text-background',
+        outline: 'border border-border bg-card text-foreground',
+      },
+      zSize: {
+        default: 'h-6 px-2.5 text-xs',
+        lg: 'h-8 px-3 text-[13px]',
       },
     },
     defaultVariants: {
-      zType: 'default',
+      zType: 'neutral',
+      zSize: 'default',
     },
   },
 );
 
 export type ZardBadgeTypeVariants = NonNullable<VariantProps<typeof badgeVariants>['zType']>;
+export type ZardBadgeSizeVariants = NonNullable<VariantProps<typeof badgeVariants>['zSize']>;

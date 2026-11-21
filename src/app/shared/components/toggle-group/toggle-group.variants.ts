@@ -1,9 +1,11 @@
 import { cva } from 'class-variance-authority';
 
+/**
+ * Grupo de chips. No tipo `segmented` (contrato §3.4) o grupo vira a trilha: colunas iguais,
+ * `rounded-full bg-card p-1`, com `gap-1`.
+ */
 export const toggleGroupVariants = cva(
-  'group/toggle-group flex w-fit flex-row items-center gap-[--spacing(var(--gap))] rounded-lg data-[size=sm]:rounded-[min(var(--radius-md),10px)] data-vertical:flex-col data-vertical:items-stretch',
+  'group/toggle-group flex w-fit flex-row flex-wrap items-center gap-[--spacing(var(--gap))] data-vertical:flex-col data-vertical:items-stretch data-[variant=segmented]:grid data-[variant=segmented]:w-full data-[variant=segmented]:auto-cols-fr data-[variant=segmented]:grid-flow-col data-[variant=segmented]:gap-1 data-[variant=segmented]:rounded-full data-[variant=segmented]:bg-card data-[variant=segmented]:p-1',
 );
 
-export const toggleGroupItemVariants = cva(
-  'shrink-0 group-data-[spacing=0]/toggle-group:rounded-none group-data-[spacing=0]/toggle-group:px-2 focus:z-10 focus-visible:z-10 group-data-[spacing=0]/toggle-group:has-data-[icon=inline-end]:pe-1.5 group-data-[spacing=0]/toggle-group:has-data-[icon=inline-start]:ps-1.5 group-data-horizontal/toggle-group:data-[spacing=0]:first:rounded-s-lg group-data-vertical/toggle-group:data-[spacing=0]:first:rounded-t-lg group-data-horizontal/toggle-group:data-[spacing=0]:last:rounded-e-lg group-data-vertical/toggle-group:data-[spacing=0]:last:rounded-b-lg group-data-horizontal/toggle-group:data-[spacing=0]:data-[variant=outline]:border-s-0 group-data-vertical/toggle-group:data-[spacing=0]:data-[variant=outline]:border-t-0 group-data-horizontal/toggle-group:data-[spacing=0]:data-[variant=outline]:first:border-s group-data-vertical/toggle-group:data-[spacing=0]:data-[variant=outline]:first:border-t',
-);
+export const toggleGroupItemVariants = cva('shrink-0 data-[variant=segmented]:w-full');

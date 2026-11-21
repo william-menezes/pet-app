@@ -43,6 +43,7 @@ type OnChangeType = (value: string | string[]) => void;
   template: `
     <div
       role="group"
+      [attr.aria-label]="zAriaLabel() || null"
       data-slot="toggle-group"
       [class]="classes()"
       [attr.data-variant]="zType()"
@@ -101,6 +102,8 @@ export class ZardToggleGroupComponent implements ControlValueAccessor {
   readonly zMode = input<'single' | 'multiple'>('multiple');
   readonly zItemClass = input<ClassValue>('');
   readonly zItems = input<ZardToggleGroupItem[]>([]);
+  /** Nome acessível do grupo (obrigatório para o segmentado). */
+  readonly zAriaLabel = input<string>();
   readonly zOrientation = input<'horizontal' | 'vertical'>('horizontal');
   readonly zSize = input<ZardToggleSizeVariants>('default');
   /** Gap between items in spacing units; `0` joins them into one bar. */
@@ -170,7 +173,8 @@ export class ZardToggleGroupComponent implements ControlValueAccessor {
     let newValue: string | string[];
 
     if (this.zMode() === 'single') {
-      newValue = currentValue === item.value ? '' : item.value;
+      // Seleção única do Faro: sempre há uma opção escolhida; tocar na escolhida não a desmarca.
+      newValue = item.value;
     } else {
       const currentArray = Array.isArray(currentValue) ? currentValue : [];
       if (currentArray.includes(item.value)) {
