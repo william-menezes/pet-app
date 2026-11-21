@@ -8,3 +8,4 @@
 - [CSS layer: faro-ds vs primeng](gotcha-css-layer-primeng-vs-faro-ds.md) — regras unlayered vencem @layer primeng; cuidado com resets globais
 - [ng test --no-watch](gotcha-ng-test-no-watch.md) — sem a flag o vitest trava em watch; nunca rodar ng serve p/ verificar
 - [Variações de logo](reference-logo-variants.md) — quais SVGs em public/logos/ usar por tema/fundo
+- [Pivô: ZardUI no lugar de PrimeNG](project-pivo-ui-zardui.md) — desde 2026-11-21; memórias de PrimeNG ficam obsoletas após a spec 002

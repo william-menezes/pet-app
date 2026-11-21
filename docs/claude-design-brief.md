@@ -1,5 +1,7 @@
 # Brief para o Claude Design — Design System do Faro
 
+> **DESATUALIZADO (pivô de novembro de 2026).** Este documento descreve o produto anterior ao pivô (plataforma de saúde por assinatura, PrimeNG). Não use para decidir nada. Vale: `.specify/memory/constitution.md` (v2.0.0), `docs/decisoes-pivo.md`, `CLAUDE.md`, `DESIGN.md` e as specs `002`, `003`, `004`. Mantido só como histórico até ser reescrito ou removido.
+
 > **Objetivo:** gerar no **Claude Design** (Anthropic Labs, no claude.ai) o **design system visual** do Faro
 > com todos os componentes base, já alinhado às decisões do projeto (Paleta C, Poppins+Inter, tokens, tom de voz).
 >

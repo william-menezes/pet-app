@@ -1,5 +1,7 @@
 # Faro — Design System & Identidade Verbal
 
+> **DESATUALIZADO (pivô de novembro de 2026).** Este documento descreve o produto anterior ao pivô (plataforma de saúde por assinatura, PrimeNG). Não use para decidir nada. Vale: `.specify/memory/constitution.md` (v2.0.0), `docs/decisoes-pivo.md`, `CLAUDE.md`, `DESIGN.md` e as specs `002`, `003`, `004`. Mantido só como histórico até ser reescrito ou removido.
+
 > **Status:** Proposta v1.0 (Designer de Marca & UX) — paleta (C · Faro Noturno) e fontes (Poppins + Inter) **decididas**; logo ainda pendente.
 > **Fonte de verdade:** este documento NÃO contradiz `.specify/memory/constitution.md` nem `CLAUDE.md`. Em conflito, a constituição vence.
 > **Stack alvo:** Angular 21 (standalone, signals) + PrimeNG **tema Aura** + PrimeIcons. PWA mobile-first. i18n PT-BR. SSR nas rotas públicas (resgate), CSR no painel.

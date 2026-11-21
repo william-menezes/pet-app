@@ -44,6 +44,9 @@ __screenshots__/
 Thumbs.db
 
 design/*
+# Telas de referência do MVP v2 e o gerador: as tarefas das specs apontam para estes arquivos.
+!design/telas-v2/
+!design/telas-v2-gerador/
 
 # Supabase local secrets (NUNCA commitar — contém service_role key e segredos OAuth)
 supabase/.env.local
@@ -52,3 +55,12 @@ supabase/.env.*.local
 supabase/.branches/
 supabase/.temp/
 
+
+# Lotes de tags: lote.csv tem os PINs em texto puro (NUNCA commitar). O repositório é público,
+# então a lista de códigos e as folhas de etiquetas de lotes reais também ficam fora do git.
+lote.csv
+lote*.csv
+tools/tag-generator/lote*/
+tools/tag-generator/*.ttf
+
+**/pins.csv
