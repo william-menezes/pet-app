@@ -382,7 +382,7 @@ fundo lima, sem uso no código); os arquivos `.css` vazios `src/app/app.css`,
     `focus-visible:ring|focus:ring|outline-none|outline-hidden|aria-invalid:ring|ring-offset-` em
     `src/app/shared/` não acha nada; `npm run build` passa.
 
-- [ ] T013 [P] Desligar o CSS crítico embutido em produção (`angular.json`)
+- [x] T013 [P] Desligar o CSS crítico embutido em produção (`angular.json`)
   - **Referência**: `research.md` §R9.
   - **Faça**: em `projects.faro.architect.build.configurations.production`, acrescente
     `"optimization": { "scripts": true, "styles": { "minify": true, "inlineCritical": false }, "fonts": false }`.
