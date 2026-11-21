@@ -599,7 +599,7 @@ e visível em `/dev/ui/components`.
     spec 004). Os dois links com `inline-flex min-h-11 items-center`.
   - **Feito quando**: `npm run build` e `npm test -- --watch=false` passam.
 
-- [ ] T033 [US2] Ajustar o teste do login: `src/app/features/auth/login/login.spec.ts`
+- [x] T033 [US2] Ajustar o teste do login: `src/app/features/auth/login/login.spec.ts`
   - **Referência**: `contracts/shared-components.contract.md` §6.1 (última parte).
   - **Faça**: **única edição permitida no que já existe**: remover a linha
     `import { MessageService } from 'primeng/api';` e a linha `MessageService,` dos `providers`.
