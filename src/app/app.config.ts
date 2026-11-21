@@ -18,6 +18,8 @@ import { routes } from './app.routes';
 import { FaroPreset } from '../theme/faro-preset';
 import { GlobalErrorHandler } from './core/error/global-error-handler';
 import { provideZard } from '@/shared/core/provider/providezard';
+import { provideIcons } from '@ng-icons/core';
+import { faroIcons } from './shared/icons/faro-icons';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -51,5 +53,8 @@ export const appConfig: ApplicationConfig = {
       registrationStrategy: 'registerWhenStable:30000',
     }),
     provideZard(),
+
+    // Ícones do Faro (Boxicons sob nomes do Faro). Ver shared/icons/faro-icons.ts.
+    provideIcons(faroIcons),
   ],
 };

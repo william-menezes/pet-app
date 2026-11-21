@@ -349,7 +349,7 @@ fundo lima, sem uso no código); os arquivos `.css` vazios `src/app/app.css`,
     contém `googleapis` nem `gstatic`; `package.json` não contém `fontsource`; `npm run build`
     passa.
 
-- [ ] T010 Registro de ícones: `src/app/shared/icons/faro-icons.ts`, `src/app/shared/icons/faro-icons.spec.ts`, `src/app/app.config.ts`
+- [x] T010 Registro de ícones: `src/app/shared/icons/faro-icons.ts`, `src/app/shared/icons/faro-icons.spec.ts`, `src/app/app.config.ts`
   - **Referência**: `contracts/shared-components.contract.md` §2 (tabela com os 32 nomes).
   - **Faça**: `npm i @boxicons/js@1.0.1`. Crie `faro-icons.ts` com a função `svg`, o objeto
     `faroIcons` com as 32 entradas da tabela (o `whats` usa `{ pack: 'brands' }`) e
