@@ -55,6 +55,12 @@ jobs:
           ' supabase/config.toml > /tmp/config.toml && mv /tmp/config.toml supabase/config.toml
           git diff --stat -- supabase/config.toml
           git diff -- supabase/config.toml
+      - name: "TEMPORARIO: neutralizar COMMENT ON TRIGGER da migration 0007 (so no runner)"
+        # 0007 termina com COMMENT ON TRIGGER em auth.users, que falha com "must be owner of relation users".
+        # Edita apenas a copia do runner. Remover quando a migration for corrigida.
+        run: |
+          sed -i '/^COMMENT ON TRIGGER on_auth_user_created/,$d' supabase/migrations/0007_trigger_handle_new_user.sql
+          git diff --stat -- supabase/migrations
       - name: Subir o Supabase local
         run: supabase start
       - name: Testes de banco (pgTAP)
