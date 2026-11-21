@@ -41,7 +41,7 @@ jobs:
           persist-credentials: false
       - uses: supabase/setup-cli@689adcfb80d947100a1eab127289b97d1fb07b13 # v3.2.0
         with:
-          version: latest
+          version: 2.122.1
       - name: Subir o Supabase local
         run: supabase start
       - name: Testes de banco (pgTAP)
@@ -57,4 +57,4 @@ jobs:
           deno test $files
       - name: Parar o Supabase local
         if: always()
-        run: supabase stop --no-backup
+        run: supabase stop --no-backup || true
