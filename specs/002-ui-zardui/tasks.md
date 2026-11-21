@@ -304,7 +304,7 @@ fundo lima, sem uso no código); os arquivos `.css` vazios `src/app/app.css`,
     imprime `ok`:
     `node -e "const fs=require('fs');const d='dist/faro/browser/';const c=fs.readdirSync(d).filter(f=>f.endsWith('.css')).map(f=>fs.readFileSync(d+f,'utf8')).join('');if(!/#84c32e/i.test(c))throw new Error('lima ausente');if(/0FA12E/i.test(c))throw new Error('Tailwind varreu fora de src');console.log('ok')"`
 
-- [ ] T008 Criar a checagem de tokens `scripts/ui-checks/tokens.mjs` e os scripts `check:tokens` e `check:ui` em `package.json`
+- [x] T008 Criar a checagem de tokens `scripts/ui-checks/tokens.mjs` e os scripts `check:tokens` e `check:ui` em `package.json`
   - **Referência**: `contracts/design-tokens.contract.md` §2 (valores) e §5 (pares).
   - **Faça**: script de Node sem dependências que:
     1. lê `src/styles.css` e extrai as declarações `--nome: valor;` do bloco `:root { … }` e do

@@ -9,7 +9,9 @@
     "test": "ng test",
     "serve:ssr:faro": "node dist/faro/server/server.mjs",
     "lint": "ng lint",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "check:tokens": "node scripts/ui-checks/tokens.mjs",
+    "check:ui": "npm run check:tokens"
   },
   "private": true,
   "packageManager": "npm@10.9.4",
