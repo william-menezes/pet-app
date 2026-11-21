@@ -783,7 +783,7 @@ vestígio de PrimeNG.
     `"check:ui": "npm run check:tokens && npm run check:stack && npm run check:boundary"`.
   - **Feito quando**: `npm run check:ui` e `npm run lint` passam.
 
-- [ ] T048 [US3] Páginas das cascas na galeria: `src/app/features/dev-gallery/gallery-tutor/`, `gallery-flow/`, `gallery-admin/`, `gallery-public/` e `dev-gallery.routes.ts` (depende de T041 a T044)
+- [x] T048 [US3] Páginas das cascas na galeria: `src/app/features/dev-gallery/gallery-tutor/`, `gallery-flow/`, `gallery-admin/`, `gallery-public/` e `dev-gallery.routes.ts` (depende de T041 a T044)
   - **Referência**: `contracts/shells.contract.md` §8 (tabela de rotas e `data-testid`).
   - **Faça**: as páginas `tutor` (com `bottomNav`), `tutor/inner` (com `app-screen-header`),
     `flow`, `admin`, `public` e `public/photo`. Os itens de navegação apontam para páginas da
