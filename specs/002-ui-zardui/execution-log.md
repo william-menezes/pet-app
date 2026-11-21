@@ -180,6 +180,34 @@ Resultado: APROVADO
 
 Tamanhos depois da Fase 2 (`dist/faro/browser/`): soma dos `.js` sem scripts do service worker 957.861 bytes (linha de base: 936.345); soma dos `.css` 95.575 bytes (linha de base: 35.752). `ngsw-worker.js` continua no pacote (sai na T057).
 
+### Fase 3 (T016 a T030), desvios e decisões
+
+- **Camada de baixa prioridade para a folha antiga (fora das tarefas, temporário)**: com `src/styles/faro-ds.css` carregada depois de `styles.css` e sem camada, ela sobrescrevia `--primary` (índigo `#3A4FD6`), `--border`, `--divider`, `--text`, `--ring`, `--amber`, o `body`, `h1..h4` (Poppins) e `a`, e vencia as utilidades do Tailwind. Sem isso nenhuma verificação de identidade da T030 passava (o botão `default` saía índigo). Mudança: `angular.json` → `styles` passa a `["primeicons/primeicons.css", "src/styles/faro-ds.css", "src/styles.css"]` e `faro-ds.css` ganha, no topo, `@layer legacy, ng-icon, theme, base, components, utilities;` e todo o conteúdo dentro de `@layer legacy { ... }`. Some tudo na T037 (que apaga o arquivo e fixa `styles` em `["src/styles.css"]`). Efeito colateral: o login antigo (PrimeNG) mudou de aparência até a Fase 4 (as variáveis `--primary`, etc. agora são as novas).
+- **T016**: `zSize` vem antes de `zType` em `button.variants.ts` para o tipo `link` (`h-auto`, `px-0`) vencer o tamanho no `tailwind-merge`; `zLoading`/`zDisabled` por último. `zShape.default` virou vazio (o padrão do ZardUI `rounded-md` anulava a pílula). Edição no componente: `aria-busy` e `disabled` também quando `zLoading`. Tipos `xs`, `icon-xs`, `icon-sm`, `icon-lg` e `accent`/`whatsapp` não existem.
+- **Área de toque medida**: o `inset` do `before`/`after` conta a partir da caixa de preenchimento, que é 2px menor que a altura (a borda de 1,5px vira 1px com DPR 1). Por isso: botão `sm` usa `before:-inset-y-1.5`, chip usa `after:-inset-y-[5px]`, caixa usa `after:-inset-3.5` (o contrato dizia `-inset-y-1`, `-inset-y-[3px]`/`-inset-3`, que davam 41 a 42px). Verificado no e2e.
+- **T018**: `fieldSuccessVariants` acrescentado em `field.variants.ts` (o Zard não tem estado de sucesso). `field-label` perdeu `has-data-checked:border-primary/…` (lima como seleção é proibido).
+- **T020**: `toggle` ganhou o tipo `segmented` e `toggle-group` a trilha (`data-[variant=segmented]:…`) e o input `zAriaLabel`; no modo `single` tocar na opção escolhida não a desmarca (sempre há uma escolhida). `badge` ganhou `zSize` e o padrão de `zType` virou `neutral`. Removidas as regras de grupo "emendado" (`zSpacing=0`) e os tamanhos `sm`/`lg` do chip (só existe `default`).
+- **T021**: `card` ficou `p-4 gap-3` (sem `--card-spacing` nem `px` nas partes; o componente passou a repassar `zSize` ao `cva`). `item-group` perdeu `role="list"` (o axe reprovava: filhos `a`, `separator` e `switch` não são `listitem`). `item` ficou só `default`.
+- **T022**: tipos do `alert` renomeados `default→neutral`, `destructive→danger` (+ `success`); ícone e `role` por tipo (neutro e sucesso `status`, erro `alert`). `spinner` passou a usar o ícone `loader` do Faro (não mais o SVG do Zard) e o texto padrão `Carregando`; o tamanho usa `size-4!` porque o estilo do host do `ng-icon` não está em camada e vence `size-*` (para outro tamanho, `size-12!`).
+- **T023**: o seletor do aviso temporário é `z-sonner` (não `z-toaster`); a seção traz `<z-sonner />`; `app.html` intacto. `theme` padrão do sonner virou `light` e as cores vêm de `--toast`; `!` nas utilidades porque o CSS do ngx-sonner não está em camada. Textos padrão em inglês do diálogo (`Cancel`, `Continue`, `Confirm`) viraram `$localize` em PT-BR; o cancelar do diálogo é `ghost`.
+- **T024**: em vez de editar o padrão do arquivo copiado, o `input-otp` ganhou `zMode` (`numeric` | `alphanumeric`), que escolhe o padrão (`REGEXP_ONLY_DIGITS_AND_CHARS`), `inputmode`, `autocapitalize` e `autocomplete`; também `zAriaLabel` (grupo) e os atributos `data-filled`/`data-active` nas células (sem `slots`). Sem normalização: `O1IL2M` fica como foi digitado. Rótulos das células em PT-BR. Os tamanhos `sm`/`lg` do `input-otp` saíram.
+- **T025**: a busca por `/logos/` em `src/` ainda acha `features/auth/login/login.html` (login antigo, reescrito na T031/T032). Só `brand-assets.ts` está certo nos arquivos desta fase; a parte "só acha brand-assets.ts" do "Feito quando" só fecha depois da T032. O `path` do focinho foi copiado por script do `logo-compact.svg` atual (1 `<path>`).
+- **T028**: o nome do `app-pet-hero` é um `<h1>` (o contrato não diz o elemento). Se a tela já tiver `h1`, ajustar na spec 003; a confirmar com o William.
+- **T029**: os `data-testid` internos das seções usam o prefixo `dev-` e só a raiz de cada seção começa por `gallery-` (senão o teste "12 elementos com `gallery-`" contaria dezenas).
+- **T030**: no e2e, as leituras de cor usam `expect.poll` e a página espera o `body` ficar `rgb(247, 248, 248)`: em dev o CSS chega depois do primeiro desenho e as cores (com `transition-colors`) eram lidas no meio da transição (testes intermitentes). A checagem de alvo de toque mede o pseudo-elemento (`before`/`after` absolutos) quando a caixa tem menos de 44px.
+- Regras de lint: nenhuma regra nova desligada nesta fase.
+
+### Checkpoint da Phase 3 (2026-11-21)
+
+| Comando | Resultado |
+|---|---|
+| `npm run build` | passou; um aviso: orçamento do bundle inicial, 567,85 kB contra 500 kB (PrimeNG ainda instalado; sai na T037) |
+| `npm run lint` | passou ("All files pass linting.") |
+| `npm test -- --watch=false` | passou: 40 arquivos, 181 testes |
+| `npx playwright test e2e/smoke.spec.ts` | passou (rodado junto com `dev-gallery` e `ui-identity`: 18 testes, 4 rodadas seguidas verdes depois das correções de intermitência) |
+| `npx playwright test e2e/ui-identity.spec.ts` | passou: 15 testes (celular, desktop, 320px; axe sem violações graves) |
+| `npm run check:ui` | passou: 65 variáveis, 46 pares |
+
 ## Regras de lint desligadas
 
 Bloco em `eslint.config.js` com `files` = `src/app/shared/core/**/*.ts`, `src/app/shared/utils/**/*.ts`, `src/app/shared/components/**/*.ts` e `ignores` = `src/app/shared/components/faro/**`:

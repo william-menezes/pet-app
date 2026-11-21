@@ -429,7 +429,7 @@ Cada tarefa de componente tem três partes: (1) editar as variantes conforme o c
 `src/app/features/dev-gallery/sections/<nome>-section.ts` (componente `app-gallery-<nome>`, com
 `data-testid="gallery-<nome>"`), mostrando todas as variantes e estados. A T029 junta as seções.
 
-- [ ] T016 [US1] Botão: `src/app/shared/components/button/button.variants.ts`, `button.variants.spec.ts`, `src/app/features/dev-gallery/sections/button-section.ts`
+- [x] T016 [US1] Botão: `src/app/shared/components/button/button.variants.ts`, `button.variants.spec.ts`, `src/app/features/dev-gallery/sections/button-section.ts`
   - **Referência**: `contracts/shared-components.contract.md` §3.1 (base, tabela de `zType`,
     tabela de `zSize`).
   - **Faça**: reescreva a base e as variantes como no contrato; acrescente `ink`, `danger`, `md` e
@@ -440,12 +440,12 @@ Cada tarefa de componente tem três partes: (1) editar as variantes conforme o c
     carregando.
   - **Feito quando**: `npm test -- --watch=false` e `npm run build` passam.
 
-- [ ] T017 [P] [US1] Quadrado de ícone, cartão de informação e nota: `src/app/shared/components/faro/icon-tile/icon-tile.ts`, `faro/info-card/info-card.ts`, `faro/note/note.ts` (+ um `.spec.ts` para cada) e `sections/info-section.ts`
+- [x] T017 [P] [US1] Quadrado de ícone, cartão de informação e nota: `src/app/shared/components/faro/icon-tile/icon-tile.ts`, `faro/info-card/info-card.ts`, `faro/note/note.ts` (+ um `.spec.ts` para cada) e `sections/info-section.ts`
   - **Referência**: `contracts/shared-components.contract.md` §1, §5.6, §5.7, §5.8.
   - **Feito quando**: os testes conferem as classes por `tone`, o `aria-hidden` do ícone e a
     projeção de conteúdo; `npm test -- --watch=false` passa.
 
-- [ ] T018 [P] [US1] Campo: `src/app/shared/components/field/`, `input/`, `textarea/` (arquivos `*.variants.ts`), um `*.variants.spec.ts` em cada e `sections/form-section.ts`
+- [x] T018 [P] [US1] Campo: `src/app/shared/components/field/`, `input/`, `textarea/` (arquivos `*.variants.ts`), um `*.variants.spec.ts` em cada e `sections/form-section.ts`
   - **Referência**: `contracts/shared-components.contract.md` §3.2.
   - **Faça**: campo de 54px, raio 12, borda de 1,5px em `border-input`, `text-base`; rótulo acima;
     ajuda, erro e sucesso abaixo. Seção: campo normal, com ajuda, inválido (com
@@ -454,19 +454,19 @@ Cada tarefa de componente tem três partes: (1) editar as variantes conforme o c
   - **Feito quando**: os testes conferem `h-[54px]`, `border-input`, `text-base` e
     `aria-invalid:border-destructive`; `npm test -- --watch=false` e `npm run build` passam.
 
-- [ ] T019 [P] [US1] Caixa e interruptor: `src/app/shared/components/checkbox/`, `switch/` (`*.variants.ts` + `*.variants.spec.ts`) e `sections/toggles-section.ts`
+- [x] T019 [P] [US1] Caixa e interruptor: `src/app/shared/components/checkbox/`, `switch/` (`*.variants.ts` + `*.variants.spec.ts`) e `sections/toggles-section.ts`
   - **Referência**: `contracts/shared-components.contract.md` §3.3.
   - **Feito quando**: os testes conferem que o estado ligado usa `bg-foreground` (nunca
     `bg-primary`) e a borda desligada usa `border-input`; `npm test -- --watch=false` passa.
 
-- [ ] T020 [P] [US1] Selo, chip e segmentado: `src/app/shared/components/badge/`, `toggle/`, `toggle-group/` (`*.variants.ts` + `*.variants.spec.ts`) e `sections/chips-section.ts`
+- [x] T020 [P] [US1] Selo, chip e segmentado: `src/app/shared/components/badge/`, `toggle/`, `toggle-group/` (`*.variants.ts` + `*.variants.spec.ts`) e `sections/chips-section.ts`
   - **Referência**: `contracts/shared-components.contract.md` §3.4.
   - **Faça**: selo com os tipos `neutral`, `success`, `warning`, `danger`, `ink`, `outline` e os
     tamanhos `default` (24px) e `lg` (32px). Chip solto e escolhido. Segmentado de seleção única.
   - **Feito quando**: os testes conferem as classes de cada tipo e que o estado escolhido usa
     `bg-foreground text-background`; `npm test -- --watch=false` passa.
 
-- [ ] T021 [US1] Cartão, linha de lista e estado vazio: `src/app/shared/components/card/`, `item/`, `empty/` (`*.variants.ts` + `*.variants.spec.ts`) e `sections/lists-section.ts` (depende de T017)
+- [x] T021 [US1] Cartão, linha de lista e estado vazio: `src/app/shared/components/card/`, `item/`, `empty/` (`*.variants.ts` + `*.variants.spec.ts`) e `sections/lists-section.ts` (depende de T017)
   - **Referência**: `contracts/shared-components.contract.md` §3.5.
   - **Faça**: cartão sem borda e sem sombra, raio 20. Grupo de linhas com divisória de 1px em
     `divider` recuada 14px. Linha com `app-icon-tile`, título, subtítulo e um item à direita.
@@ -474,14 +474,14 @@ Cada tarefa de componente tem três partes: (1) editar as variantes conforme o c
   - **Feito quando**: a busca por `shadow` e por `border ` nas variantes de `card` não acha classe
     de borda nem de sombra; `npm test -- --watch=false` passa.
 
-- [ ] T022 [P] [US1] Aviso, spinner e esqueleto: `src/app/shared/components/alert/`, `spinner/`, `skeleton/` (`*.variants.ts` ou `*.component.ts` + `*.spec.ts`) e `sections/feedback-section.ts`
+- [x] T022 [P] [US1] Aviso, spinner e esqueleto: `src/app/shared/components/alert/`, `spinner/`, `skeleton/` (`*.variants.ts` ou `*.component.ts` + `*.spec.ts`) e `sections/feedback-section.ts`
   - **Referência**: `contracts/shared-components.contract.md` §3.6 (aviso) e §3.7.
   - **Faça**: aviso com os tipos `neutral`, `success`, `danger` (sem âmbar e sem azul), ícones
     `info`, `checkCircle`, `alert`, e o papel ARIA da tabela.
   - **Feito quando**: os testes conferem as classes e o `role` de cada tipo;
     `npm test -- --watch=false` passa.
 
-- [ ] T023 [US1] Aviso temporário e diálogo: `src/app/shared/components/sonner/`, `alert-dialog/` (`*.variants.ts`) e `sections/overlays-section.ts` (depende de T016)
+- [x] T023 [US1] Aviso temporário e diálogo: `src/app/shared/components/sonner/`, `alert-dialog/` (`*.variants.ts`) e `sections/overlays-section.ts` (depende de T016)
   - **Referência**: `contracts/shared-components.contract.md` §3.6.
   - **Faça**: aviso temporário em `bg-toast text-toast-foreground`, posição `top-center`, ação em
     lima. Diálogo com fundo `bg-ink/50`, cartão `rounded-2xl bg-popover p-6`, botões em coluna no
@@ -491,7 +491,7 @@ Cada tarefa de componente tem três partes: (1) editar as variantes conforme o c
   - **Feito quando**: `npm run build` e `npm run lint` passam e `src/app/app.html` continua só com
     `<router-outlet />`.
 
-- [ ] T024 [P] [US1] Células de código: `src/app/shared/components/input-otp/` (`*.variants.ts` e, se preciso, o padrão de caracteres) e `sections/code-cells-section.ts`
+- [x] T024 [P] [US1] Células de código: `src/app/shared/components/input-otp/` (`*.variants.ts` e, se preciso, o padrão de caracteres) e `sections/code-cells-section.ts`
   - **Referência**: `contracts/shared-components.contract.md` §3.7.
   - **Faça**: 6 células de 60px, Outfit 26px/600, as três bordas (vazia, preenchida, ativa). Dois
     exemplos na seção: numérico (código por SMS) e alfanumérico (PIN). Se o componente só aceitar
@@ -500,7 +500,7 @@ Cada tarefa de componente tem três partes: (1) editar as variantes conforme o c
   - **Feito quando**: um teste de unidade prova que o modo alfanumérico aceita `K47Q9M`;
     `npm test -- --watch=false` passa.
 
-- [ ] T025 [P] [US1] Logo e focinho: `src/app/shared/components/faro/logo/brand-assets.ts`, `faro/logo/logo.ts`, `faro/logo/logo.spec.ts`, `faro/focinho/focinho.ts`, `faro/focinho/focinho.spec.ts`
+- [x] T025 [P] [US1] Logo e focinho: `src/app/shared/components/faro/logo/brand-assets.ts`, `faro/logo/logo.ts`, `faro/logo/logo.spec.ts`, `faro/focinho/focinho.ts`, `faro/focinho/focinho.spec.ts`
   - **Referência**: `contracts/shared-components.contract.md` §4, §5.1, §5.2.
   - **Faça**: em `brand-assets.ts`, `LOGO` e `FOCINHO`; o `path` é o atributo `d` do único
     `<path>` de `public/logos/logo-compact.svg`, copiado por inteiro. `app-logo` e `app-focinho`
@@ -510,7 +510,7 @@ Cada tarefa de componente tem três partes: (1) editar as variantes conforme o c
     `label`; a busca por `/logos/` em `src/` só acha `brand-assets.ts`;
     `npm test -- --watch=false` passa.
 
-- [ ] T026 [US1] Painel de marca, marca circular e "G" do Google: `src/app/shared/components/faro/brand-panel/brand-panel.ts`, `faro/brand-panel/brand-copy.ts`, `faro/brand-mark/brand-mark.ts`, `faro/google-glyph/google-glyph.ts` (+ `.spec.ts`) e `sections/brand-section.ts` (depende de T016 e T025)
+- [x] T026 [US1] Painel de marca, marca circular e "G" do Google: `src/app/shared/components/faro/brand-panel/brand-panel.ts`, `faro/brand-panel/brand-copy.ts`, `faro/brand-mark/brand-mark.ts`, `faro/google-glyph/google-glyph.ts` (+ `.spec.ts`) e `sections/brand-section.ts` (depende de T016 e T025)
   - **Referência**: `contracts/shared-components.contract.md` §5.3, §5.4, §5.5.
   - **Faça**: as medidas do painel por largura estão na tabela do §5.3. Os caminhos do "G" estão
     no §5.4 (copie exatamente). A seção mostra o painel nas variantes `page` e `flow`, a marca
@@ -520,13 +520,13 @@ Cada tarefa de componente tem três partes: (1) editar as variantes conforme o c
     o "G" tem as quatro cores `#EA4335`, `#4285F4`, `#FBBC05`, `#34A853`;
     `npm test -- --watch=false` passa.
 
-- [ ] T027 [P] [US1] Cartão de número e passos: `src/app/shared/components/faro/stat-tile/stat-tile.ts`, `faro/steps/steps.ts` (+ `.spec.ts`) e `sections/stats-section.ts`
+- [x] T027 [P] [US1] Cartão de número e passos: `src/app/shared/components/faro/stat-tile/stat-tile.ts`, `faro/steps/steps.ts` (+ `.spec.ts`) e `sections/stats-section.ts`
   - **Referência**: `contracts/shared-components.contract.md` §5.9, §5.10.
   - **Feito quando**: os testes conferem que `app-steps` com `current=2` e `total=3` desenha duas
     barras `bg-foreground` e uma `bg-border`, e o texto "Passo 2 de 3"; que `app-stat-tile` com
     `link` vira um `<a>`; `npm test -- --watch=false` passa.
 
-- [ ] T028 [US1] Capa do pet e cartão de ação: `src/app/shared/components/faro/pet-hero/pet-hero.ts`, `faro/action-card/action-card.ts` (+ `.spec.ts`) e `sections/pet-section.ts` (depende de T016)
+- [x] T028 [US1] Capa do pet e cartão de ação: `src/app/shared/components/faro/pet-hero/pet-hero.ts`, `faro/action-card/action-card.ts` (+ `.spec.ts`) e `sections/pet-section.ts` (depende de T016)
   - **Referência**: `contracts/shared-components.contract.md` §5.11, §5.12.
   - **Faça**: na seção, a capa aparece sem foto (`photoUrl` nulo) e o cartão de ação traz um
     `z-button zType="ink" zSize="md"`.
@@ -534,7 +534,7 @@ Cada tarefa de componente tem três partes: (1) editar as variantes conforme o c
     `text-foreground`) e que o `<h2>` do cartão de ação tem a classe `text-primary-foreground`;
     `npm test -- --watch=false` passa.
 
-- [ ] T029 [US1] Página de componentes da galeria: `src/app/features/dev-gallery/gallery-components/gallery-components.ts` e `dev-gallery.routes.ts` (depende de T016 a T028)
+- [x] T029 [US1] Página de componentes da galeria: `src/app/features/dev-gallery/gallery-components/gallery-components.ts` e `dev-gallery.routes.ts` (depende de T016 a T028)
   - **Referência**: `contracts/shells.contract.md` §8.
   - **Faça**: componente `app-gallery-components` com `data-testid="dev-gallery-components"`, um
     `<h1>`, e todas as seções criadas nas tarefas T016 a T028, cada uma sob um `<h2>`. Rota
@@ -543,7 +543,7 @@ Cada tarefa de componente tem três partes: (1) editar as variantes conforme o c
     com um teste rápido acrescentado a `e2e/dev-gallery.spec.ts`: existem 12 elementos com
     `data-testid` começando por `gallery-`).
 
-- [ ] T030 [US1] Teste e2e da identidade: `e2e/ui-identity.spec.ts`
+- [x] T030 [US1] Teste e2e da identidade: `e2e/ui-identity.spec.ts`
   - **Referência**: `spec.md` US1 (cenários 1 a 8); `contracts/design-tokens.contract.md` §4.
   - **Faça**, em `/dev/ui/components`, na largura `phone` e na `desktop`:
     1. o botão `default` tem `background-color` `rgb(132, 195, 46)` e `color` `rgb(19, 32, 30)`;
