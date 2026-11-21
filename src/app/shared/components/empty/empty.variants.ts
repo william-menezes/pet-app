@@ -1,7 +1,11 @@
 import { cva } from 'class-variance-authority';
 
+/**
+ * Estado vazio (contrato §3.5): coluna centralizada com título, uma frase e uma ação que leva ao
+ * próximo passo. Nunca termina sem ação.
+ */
 export const emptyVariants = cva(
-  'flex w-full min-w-0 flex-1 flex-col items-center justify-center gap-4 rounded-xl border-dashed p-6 text-center text-balance',
+  'flex w-full min-w-0 flex-1 flex-col items-center justify-center gap-4 p-6 text-center text-balance',
   {
     variants: {},
   },
@@ -19,18 +23,18 @@ export const emptyImageVariants = cva(
 );
 
 export const emptyIconVariants = cva(
-  `bg-muted text-foreground mb-2 flex size-8 shrink-0 items-center justify-center rounded-lg [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4`,
+  'mb-2 flex size-10 shrink-0 items-center justify-center rounded-md bg-inset text-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0',
   {
     variants: {},
   },
 );
 
-export const emptyTitleVariants = cva('text-sm font-medium tracking-tight', {
+export const emptyTitleVariants = cva('font-display text-xl leading-[1.15] font-semibold tracking-[-0.01em] text-foreground', {
   variants: {},
 });
 
 export const emptyDescriptionVariants = cva(
-  'text-muted-foreground [&>a:hover]:text-primary text-sm/relaxed [&>a]:underline [&>a]:underline-offset-4',
+  'text-[15px] leading-[1.45] text-text [&>a]:text-link [&>a]:underline [&>a]:underline-offset-[3px]',
   {
     variants: {},
   },

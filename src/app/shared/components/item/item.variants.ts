@@ -2,28 +2,24 @@ import { cva, type VariantProps } from 'class-variance-authority';
 
 import { mergeClasses } from '@/shared/utils/merge-classes';
 
-export const itemGroupVariants = cva(
-  'group/item-group flex w-full flex-col gap-4 has-data-[size=sm]:gap-2.5 has-data-[size=xs]:gap-2',
-);
+/**
+ * Grupo de linhas (contrato §3.5): um cartão `rounded-xl bg-card` sem padding; as linhas ficam
+ * dentro e entre elas há `app-item-separator` (1px em `divider`, recuada 14px).
+ */
+export const itemGroupVariants = cva('group/item-group flex w-full flex-col overflow-hidden rounded-xl bg-card');
 
-export const itemSeparatorVariants = cva('bg-border my-2 block h-px w-full shrink-0');
+export const itemSeparatorVariants = cva('mx-3.5 block h-px shrink-0 bg-divider');
 
+/** Linha: `app-icon-tile` opcional, título, subtítulo e um item à direita. */
 export const itemVariants = cva(
-  mergeClasses(
-    'group/item flex w-full flex-wrap items-center rounded-lg border text-sm transition-colors duration-100',
-    '[a]:transition-colors [a]:hover:bg-muted',
-  ),
+  mergeClasses('group/item flex min-h-11 w-full items-center text-sm transition-colors duration-100', '[a]:hover:bg-background'),
   {
     variants: {
       zVariant: {
-        default: 'border-transparent',
-        outline: 'border-border',
-        muted: 'border-transparent bg-muted/50',
+        default: '',
       },
       zSize: {
-        default: 'gap-2.5 px-3 py-2.5',
-        sm: 'gap-2.5 px-3 py-2.5',
-        xs: 'gap-2 px-2.5 py-2 in-data-[slot=dropdown-menu-content]:p-0',
+        default: 'gap-3 px-3.5 py-3',
       },
     },
     defaultVariants: {
@@ -36,7 +32,6 @@ export const itemVariants = cva(
 export const itemMediaVariants = cva(
   mergeClasses(
     'flex shrink-0 items-center justify-center gap-2',
-    'group-has-data-[slot=item-description]/item:translate-y-0.5',
     'group-has-data-[slot=item-description]/item:self-start',
     '[&_svg]:pointer-events-none',
   ),
@@ -44,9 +39,8 @@ export const itemMediaVariants = cva(
     variants: {
       zVariant: {
         default: 'bg-transparent',
-        icon: "[--ng-icon__size:1rem] [&_svg:not([class*='size-'])]:size-4",
-        image:
-          'size-10 overflow-hidden rounded-sm group-data-[size=sm]/item:size-8 group-data-[size=xs]/item:size-6 [&_img]:size-full [&_img]:object-cover',
+        icon: 'text-foreground',
+        image: 'size-10 overflow-hidden rounded-sm [&_img]:size-full [&_img]:object-cover',
       },
     },
     defaultVariants: {
@@ -55,23 +49,20 @@ export const itemMediaVariants = cva(
   },
 );
 
-export const itemContentVariants = cva(
-  'flex flex-1 flex-col gap-1 group-data-[size=xs]/item:gap-0 [&+[data-slot=item-content]]:flex-none',
-);
+export const itemContentVariants = cva('flex min-w-0 flex-1 flex-col gap-0.5 [&+[data-slot=item-content]]:flex-none');
 
 export const itemTitleVariants = cva(
-  'line-clamp-1 flex w-fit items-center gap-2 text-sm/snug font-medium underline-offset-4',
+  'line-clamp-1 flex w-fit items-center gap-2 text-[15px] leading-snug font-semibold text-foreground',
 );
 
 export const itemDescriptionVariants = cva(
   mergeClasses(
-    'line-clamp-2 text-start text-sm/normal font-normal text-muted-foreground',
-    'group-data-[size=xs]/item:text-xs',
-    '[&>a]:underline [&>a]:underline-offset-4 [&>a:hover]:text-primary',
+    'line-clamp-2 text-start text-[13px] leading-[1.35] font-normal text-muted-foreground',
+    '[&>a]:text-link [&>a]:underline [&>a]:underline-offset-[3px]',
   ),
 );
 
-export const itemActionsVariants = cva('flex items-center gap-2');
+export const itemActionsVariants = cva('flex shrink-0 items-center gap-2');
 
 export const itemHeaderVariants = cva('flex basis-full items-center justify-between gap-2');
 

@@ -168,5 +168,5 @@ export class ZardCardComponent {
   readonly class = input<ClassValue>('');
   readonly zSize = input<ZardCardSizeType>('default');
 
-  protected readonly classes = computed(() => mergeClasses(cardVariants(), this.class()));
+  protected readonly classes = computed(() => mergeClasses(cardVariants({ zSize: this.zSize() }), this.class()));
 }
