@@ -5,14 +5,14 @@ export const fieldSetVariants = cva(
 );
 
 export const fieldLegendVariants = cva(
-  'mb-1.5 font-medium data-[variant=label]:text-sm data-[variant=legend]:text-base',
+  'mb-1.5 font-semibold text-foreground data-[variant=label]:text-sm data-[variant=legend]:text-base',
 );
 
 export const fieldGroupVariants = cva(
   'group/field-group @container/field-group flex w-full flex-col gap-5 data-[slot=checkbox-group]:gap-3 *:data-[slot=field-group]:gap-4',
 );
 
-export const fieldVariants = cva('group/field flex w-full gap-2 data-[invalid=true]:text-destructive', {
+export const fieldVariants = cva('group/field flex w-full gap-1.5', {
   variants: {
     zOrientation: {
       vertical: 'flex-col *:w-full [&>.sr-only]:w-auto',
@@ -29,32 +29,37 @@ export const fieldVariants = cva('group/field flex w-full gap-2 data-[invalid=tr
 
 export const fieldContentVariants = cva('group/field-content flex flex-1 flex-col gap-0.5 leading-snug');
 
+/** Rótulo acima do campo, fora da caixa (contrato §3.2). */
 export const fieldLabelVariants = cva([
-  'group/field-label peer/field-label flex w-fit gap-2 text-sm/snug font-medium',
+  'group/field-label peer/field-label flex w-fit gap-2 text-sm font-semibold text-foreground',
   'group-data-[disabled=true]/field:opacity-50',
-  'has-data-checked:border-primary/30 has-data-checked:bg-primary/5',
+  'has-data-checked:border-foreground',
   'has-[>[data-slot=field]]:rounded-lg has-[>[data-slot=field]]:border *:data-[slot=field]:p-2.5',
-  'dark:has-data-checked:border-primary/20 dark:has-data-checked:bg-primary/10',
   'has-[>[data-slot=field]]:w-full has-[>[data-slot=field]]:flex-col',
 ]);
 
 export const fieldTitleVariants = cva(
-  'flex w-fit items-center gap-2 text-sm font-medium group-data-[disabled=true]/field:opacity-50',
+  'flex w-fit items-center gap-2 text-sm font-semibold text-foreground group-data-[disabled=true]/field:opacity-50',
 );
 
+/** Ajuda abaixo do campo. */
 export const fieldDescriptionVariants = cva([
-  'text-start text-sm/normal font-normal text-muted-foreground',
+  'text-start text-[13px] leading-normal font-normal text-muted-foreground',
   'group-has-data-horizontal/field:text-balance',
   '[[data-variant=legend]+&]:-mt-1.5',
   'last:mt-0 nth-last-2:-mt-1',
-  '[&>a]:underline [&>a]:underline-offset-4 [&>a:hover]:text-primary',
+  '[&>a]:text-link [&>a]:underline [&>a]:underline-offset-[3px]',
 ]);
 
 export const fieldSeparatorVariants = cva(
   'relative -my-2 flex h-5 items-center text-sm group-data-[variant=outline]/field-group:-mb-2',
 );
 
-export const fieldErrorVariants = cva('text-sm font-normal text-destructive');
+/** Erro abaixo do campo; o campo aponta para ele com `aria-describedby`. */
+export const fieldErrorVariants = cva('text-[13px] font-semibold text-danger-foreground');
+
+/** Sucesso abaixo do campo; use com o ícone `check` de 16px. */
+export const fieldSuccessVariants = cva('flex items-center gap-1 text-[13px] font-semibold text-success-foreground');
 
 export type ZardFieldOrientationVariants = NonNullable<VariantProps<typeof fieldVariants>['zOrientation']>;
 export type ZardFieldLegendVariants = 'legend' | 'label';
