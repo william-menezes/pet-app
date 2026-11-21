@@ -32,7 +32,7 @@ import { Logo } from '@/shared/components/faro/logo/logo';
           variant="page"
           [headline]="headline"
           [sub]="sub"
-          data-testid="gallery-brand-panel-page"
+          data-testid="dev-brand-panel-page"
         />
       </div>
 
@@ -43,17 +43,17 @@ import { Logo } from '@/shared/components/faro/logo/logo';
           variant="flow"
           [headline]="headline"
           [sub]="sub"
-          data-testid="gallery-brand-panel-flow"
+          data-testid="dev-brand-panel-flow"
         />
       </div>
 
       <div class="flex max-w-[460px] flex-col gap-3">
         <h3 class="text-base font-semibold" i18n>Botões de marca de terceiros</h3>
-        <button type="button" z-button zType="default" zSize="lg" class="w-full" data-testid="gallery-whatsapp">
+        <button type="button" z-button zType="default" zSize="lg" class="w-full" data-testid="dev-whatsapp">
           <ng-icon name="whats" size="22" aria-hidden="true" />
           <span i18n>Falar no WhatsApp</span>
         </button>
-        <button type="button" z-button zType="outline" zSize="lg" class="w-full" data-testid="gallery-google">
+        <button type="button" z-button zType="outline" zSize="lg" class="w-full" data-testid="dev-google">
           <app-google-glyph />
           <span i18n>Entrar com o Google</span>
         </button>

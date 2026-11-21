@@ -15,28 +15,28 @@ import { ZardSpinnerComponent } from '@/shared/components/spinner';
         zType="neutral"
         zDescription="Sua sessão expirou. Entre de novo para continuar."
         i18n-zDescription
-        data-testid="gallery-alert-neutral"
+        data-testid="dev-alert-neutral"
       />
       <z-alert
         zType="success"
         zDescription="Você saiu com segurança."
         i18n-zDescription
-        data-testid="gallery-alert-success"
+        data-testid="dev-alert-success"
       />
       <z-alert
         zType="danger"
         zDescription="E-mail ou senha incorretos."
         i18n-zDescription
-        data-testid="gallery-alert-danger"
+        data-testid="dev-alert-danger"
       />
 
       <div class="flex items-center gap-3">
-        <z-spinner data-testid="gallery-spinner" />
+        <z-spinner data-testid="dev-spinner" />
         <z-spinner class="size-8!" />
         <span class="text-sm text-muted-foreground" i18n>Carregando seus pets...</span>
       </div>
 
-      <div class="flex flex-col gap-2" data-testid="gallery-skeleton">
+      <div class="flex flex-col gap-2" data-testid="dev-skeleton">
         <z-skeleton class="h-5 w-48" />
         <z-skeleton class="h-4 w-full" />
         <z-skeleton class="h-4 w-72 max-w-full" />

@@ -25,7 +25,7 @@ import { ZardSwitchComponent } from '@/shared/components/switch';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="grid max-w-[520px] gap-5" data-testid="gallery-lists">
-      <div z-card data-testid="gallery-card">
+      <div z-card data-testid="dev-card">
         <div z-card-header>
           <h3 z-card-title i18n>Paçoca</h3>
           <p z-card-description i18n>Tag ativa desde ontem.</p>
@@ -33,7 +33,7 @@ import { ZardSwitchComponent } from '@/shared/components/switch';
         <div z-card-content i18n>Cartão sem borda e sem sombra, com raio de 20px.</div>
       </div>
 
-      <div z-item-group data-testid="gallery-item-group">
+      <div z-item-group data-testid="dev-item-group">
         <a z-item href="/dev/ui/components">
           <z-item-media><app-icon-tile icon="paw" /></z-item-media>
           <z-item-content>
@@ -62,7 +62,7 @@ import { ZardSwitchComponent } from '@/shared/components/switch';
         </div>
       </div>
 
-      <div class="rounded-xl bg-card" data-testid="gallery-empty">
+      <div class="rounded-xl bg-card" data-testid="dev-empty">
         <z-empty
           zIcon="paw"
           zTitle="Nenhum pet por aqui ainda"

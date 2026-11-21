@@ -16,7 +16,7 @@ import { ZardInputOtpComponent } from '@/shared/components/input-otp';
           [zMaxLength]="6"
           zAriaLabel="Código de 6 dígitos"
           i18n-zAriaLabel
-          data-testid="gallery-otp-numeric"
+          data-testid="dev-otp-numeric"
         />
       </div>
       <div class="flex flex-col gap-2">
@@ -26,7 +26,7 @@ import { ZardInputOtpComponent } from '@/shared/components/input-otp';
           [zMaxLength]="6"
           zAriaLabel="PIN de 6 caracteres"
           i18n-zAriaLabel
-          data-testid="gallery-otp-alphanumeric"
+          data-testid="dev-otp-alphanumeric"
         />
       </div>
       <div class="flex flex-col gap-2">

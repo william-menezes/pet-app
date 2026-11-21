@@ -41,7 +41,7 @@ import { ZardTextareaComponent } from '@/shared/components/textarea';
           value="1199"
           aria-invalid="true"
           aria-describedby="gallery-field-invalid-error"
-          data-testid="gallery-field-invalid"
+          data-testid="dev-field-invalid"
         />
         <z-field-error id="gallery-field-invalid-error" i18n>Confira o número: faltam dígitos.</z-field-error>
       </div>
@@ -80,7 +80,7 @@ import { ZardTextareaComponent } from '@/shared/components/textarea';
             class="pr-[52px]"
             [type]="showPassword() ? 'text' : 'password'"
             autocomplete="current-password"
-            data-testid="gallery-password"
+            data-testid="dev-password"
           />
           <button
             type="button"
@@ -90,7 +90,7 @@ import { ZardTextareaComponent } from '@/shared/components/textarea';
             class="absolute top-[5px] right-[5px]"
             [attr.aria-pressed]="showPassword()"
             [attr.aria-label]="showPassword() ? hideLabel : showLabel"
-            data-testid="gallery-password-toggle"
+            data-testid="dev-password-toggle"
             (click)="showPassword.set(!showPassword())"
           >
             <ng-icon [name]="showPassword() ? 'eyeOff' : 'eye'" size="20" class="text-muted-foreground" aria-hidden="true" />

@@ -29,8 +29,8 @@ import { ZardToggleGroupComponent, type ZardToggleGroupItem } from '@/shared/com
       <div class="flex flex-col gap-2">
         <h3 class="text-base font-semibold" i18n>Chips</h3>
         <div class="flex flex-wrap items-center gap-2">
-          <z-toggle zAriaLabel="Dócil" i18n-zAriaLabel data-testid="gallery-chip-off">Dócil</z-toggle>
-          <z-toggle zAriaLabel="Brincalhão" i18n-zAriaLabel [zValue]="true" data-testid="gallery-chip-on">Brincalhão</z-toggle>
+          <z-toggle zAriaLabel="Dócil" i18n-zAriaLabel data-testid="dev-chip-off">Dócil</z-toggle>
+          <z-toggle zAriaLabel="Brincalhão" i18n-zAriaLabel [zValue]="true" data-testid="dev-chip-on">Brincalhão</z-toggle>
           <z-toggle zAriaLabel="Medroso" i18n-zAriaLabel zDisabled>Medroso</z-toggle>
         </div>
       </div>
@@ -45,7 +45,7 @@ import { ZardToggleGroupComponent, type ZardToggleGroupItem } from '@/shared/com
           [zItems]="themeItems"
           [zValue]="theme()"
           (valueChange)="onTheme($event)"
-          data-testid="gallery-segmented"
+          data-testid="dev-segmented"
         />
       </div>
     </div>

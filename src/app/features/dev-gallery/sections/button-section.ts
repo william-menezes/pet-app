@@ -15,7 +15,7 @@ import type { ZardButtonSizeVariants, ZardButtonTypeVariants } from '@/shared/co
         <h3 class="text-base font-semibold" i18n>Tipos (tamanho padrão)</h3>
         <div class="flex flex-wrap items-center gap-3">
           @for (type of types; track type) {
-            <button type="button" z-button [zType]="type" [attr.data-testid]="'gallery-button-' + type">{{ type }}</button>
+            <button type="button" z-button [zType]="type" [attr.data-testid]="'dev-button-' + type">{{ type }}</button>
           }
         </div>
       </div>
@@ -44,9 +44,9 @@ import type { ZardButtonSizeVariants, ZardButtonTypeVariants } from '@/shared/co
       <div class="flex flex-col gap-3">
         <h3 class="text-base font-semibold" i18n>Estados</h3>
         <div class="flex flex-wrap items-center gap-3">
-          <button type="button" z-button zDisabled data-testid="gallery-button-disabled" i18n>Desativado</button>
+          <button type="button" z-button zDisabled data-testid="dev-button-disabled" i18n>Desativado</button>
           <button type="button" z-button zType="outline" zDisabled i18n>Desativado</button>
-          <button type="button" z-button zLoading data-testid="gallery-button-loading" i18n>Salvando</button>
+          <button type="button" z-button zLoading data-testid="dev-button-loading" i18n>Salvando</button>
           <button type="button" z-button zType="ink" zSize="md" i18n>Tinta</button>
           <button type="button" z-button zType="destructive" i18n>Confirmar</button>
           <a z-button zType="link" href="/dev/ui" i18n>Link de texto</a>
