@@ -168,6 +168,15 @@ Valem para as quatro funções desta spec e para `login-guard`:
    ("função criada sem `GRANT`") é o que comprova; se ele falhar, o papel dono das migrations não
    é `postgres`: descubra qual é e repita os comandos para ele.
 2. `search_path` das funções `security definer` da `001` passa a `public, pg_temp`.
+2A. **Tabelas que já existem.** O CI mostrou (2026-11-21) que `anon` e `authenticated` ainda têm
+   `GRANT` de leitura e escrita em `perfis`, `auth_audit_log` e `auth_login_attempts`: hoje só a
+   RLS os barra, e uma leitura devolve zero linhas em vez de erro. Acrescentar:
+   `REVOKE ALL ON ALL TABLES IN SCHEMA public FROM anon;` e
+   `REVOKE ALL ON public.auth_audit_log, public.auth_login_attempts FROM authenticated;`
+   (essas duas só são tocadas por funções `security definer`). Em `perfis`, `authenticated` fica
+   com o que a migration 0010 concede. Depois disso, os testes de leitura negada da `001`
+   (`rls_auth_audit.test.sql`, `rate_limit.test.sql` e o caso de `anon` em `rls_perfis.test.sql`)
+   voltam a exigir **erro `42501`** com `throws_ok`, mantendo a linha-semente que eles já criam.
 3. `ALTER ROLE anon SET statement_timeout = '3s';` e `ALTER ROLE authenticated SET
    statement_timeout = '8s';`.
 4. `DROP EXTENSION IF EXISTS pg_graphql;`. No `config.toml`, `[api] schemas = ["public"]`. Nada no

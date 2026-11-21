@@ -247,6 +247,26 @@ tarefas na 002, 96 na 004 e 105 na 003.
 - **Implementação liberada**, pelos subagentes em Sonnet, começando pela 002. A sessão principal
   não implementa: planeja, confere cada checkpoint e resolve o que for ambíguo.
 
+## O que o CI mostrou na primeira execução (2026-11-21)
+
+O CI do GitHub Actions foi criado para ser o lugar onde os testes de banco rodam (a máquina de
+desenvolvimento não tem Docker). Na primeira execução ele mostrou que **a camada de banco do login
+(spec 001) nunca tinha rodado**:
+
+- o `supabase/config.toml` era rejeitado por todas as versões da CLI testadas;
+- a migration 0007 falhava por permissão (um comentário num gatilho de `auth.users`);
+- os três arquivos de teste de RLS e de limite de tentativas tinham erro de sintaxe ou dependiam de
+  um schema que ninguém criava. **Nenhum teste de isolamento do login jamais executou.**
+
+O reparo (PR nº 1, branch `ci/base`) deixou o arquivo de configuração válido para a CLI 3.2.0,
+trocou o comentário do gatilho por um comentário SQL (o gatilho não mudou) e consertou os testes
+sem remover nenhuma asserção: são 42 no banco e 20 na função de login, todas passando. Nenhuma
+falha apontou defeito real de proteção. Um reforço saiu daí e entrou no contrato de endurecimento:
+hoje só a RLS barra o papel anônimo nessas tabelas; a permissão em si também será retirada.
+
+**O PR nº 1 não foi mesclado**: toca configuração e testes de RLS, e a esteira pede a revisão do
+William antes do merge.
+
 ## Em aberto
 
 - **Design system, partes ainda antigas**: componentes de saúde, `PlanTier`, o kit de telas,
@@ -257,9 +277,9 @@ tarefas na 002, 96 na 004 e 105 na 003.
 - `TODO(EMAIL_PROVIDER)` e `TODO(SMS_PROVIDER)`: conta Google, ainda não ativada; produto de SMS
   a confirmar. **Bloqueiam produção.**
 - `TODO(LEGAL_TEXTS)`: o William envia. `TODO(RETENCAO)`: prazo de guarda de scans e auditoria.
-- **Ambiente de backend**: nesta máquina não há Docker nem a CLI do Supabase, e o conector do
-  Supabase não está autorizado. Sem um deles, as tarefas de banco da 004 e da 003 não têm como
-  ser verificadas ("Feito quando" exige rodar os testes do banco).
+- **Ambiente de backend**: nesta máquina não há Docker nem a CLI do Supabase. As tarefas de banco
+  da 004 e da 003 são verificadas no CI (push da branch e leitura do resultado), o que funciona,
+  mas é mais lento do que rodar localmente. Instalar o Docker Desktop e a CLI 3.2.0 acelera.
 - **Repositório público**: avaliar torná-lo privado antes de o produto abrir.
 - `TODO(PIN_LENGTH)`: PIN de 8 caracteres em lotes futuros.
 - **`tools/tag-generator/`**: faltam a fonte `JetBrainsMono-Bold.ttf` usada na impressão e a

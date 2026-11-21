@@ -775,7 +775,8 @@ senha e escolher a aparência.
 fase dependem só da Phase 2; as de tela dependem das telas das histórias 1, 4, 5 e 6.
 
 - [ ] T097 [BE] Migration `0017_endurecimento_base.sql` e `supabase/tests/security_catalog.test.sql`,
-  conforme o contrato §6 (privilégios padrão, `search_path` das funções da `001`,
+  conforme o contrato §6 (privilégios padrão, `REVOKE` nas tabelas que já existem com os testes de
+  leitura negada da `001` voltando a exigir erro `42501`, `search_path` das funções da `001`,
   `statement_timeout` por papel, remoção do `pg_graphql`) e os ajustes de `[api]` no
   `config.toml`. **Feito quando**: o portão de catálogo passa; uma função criada sem `GRANT`
   dentro do teste não é executável por `authenticated`; os testes da `001` continuam verdes.

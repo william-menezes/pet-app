@@ -1,5 +1,12 @@
 # Contrato: configuração do Supabase Auth, e-mails e segredos
 
+> **Estado do `config.toml` desde 2026-11-21** (reparo da base da `001`, PR nº 1): o arquivo é
+> válido para a CLI do Supabase **3.2.0**, fixada no CI. `[inbucket]` virou `[local_smtp]`; os
+> limites se chamam `email_sent` e `token_refresh`; **`token_refresh` agora conta por 5 minutos e
+> por IP**, não por hora; e `verify_jwt` é declarado **por função** (`[functions.<nome>]`), não
+> mais num bloco global. Onde este contrato disser "padrão atual do arquivo" para `verify_jwt`,
+> leia: declarar `[functions.<nome>] verify_jwt = true` para cada função nova.
+
 Arquivos: `supabase/config.toml`, `supabase/templates/confirmation.html`,
 `supabase/templates/recovery.html`, `supabase/.env.local.example`.
 
