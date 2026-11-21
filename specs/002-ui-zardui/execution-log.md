@@ -208,6 +208,34 @@ Tamanhos depois da Fase 2 (`dist/faro/browser/`): soma dos `.js` sem scripts do 
 | `npx playwright test e2e/ui-identity.spec.ts` | passou: 15 testes (celular, desktop, 320px; axe sem violações graves) |
 | `npm run check:ui` | passou: 65 variáveis, 46 pares |
 
+### Fase 4 (T031 a T039), desvios e decisões
+
+- **T031/T032 num só commit**: o layout das três larguras saiu junto com o formulário (o template é um arquivo só); cada "Feito quando" foi conferido (build, 181 testes, busca por `primeng` e `<p-` em `login.ts` e `login.html` vazia). `login.css` apagado. Aviso temporário: `<z-sonner />` no topo do template e `ZardSonnerService` (`success`/`info`) com os mesmos textos; os getters `isErrorBanner`, `isWarnBanner` e `bannerSeverity` saíram, entrou `bannerType` (`danger` só em `invalid`).
+- **Arquivo novo fora das tarefas, `src/test-setup.ts` + `setupFiles` em `angular.json` (`test`)**: o `ngx-sonner` chama `window.matchMedia` ao montar e o jsdom não o tem; o `login.spec.ts` (que não pode mudar além das duas linhas da T033) passou a falhar em 18 testes. O arquivo só define um `matchMedia` falso quando ele não existe. O `sonner.component.spec.ts` continua com o próprio stub.
+- **T033**: `git diff` mostra, nas linhas removidas, só `import { MessageService } from 'primeng/api';` e `MessageService,`. Quatro testes novos no fim. O título do teste (a) foi escrito sem a palavra "PrimeNG" para a busca por `primeng` em `src/` (sem diferenciar maiúsculas) ficar vazia.
+- **T034**: o spinner usa `z-spinner` com `class="size-12!"` dentro de um `span aria-hidden`, porque o `z-spinner` tem `role="status"` e o contêiner já é `role="status"` (evita anúncio duplo).
+- **T035**: `landing.spec.ts` ganhou `provideRouter([])` (o `routerLink` do botão exige `ActivatedRoute`); é a única mudança no teste.
+- **T036**: textos da tela provisória em `i18n`; o texto "Placeholder" virou "Provisório".
+- **T037**: `npm rm primeng @primeuix/themes primeicons` sem conflito; `package-lock.json` perdeu 91 linhas. Fora da lista da tarefa, só comentários e uma cor: `src/server.ts` (dois comentários da CSP citavam PrimeNG e Poppins; a CSP não mudou) e o `login.spec.ts` (título de teste). A camada temporária `legacy` e a entrada de `faro-ds.css` no `angular.json` sumiram junto com o arquivo.
+- **T038, fora da tarefa**: `src/index.html` tinha `<meta name="theme-color" content="#3A4FD6">` (índigo antigo), que a regra 5 reprova. Troquei para `#25337A`, o mesmo valor que a T060 manda pôr; a T060 só precisa conferir. O script foi testado com um arquivo de sonda (`#123456` + `primeng`): falhou nas duas regras e saiu com código 1; a sonda foi apagada.
+- **T025 fechou**: a busca por `/logos/` em `src/` só acha `brand-assets.ts` (e comentários do mesmo arquivo).
+- **T039**: o teste do foco lê o `outline-color` com `expect.poll` (a primeira leitura pegou a cor no meio da transição, `rgb(36, 49, 47)`). Três rodadas seguidas de `login-ui.spec.ts` + `smoke.spec.ts`: 14 testes verdes em todas.
+- **Estado de erro com credencial inválida** (captura): o Supabase local não está configurado (`environment.development.ts` tem `YOUR_PROJECT`), então sem mock o login mostra o erro de rede. A captura `login-erro-390.png` foi feita com uma rota do Playwright respondendo 400 `invalid_credentials` em `**/auth/v1/token**`. Esse mock está só no script avulso, não no repositório.
+- Regras de lint: nenhuma regra nova desligada nesta fase.
+
+### Checkpoint da Phase 4 (2026-11-21)
+
+| Comando | Resultado |
+|---|---|
+| `npm run build` | passou; **sem aviso de orçamento**: bundle inicial 389,05 kB (105,12 kB transferidos); antes da fase: 567,85 kB |
+| `npm run lint` | passou ("All files pass linting.") |
+| `npm test -- --watch=false` | passou: 40 arquivos, 185 testes (181 + 4 novos do login) |
+| `npx playwright test e2e/smoke.spec.ts` | passou (rodado com `login-ui`, `dev-gallery` e `ui-identity`: 31 testes verdes) |
+| `npx playwright test e2e/login-ui.spec.ts` | passou: 13 testes |
+| `npm run check:ui` | passou: 65 variáveis, 46 pares; `check:stack` ok |
+
+Tamanhos (`dist/faro/browser/`): soma dos `.js` 792.956 bytes (sem os scripts do service worker: 707.292; linha de base 936.345); soma dos `.css` 53.895 bytes (linha de base 35.752; Fase 2: 95.575). `ngsw-worker.js` e `ngsw.json` continuam (saem na T057).
+
 ## Regras de lint desligadas
 
 Bloco em `eslint.config.js` com `files` = `src/app/shared/core/**/*.ts`, `src/app/shared/utils/**/*.ts`, `src/app/shared/components/**/*.ts` e `ignores` = `src/app/shared/components/faro/**`:
