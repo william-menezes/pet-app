@@ -1,4 +1,4 @@
-// Checagem "não sobrou a pilha antiga" (spec 002, T038).
+// Checagem "não sobrou a pilha antiga" (spec 002, T038, T056, T062).
 // Falha (código 1, com arquivo e linha) se PrimeNG, Lucide, o tema antigo, cores soltas ou
 // variáveis de tema fora de src/styles.css reaparecerem. Sem dependências.
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
@@ -53,6 +53,9 @@ const RULE5 =
 const RULE6 =
   /--(background|foreground|card|primary|secondary|muted|accent|destructive|border|input|ring|brand|ink|lost|text|link)\s*:/;
 const RULE7 = /#[0-9a-fA-F]{6}\b|\b(rgb|rgba|hsl|hsla|oklch)\(/;
+// 8: só a casca do tutor aplica a classe dark. 9: nunca em html nem em body.
+const RULE8 = /class\.dark|classList\.add\('dark'\)|classList\.toggle\('dark'|class="dark/;
+const RULE9 = /(documentElement|body)\.classList.*dark|dark.*(documentElement|body)\.classList/;
 
 for (const file of walk(join(root, 'src'))) {
   const rel = relative(root, file).split(sep).join('/');
@@ -60,6 +63,7 @@ for (const file of walk(join(root, 'src'))) {
   const isSpec = rel.endsWith('.spec.ts');
   const isGlyph = rel === 'src/app/shared/components/faro/google-glyph/google-glyph.ts';
   const inApp = rel.startsWith('src/app/');
+  const mayApplyDark = rel.startsWith('src/app/shared/shells/tutor-shell/') || rel.startsWith('src/app/features/dev-gallery/');
   readFileSync(file, 'utf8')
     .split(/\r?\n/)
     .forEach((line, i) => {
@@ -68,6 +72,8 @@ for (const file of walk(join(root, 'src'))) {
       if (RULE5.test(line)) fail(at, `identidade antiga: ${line.trim()}`);
       if (!isThemeFile && RULE6.test(line)) fail(at, `variável de tema fora de src/styles.css: ${line.trim()}`);
       if (inApp && !isSpec && !isGlyph && RULE7.test(line)) fail(at, `cor solta: ${line.trim()}`);
+      if (inApp && !isSpec && !mayApplyDark && RULE8.test(line)) fail(at, `classe dark fora da casca do tutor: ${line.trim()}`);
+      if (RULE9.test(line)) fail(at, `classe dark em html ou body: ${line.trim()}`);
     });
 }
 

@@ -1,5 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 
+import { ThemeService } from '@/core/theme/theme.service';
+import type { ThemePreference } from '@/core/theme/theme.service';
 import { ZardAlertDialogService } from '@/shared/components/alert-dialog';
 import { ZardBadgeComponent } from '@/shared/components/badge';
 import { ZardButtonComponent } from '@/shared/components/button';
@@ -13,6 +15,8 @@ import { ZardInputComponent } from '@/shared/components/input';
 import { ZardItemImports } from '@/shared/components/item';
 import { ZardSwitchComponent } from '@/shared/components/switch';
 import { ZardToggleComponent } from '@/shared/components/toggle';
+import { ZardToggleGroupComponent } from '@/shared/components/toggle-group';
+import type { ZardToggleGroupItem } from '@/shared/components/toggle-group';
 import { TutorShell } from '@/shared/shells/tutor-shell/tutor-shell';
 
 import { GALLERY_TUTOR_NAV } from './gallery-nav';
@@ -30,6 +34,7 @@ import { GALLERY_TUTOR_NAV } from './gallery-nav';
     ZardItemImports,
     ZardSwitchComponent,
     ZardToggleComponent,
+    ZardToggleGroupComponent,
     ZardBadgeComponent,
     ZardFieldImports,
     ZardInputComponent,
@@ -39,6 +44,16 @@ import { GALLERY_TUTOR_NAV } from './gallery-nav';
   template: `
     <app-tutor-shell [items]="items" [bottomNav]="true" userName="Ana" userEmail="ana@email.com">
       <div class="flex flex-col gap-3 md:gap-4 xl:gap-5" data-testid="dev-gallery-tutor">
+        <z-toggle-group
+          zType="segmented"
+          zMode="single"
+          zAriaLabel="Tema do app"
+          i18n-zAriaLabel
+          [zItems]="themeItems"
+          [zValue]="theme.preference()"
+          (valueChange)="onTheme($event)"
+          data-testid="dev-gallery-theme-switch"
+        />
         <app-pet-hero class="h-[236px] md:h-[320px] xl:h-[400px]" name="Paçoca" subtitle="Tag ativa · 7K3M-Q9XA-C">
           <app-brand-mark heroTop [size]="44" />
         </app-pet-hero>
@@ -86,6 +101,7 @@ import { GALLERY_TUTOR_NAV } from './gallery-nav';
         </div>
 
         <div class="flex flex-col items-start gap-2">
+          <button type="button" z-button zType="default" data-testid="dev-gallery-tutor-primary" i18n>Salvar alterações</button>
           <button type="button" z-button zType="danger" data-testid="dev-gallery-tutor-open-dialog" (click)="openDialog()" i18n>
             Desvincular tag
           </button>
@@ -97,9 +113,19 @@ import { GALLERY_TUTOR_NAV } from './gallery-nav';
 })
 export class GalleryTutor {
   private readonly dialogs = inject(ZardAlertDialogService);
+  protected readonly theme = inject(ThemeService);
 
   protected readonly items = GALLERY_TUTOR_NAV;
+  protected readonly themeItems: ZardToggleGroupItem[] = [
+    { value: 'light', label: $localize`Claro` },
+    { value: 'dark', label: $localize`Escuro` },
+    { value: 'system', label: $localize`Sistema` },
+  ];
   protected readonly result = signal('');
+
+  protected onTheme(value: string | string[]): void {
+    if (value === 'light' || value === 'dark' || value === 'system') this.theme.setPreference(value as ThemePreference);
+  }
 
   protected openDialog(): void {
     this.dialogs.confirm({

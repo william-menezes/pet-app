@@ -849,7 +849,7 @@ vestígio de PrimeNG.
 
 **Independent Test**: `npx playwright test e2e/ui-theme.spec.ts`.
 
-- [ ] T051 [US4] Serviço de tema: `src/app/core/theme/theme.service.ts`, `theme.service.spec.ts`
+- [x] T051 [US4] Serviço de tema: `src/app/core/theme/theme.service.ts`, `theme.service.spec.ts`
   - **Referência**: `contracts/shells.contract.md` §6.2.
   - **Faça**: a API do contrato. `localStorage` e `matchMedia` só no navegador
     (`isPlatformBrowser`), dentro de `try/catch`. O serviço não toca no DOM.
@@ -858,7 +858,7 @@ vestígio de PrimeNG.
     `resolved()` segue um `matchMedia` simulado, inclusive quando ele muda; se `localStorage`
     lançar erro, nada quebra; `npm test -- --watch=false` passa.
 
-- [ ] T052 [US4] A casca do tutor aplica o tema: `src/app/shared/shells/tutor-shell/tutor-shell.ts`, `tutor-shell.html`, `tutor-shell.spec.ts` (depende de T051)
+- [x] T052 [US4] A casca do tutor aplica o tema: `src/app/shared/shells/tutor-shell/tutor-shell.ts`, `tutor-shell.html`, `tutor-shell.spec.ts` (depende de T051)
   - **Referência**: `contracts/shells.contract.md` §6.3 (itens 1, 2 e 4) e §2.2 (logo do menu).
   - **Faça**: `[class.dark]="theme.resolved() === 'dark'"` no hospedeiro; o contêiner interno
     pinta `bg-background`; o `app-logo` do menu lateral usa `tone="on-dark"` no escuro. Nenhuma
@@ -867,7 +867,7 @@ vestígio de PrimeNG.
     o serviço e que `document.documentElement` e `document.body` **nunca** recebem a classe;
     `npm test -- --watch=false` passa.
 
-- [ ] T053 [US4] Diálogos acompanham o tema: `src/app/shared/shells/tutor-shell/tutor-shell.ts`, `tutor-shell.spec.ts` (depende de T052)
+- [x] T053 [US4] Diálogos acompanham o tema: `src/app/shared/shells/tutor-shell/tutor-shell.ts`, `tutor-shell.spec.ts` (depende de T052)
   - **Referência**: `contracts/shells.contract.md` §6.3 (item 3); item 6 da seção `## Spike` do
     `execution-log.md` (onde o diálogo é anexado).
   - **Faça**: enquanto a casca está montada, replique a classe `dark` no contêiner de overlays
@@ -877,13 +877,13 @@ vestígio de PrimeNG.
   - **Feito quando**: os testes conferem que o contêiner ganha `dark` com o tema escuro, perde ao
     voltar para claro e perde ao destruir a casca; `npm test -- --watch=false` passa.
 
-- [ ] T054 [P] [US4] Botões de tema na galeria: `src/app/features/dev-gallery/gallery-tutor/`
+- [x] T054 [P] [US4] Botões de tema na galeria: `src/app/features/dev-gallery/gallery-tutor/`
   - **Faça**: no topo da página `/dev/ui/tutor`, um segmentado "Claro / Escuro / Sistema"
     (`data-testid="dev-gallery-theme-switch"`) que chama `ThemeService.setPreference`. Só nessa
     página.
   - **Feito quando**: `npm run build` e `npm run lint` passam.
 
-- [ ] T055 [US4] Teste e2e do tema: `e2e/ui-theme.spec.ts` (depende de T052 a T054)
+- [x] T055 [US4] Teste e2e do tema: `e2e/ui-theme.spec.ts` (depende de T052 a T054)
   - **Referência**: `spec.md` US4 (cenários 1 a 8).
   - **Faça**:
     1. com `localStorage` `faro.theme = 'dark'` (`page.addInitScript`), `/dev/ui/tutor`: o
@@ -905,7 +905,7 @@ vestígio de PrimeNG.
     9. `expectNoSeriousA11y(page)` em `/dev/ui/tutor` no escuro, em `phone` e `desktop`.
   - **Feito quando**: `npx playwright test e2e/ui-theme.spec.ts` passa.
 
-- [ ] T056 [US4] Checagem "`.dark` só na casca do tutor": `scripts/ui-checks/removed-stack.mjs`
+- [x] T056 [US4] Checagem "`.dark` só na casca do tutor": `scripts/ui-checks/removed-stack.mjs`
   - **Faça**: acrescente duas regras ao script: (8) em `src/app/` (fora `*.spec.ts` e
     `src/app/features/dev-gallery/`), só os arquivos de `src/app/shared/shells/tutor-shell/`
     podem conter `class.dark`, `classList.add('dark')`, `classList.toggle('dark'` ou
