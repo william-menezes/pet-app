@@ -1,21 +1,25 @@
-<!-- pets.html — shell do painel autenticado (placeholder).
+<!-- pets.html — casca provisória do painel autenticado.
      Contém o botão de logout (T042, FR-010) com data-testid="login-logout".
-     Implementação completa do painel virá na feature de pets. -->
-<header class="pets-header">
-  <span class="pets-header__title">Faro — Meus pets</span>
+     O painel de verdade vem na feature de pets. -->
+<header class="flex items-center justify-between gap-3 border-b border-border bg-card px-5 py-3">
+  <span class="font-display text-lg font-semibold text-foreground" i18n>Faro — Meus pets</span>
   <button
     type="button"
-    class="pets-logout-btn"
+    z-button
+    zType="outline"
+    zSize="sm"
     (click)="signOut()"
     aria-label="Sair da conta"
-    data-testid="login-logout">
+    i18n-aria-label
+    data-testid="login-logout"
+    i18n>
     Sair
   </button>
 </header>
 
 <main>
-  <section data-testid="pets-home" style="padding: 24px;">
-    <h1>Meus pets</h1>
-    <p>Painel autenticado (CSR). Placeholder — implementado na feature de pets.</p>
+  <section class="p-6" data-testid="pets-home">
+    <h1 class="font-display text-[32px] leading-tight font-bold tracking-[-0.03em] text-foreground" i18n>Meus pets</h1>
+    <p class="mt-2 text-base text-text" i18n>Painel autenticado (CSR). Provisório: implementado na feature de pets.</p>
   </section>
 </main>

@@ -611,7 +611,7 @@ e visível em `/dev/ui/components`.
   - **Feito quando**: `npm test -- --watch=false` passa, e `git diff src/app/features/auth/login/login.spec.ts`
     mostra, nas linhas removidas, **só** as duas citadas.
 
-- [ ] T034 [P] [US2] Retorno do Google: `src/app/features/auth/callback/oauth-callback.ts`
+- [x] T034 [P] [US2] Retorno do Google: `src/app/features/auth/callback/oauth-callback.ts`
   - **Referência**: `contracts/shared-components.contract.md` §6.5.
   - **Faça**: troque o template e apague o bloco `styles: [...]`. Mantenha a lógica, o
     `data-testid="login-callback-container"`, `role="status"`, `aria-live="polite"`, `aria-label`
@@ -619,7 +619,7 @@ e visível em `/dev/ui/components`.
   - **Feito quando**: a busca por `Poppins`, `var(--` e `styles:` em `oauth-callback.ts` não acha
     nada; `npm run build` e `npm run lint` passam.
 
-- [ ] T035 [P] [US2] Tirar o PrimeNG da página inicial: `src/app/features/public/landing/landing.ts`, `landing.html`, e o `title` da rota em `src/app/app.routes.ts`
+- [x] T035 [P] [US2] Tirar o PrimeNG da página inicial: `src/app/features/public/landing/landing.ts`, `landing.html`, e o `title` da rota em `src/app/app.routes.ts`
   - **Faça**: troque `<p-button …>` por `<a z-button routerLink="/auth/login" data-testid="public-landing-cta">Entrar</a>`
     (confira o seletor em `button/index.ts`). Troque o título e o texto por: `<h1>` "O caminho de
     volta para casa." e um parágrafo "A tag com QR Code que ajuda quem achou o seu pet a falar
@@ -628,7 +628,7 @@ e visível em `/dev/ui/components`.
   - **Feito quando**: `npx playwright test e2e/smoke.spec.ts` passa; a busca por `primeng` em
     `features/public/` não acha nada.
 
-- [ ] T036 [P] [US2] Telas provisórias do app e do admin sem os tokens antigos: `src/app/features/pets/pets/pets.ts`, `pets.html`; apagar `pets.css`
+- [x] T036 [P] [US2] Telas provisórias do app e do admin sem os tokens antigos: `src/app/features/pets/pets/pets.ts`, `pets.html`; apagar `pets.css`
   - **Faça**: reescreva `pets.html` com classes do Tailwind e tokens novos; o botão "Sair" vira
     `<button z-button zType="outline" zSize="sm" …>` e **mantém** `data-testid="login-logout"`,
     `aria-label="Sair da conta"` e o `(click)="signOut()"`. Mantenha `data-testid="pets-home"`.
