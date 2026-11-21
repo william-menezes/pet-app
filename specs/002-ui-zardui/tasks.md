@@ -324,7 +324,7 @@ fundo lima, sem uso no código); os arquivos `.css` vazios `src/app/app.css`,
   - **Feito quando**: `npm run check:tokens` sai com código 0 e os números impressos batem com a
     tabela da §5 (diferença de até 0,02).
 
-- [ ] T009 Fontes no próprio domínio: `public/fonts/` e `src/index.html`
+- [x] T009 Fontes no próprio domínio: `public/fonts/` e `src/index.html`
   - **Referência**: `research.md` §R7; `contracts/design-tokens.contract.md` §3 (os `@font-face`
     já estão no bloco da T007).
   - **Faça** (um comando por linha):
