@@ -255,7 +255,7 @@ fundo lima, sem uso no código); os arquivos `.css` vazios `src/app/app.css`,
     arquivos da lista da condição de parada 5 da T003; `npm run build` e
     `npm test -- --watch=false` passam.
 
-- [ ] T005 Copiar os componentes do ZardUI para `src/app/shared/components/` e revisar o que entrou
+- [x] T005 Copiar os componentes do ZardUI para `src/app/shared/components/` e revisar o que entrou
   - **Referência**: `contracts/shared-components.contract.md` §3; `research.md` §R2 (risco do
     registro remoto).
   - **Faça**:
