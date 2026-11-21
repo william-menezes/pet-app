@@ -27,7 +27,10 @@ async function open(page: Page, path: string, testId: string): Promise<void> {
 }
 
 async function box(page: Page, selector: string) {
-  const b = await page.locator(selector).first().boundingBox();
+  // Em dev o servidor pode recarregar a página uma vez; tenta de novo até haver uma caixa.
+  const locator = page.locator(selector).first();
+  await expect.poll(() => locator.boundingBox().catch(() => null), { message: `sem caixa: ${selector}` }).not.toBeNull();
+  const b = await locator.boundingBox();
   expect(b, `sem caixa: ${selector}`).not.toBeNull();
   return b as NonNullable<typeof b>;
 }

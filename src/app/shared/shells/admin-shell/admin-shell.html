@@ -15,8 +15,8 @@
     data-testid="admin-shell-topbar"
   >
     <div class="flex items-center gap-2.5">
-      <app-logo class="md:hidden" [height]="40" />
-      <app-logo class="hidden md:block" [height]="44" />
+      <div class="md:hidden"><app-logo [height]="40" /></div>
+      <div class="hidden md:block"><app-logo [height]="44" /></div>
       <z-badge zType="ink" i18n>Admin</z-badge>
     </div>
     <nav class="-my-1 flex gap-1.5 overflow-x-auto py-1" aria-label="Navegação do admin" i18n-aria-label>

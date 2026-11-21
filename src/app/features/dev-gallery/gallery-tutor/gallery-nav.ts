@@ -5,7 +5,7 @@ export const GALLERY_TUTOR_NAV: NavItem[] = [
   { id: 'inicio', label: $localize`Início`, icon: 'home', link: '/dev/ui/tutor', exact: true },
   { id: 'pets', label: $localize`Pets`, icon: 'paw', link: '/dev/ui/tutor/inner' },
   { id: 'scans', label: $localize`Scans`, icon: 'scan', link: '/dev/ui/components' },
-  { id: 'conta', label: $localize`Conta`, icon: 'user', link: '/dev/ui' },
+  { id: 'conta', label: $localize`Conta`, icon: 'user', link: '/dev/ui', exact: true },
 ];
 
 export const GALLERY_ADMIN_NAV: NavItem[] = [
