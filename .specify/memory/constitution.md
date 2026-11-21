@@ -8,7 +8,8 @@ Histórico:
 - 1.1.0 (2026-06-05): Princípio I refinado para o modelo Freemium (piso Grátis = alerta in-app).
 - 2.0.0 (2026-11-17): PIVÔ DO MVP — o produto passa a ser a tag de coleira com QR Code.
 - 2.1.0 (2026-11-21): Princípio III — exceção à troca do PIN quando o vínculo termina sem ninguém
-  presente para receber o PIN novo (exclusão da conta; troca da tag de um pet). Decisão do William.
+  presente para receber o PIN novo (exclusão da conta; troca da tag de um pet). Princípio II —
+  exceção ao opt-in: a opção de WhatsApp vem pré-marcada na ativação, com aviso. Decisões do William.
   MINOR: orientação ampliada, sem remover nem redefinir princípio. Documentos atualizados: CLAUDE.md,
   docs/decisoes-pivo.md, specs/003-tag-qr (spec, contratos, tarefas), specs/004-conta-tutor (contrato
   cruzado).
@@ -126,6 +127,14 @@ Tratamos dados pessoais do tutor e dados do pet sob minimização e consentiment
   públicos; o restante é privado por padrão.
 - O telefone de contato só aparece na página pública depois de **confirmado** (posse
   verificada) e com **opt-in** para fins de resgate.
+- **Exceção registrada (v2.1.0, decisão do William em 2026-11-21)**: na tela de ativação da tag,
+  a opção de liberar o botão de WhatsApp vem **pré-marcada**, com um aviso na mesma tela de que
+  o contato ficará disponível para quem escanear a tag e de onde desligar; o tutor confirma ao
+  ativar e pode desmarcar antes. Vale **só** para essa opção e **só** nessa tela: todos os demais
+  campos continuam desligados até uma ação do tutor, e no servidor o padrão segue desligado.
+  **Ressalva registrada**: uma opção pré-marcada é uma forma mais fraca de consentimento do que
+  uma ação afirmativa. A base legal desse tratamento (consentimento ou execução do serviço
+  contratado) fica para a revisão dos textos legais (`TODO(LEGAL_TEXTS)`).
 - Antes de salvar a visibilidade, o tutor **DEVE** ver uma prévia de exatamente o que
   estranhos verão.
 - **Isolamento entre vínculos**: scans e dados de um vínculo encerrado **NUNCA** ficam

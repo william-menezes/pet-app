@@ -187,7 +187,10 @@ tarefas na 002, 96 na 004 e 105 na 003.
   - **WhatsApp na ativação começa marcado.** A tela do PIN mostra, junto da opção, o aviso de que
     o número ficará disponível para quem escanear a tag e de onde desligar. A tela "Tag ativa"
     repete se ficou ligado. No servidor o padrão continua "desligado": a tela envia a escolha de
-    forma explícita.
+    forma explícita. **Isso contraria a letra do Princípio II da constituição** ("opt-in",
+    "consentiu explicitamente"), então a exceção foi registrada lá, com a ressalva de que uma
+    opção pré-marcada é uma forma mais fraca de consentimento pela LGPD. Vale conferir com quem
+    for escrever os textos legais.
   - **Excluir a conta não troca o PIN.** A tag volta a "não ativada" com o PIN do cartão, e quem
     receber a tag com o cartão ativa sozinho. A mesma regra passa a valer quando o tutor troca a
     tag de um pet durante uma ativação (a tag antiga fica disponível com o PIN que já tinha).
@@ -276,7 +279,14 @@ William antes do merge.
 | `004-conta-tutor` | não iniciada (108 tarefas) | depende dos dois PRs acima |
 | `003-tag-qr` | não iniciada (112 tarefas) | depende da `004` |
 
-Ordem de merge: PR nº 1 primeiro (leva o CI para `develop`), depois o PR nº 2.
+Ordem de merge: PR nº 1 primeiro (leva o CI para `develop`); depois atualizar a branch do PR nº 2
+com `develop`, para o CI rodar nele, e então mesclar. O preview da Vercel do PR nº 2 compilou. A
+revisão do PR nº 2 pede `/code-review` e `/security-review` (ele mexe nas cascas públicas, nos
+modos de renderização das rotas e na ligação dos guards). **Não houve passada do agente de QA na
+002**: a conferência foi dos testes da própria spec, refeitos pela sessão principal a cada fase,
+mais uma checagem avulsa de que visitante sem sessão em `/app` e `/admin` cai no login.
+
+**Ainda devido**: o logo novo no artefato do design system (as telas e o app já usam o novo).
 
 **O que a 002 não cumpriu ou deixou em aberto** (detalhe em `specs/002-ui-zardui/execution-log.md`):
 

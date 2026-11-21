@@ -158,7 +158,9 @@ O que está impresso é para sempre. Nada aqui muda sem aprovação explícita d
 - **Celular confirmado por SMS** antes de aparecer na página pública.
 - **Geolocalização**: precisa só com consentimento no navegador; senão aproximada por IP,
   rotulada como aproximada. Guardar método e precisão. IP nunca cru: `ip_hash`.
-- **WhatsApp**: link `wa.me` com mensagem pré-definida, só com opt-in do tutor.
+- **WhatsApp**: link `wa.me` com mensagem pré-definida, só com a escolha do tutor. Na ativação da
+  tag a opção vem **marcada**, com aviso na mesma tela (exceção registrada no Princípio II da
+  constituição); em qualquer outro lugar, começa desligada. No servidor o padrão é desligado.
 - **Segredos** (service role, SMTP, SMS, API de geo) só em Edge Functions / env do servidor.
 - **Auditoria**: scans, criação de lote, emissão/reemissão de PIN, tentativas de ativação
   falhas e bloqueios, criar/encerrar/transferir vínculo, mudança de status, reimpressão,

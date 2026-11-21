@@ -63,7 +63,8 @@ dizendo a spec e a fase. Depois de criar ou editar agentes, reinicie a sessão (
 
 A máquina de desenvolvimento não tem Docker nem a CLI do Supabase. Os testes de banco (pgTAP) e
 das Edge Functions rodam no **GitHub Actions** (`.github/workflows/ci.yml`, job "supabase"): o
-agente faz push da branch da feature e lê o resultado com `gh run watch`. Uma tarefa de banco só é
+agente abre um PR em rascunho para `develop` no primeiro push (o CI só dispara em PR e em push para
+`develop`, `homolog` e `master`), faz push da branch da feature e lê o resultado com `gh run watch`. Uma tarefa de banco só é
 marcada como feita com esse job verde.
 
 ## Ordem das specs do MVP

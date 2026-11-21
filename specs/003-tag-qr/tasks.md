@@ -70,8 +70,9 @@
 ## Como verificar tarefas de banco sem Docker (leia antes da Phase 1)
 
 Igual à `004`: a máquina não tem Docker nem a CLI do Supabase. Todo "Feito quando" que cite pgTAP,
-`supabase` ou `deno test` com banco é verificado no job "supabase" do CI: commit, `git push origin
-003-tag-qr`, `gh run watch`, e só então marcar `[x]`. Detalhe em
+`supabase` ou `deno test` com banco é verificado no job "supabase" do CI: PR em rascunho para
+`develop` aberto no primeiro push (sem ele o CI não dispara), commit, `git push origin 003-tag-qr`,
+`gh run watch`, e só então marcar `[x]`. Detalhe em
 `specs/004-conta-tutor/tasks.md`, seção de mesmo nome.
 
 ---

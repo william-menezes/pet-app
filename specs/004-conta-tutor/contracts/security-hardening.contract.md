@@ -171,12 +171,16 @@ Valem para as quatro funções desta spec e para `login-guard`:
 2A. **Tabelas que já existem.** O CI mostrou (2026-11-21) que `anon` e `authenticated` ainda têm
    `GRANT` de leitura e escrita em `perfis`, `auth_audit_log` e `auth_login_attempts`: hoje só a
    RLS os barra, e uma leitura devolve zero linhas em vez de erro. Acrescentar:
-   `REVOKE ALL ON ALL TABLES IN SCHEMA public FROM anon;` e
-   `REVOKE ALL ON public.auth_audit_log, public.auth_login_attempts FROM authenticated;`
-   (essas duas só são tocadas por funções `security definer`). Em `perfis`, `authenticated` fica
-   com o que a migration 0010 concede. Depois disso, os testes de leitura negada da `001`
-   (`rls_auth_audit.test.sql`, `rate_limit.test.sql` e o caso de `anon` em `rls_perfis.test.sql`)
-   voltam a exigir **erro `42501`** com `throws_ok`, mantendo a linha-semente que eles já criam.
+   `REVOKE ALL ON ALL TABLES IN SCHEMA public FROM anon;`,
+   `REVOKE ALL ON public.auth_login_attempts FROM authenticated;` (só funções `security definer`
+   tocam essa tabela) e
+   `REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON public.auth_audit_log FROM authenticated;`.
+   **Em `auth_audit_log` o `SELECT` de `authenticated` fica**: a política da migration 0006 deixa o
+   admin ler a auditoria, e tirar o privilégio quebraria a tela de auditoria. Em `perfis`,
+   `authenticated` fica com o que a migration 0010 concede. Depois disso, nos testes da `001`:
+   toda leitura de `anon` e a leitura de `auth_login_attempts` por `authenticated` voltam a exigir
+   **erro `42501`** com `throws_ok`; a leitura de `auth_audit_log` por um tutor comum continua
+   provando **zero linhas** (com a linha-semente), e a do admin continua provando que ele lê.
 3. `ALTER ROLE anon SET statement_timeout = '3s';` e `ALTER ROLE authenticated SET
    statement_timeout = '8s';`.
 4. `DROP EXTENSION IF EXISTS pg_graphql;`. No `config.toml`, `[api] schemas = ["public"]`. Nada no

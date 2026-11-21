@@ -109,6 +109,9 @@ A máquina de desenvolvimento **não tem Docker nem a CLI do Supabase**. `supaba
 do CI (`.github/workflows/ci.yml`). Para toda tarefa cujo "Feito quando" cite pgTAP, `supabase`
 ou `deno test`:
 
+0. **uma vez, no primeiro push**: abra um PR em rascunho para `develop`
+   (`gh pr create --draft --base develop --head 004-conta-tutor`). O CI só roda em PR e em push
+   para `develop`, `homolog` e `master`: sem o PR aberto, o push da branch **não dispara nada**;
 1. faça o commit (caminhos explícitos) e `git push origin 004-conta-tutor`;
 2. acompanhe com `gh run watch` (ou `gh run list --branch 004-conta-tutor` e `gh run view <id> --log-failed`);
 3. só marque `[x]` com o job verde. Job vermelho: leia o log, corrija, repita.
