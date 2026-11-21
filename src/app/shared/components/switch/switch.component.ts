@@ -41,12 +41,12 @@ type OnChangeType = (value: boolean) => void;
         <span
           [attr.data-size]="zSize()"
           [attr.data-state]="status()"
-          class="bg-background dark:data-[state=checked]:bg-primary-foreground dark:data-[state=unchecked]:bg-foreground pointer-events-none block rounded-full ring-0 transition-transform data-[size=default]:size-4 data-[size=sm]:size-3 data-[state=unchecked]:translate-x-0 ltr:data-[state=checked]:translate-x-[calc(100%-2px)] rtl:data-[state=checked]:-translate-x-[calc(100%-2px)]"
+          class="pointer-events-none ms-[3px] block size-[22px] rounded-full bg-input transition-transform duration-150 data-[state=checked]:translate-x-[21px] data-[state=checked]:bg-background data-[state=unchecked]:translate-x-0"
         ></span>
       </button>
 
       <label
-        class="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+        class="text-sm leading-none text-foreground peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
         [for]="zId() || z.id()"
       >
         <ng-content><span class="sr-only">toggle switch</span></ng-content>

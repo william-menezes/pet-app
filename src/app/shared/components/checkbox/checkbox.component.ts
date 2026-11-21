@@ -44,7 +44,9 @@ type OnChangeType = (value: boolean) => void;
       />
       <ng-icon
         name="check"
-        class="text-primary-foreground pointer-events-none absolute top-1/2 left-1/2 flex -translate-1/2 items-center justify-center transition-opacity"
+        size="14"
+        aria-hidden="true"
+        class="text-background pointer-events-none absolute top-1/2 left-1/2 flex -translate-1/2 items-center justify-center transition-opacity"
         [class]="checked() ? 'opacity-100' : 'opacity-0'"
       />
     </span>
@@ -63,7 +65,7 @@ type OnChangeType = (value: boolean) => void;
   encapsulation: ViewEncapsulation.None,
   host: {
     'data-slot': 'checkbox',
-    '[class]': "(disabled() ? 'cursor-not-allowed' : 'cursor-pointer') + ' flex items-center gap-2'",
+    '[class]': "(disabled() ? 'cursor-not-allowed' : 'cursor-pointer') + ' flex min-h-11 items-center gap-2.5 text-sm text-foreground'",
     '[attr.aria-disabled]': 'disabled() ? "true" : null',
     '[attr.aria-invalid]': 'zInvalid() ? "true" : null',
     '[attr.data-checked]': "checked() ? '' : null",

@@ -1,7 +1,11 @@
 import { cva } from 'class-variance-authority';
 
+/**
+ * Caixa de 20px (contrato §3.3). Marcada é tinta (`bg-foreground`), nunca lima. A área extra do
+ * `after` leva o alvo de toque a 44px. O foco é o da regra global.
+ */
 export const checkboxVariants = cva(
-  'cursor-[unset] peer size-4 shrink-0 appearance-none rounded-[4px] border border-input shadow-sm transition hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive dark:bg-input/30 dark:aria-invalid:border-destructive/50 checked:border-primary checked:bg-primary checked:text-primary-foreground dark:checked:bg-primary',
+  "peer relative size-5 shrink-0 cursor-[unset] appearance-none rounded-[6px] border-[1.5px] border-input bg-card transition-colors after:absolute after:-inset-3 after:content-[''] checked:border-foreground checked:bg-foreground disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive",
 );
 
-export const checkboxLabelVariants = cva('cursor-[unset] text-sm text-current empty:hidden select-none');
+export const checkboxLabelVariants = cva('cursor-[unset] text-sm text-foreground empty:hidden select-none');
