@@ -172,9 +172,10 @@ SELECT is(
 SET LOCAL ROLE authenticated;
 SET LOCAL "request.jwt.claim.sub" = '00000000-0000-0000-0000-000000000001';
 
-SELECT throws_ok(
-  $$ SELECT * FROM public.auth_login_attempts LIMIT 1 $$,
-  'authenticated não pode SELECT em auth_login_attempts diretamente'
+-- A tabela já tem linhas (inseridas acima como dono); RLS sem policy devolve zero linhas.
+SELECT is_empty(
+  $$ SELECT * FROM public.auth_login_attempts $$,
+  'authenticated não lê nenhuma linha de auth_login_attempts diretamente'
 );
 
 RESET ROLE;
