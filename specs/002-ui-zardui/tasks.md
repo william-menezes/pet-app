@@ -954,7 +954,7 @@ vestígio de PrimeNG.
     sem `serviceWorker` no `navigator`, a função termina sem erro; `npm test -- --watch=false`
     passa.
 
-- [ ] T059 [US5] Teste e2e do worker antigo: `e2e/legacy-sw.spec.ts` (depende de T057)
+- [x] T059 [US5] Teste e2e do worker antigo: `e2e/legacy-sw.spec.ts` (depende de T057)
   - **Faça**: abre `/`; dentro de `page.evaluate`, registra `'/ngsw-worker.js'` com
     `navigator.serviceWorker.register` e consulta `getRegistrations()` a cada 250ms por até 10s;
     o teste exige que a lista fique vazia. Um segundo teste confere que a resposta de
