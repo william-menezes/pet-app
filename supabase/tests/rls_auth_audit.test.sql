@@ -18,6 +18,11 @@ BEGIN;
 
 SELECT plan(14);
 
+-- Schema de apoio do teste: criado dentro da transação (some no ROLLBACK).
+-- anon e authenticated precisam de USAGE para chamar tests.* depois de trocar de papel.
+CREATE SCHEMA IF NOT EXISTS tests;
+GRANT USAGE ON SCHEMA tests TO anon, authenticated;
+
 -- ─────────────────────────────────────────
 -- Helpers (replicados do rls_perfis.test.sql para independência)
 -- ─────────────────────────────────────────

@@ -151,16 +151,19 @@ SELECT is(
 -- 8. p_sucesso=null: não grava, só consulta
 -- ─────────────────────────────────────────
 
-DECLARE
-  v_count_before integer;
-  v_count_after  integer;
-BEGIN
-  SELECT COUNT(*) INTO v_count_before FROM public.auth_login_attempts WHERE identity_hash = 'test_identity_nowrite';
-  PERFORM public.record_login_attempt('test_identity_nowrite', 'test_ip_nowrite', null);
-  SELECT COUNT(*) INTO v_count_after  FROM public.auth_login_attempts WHERE identity_hash = 'test_identity_nowrite';
+-- Contagem antes (tabela temporária, vive só nesta transação), chamada, contagem depois.
+CREATE TEMP TABLE _nowrite_antes AS
+  SELECT COUNT(*)::bigint AS n
+  FROM public.auth_login_attempts
+  WHERE identity_hash = 'test_identity_nowrite';
 
-  PERFORM is(v_count_before, v_count_after, 'p_sucesso=null não insere registro (somente consulta)');
-END;
+SELECT public.record_login_attempt('test_identity_nowrite', 'test_ip_nowrite', null);
+
+SELECT is(
+  (SELECT COUNT(*)::bigint FROM public.auth_login_attempts WHERE identity_hash = 'test_identity_nowrite'),
+  (SELECT n FROM _nowrite_antes),
+  'p_sucesso=null não insere registro (somente consulta)'
+);
 
 -- ─────────────────────────────────────────
 -- 9. RLS: authenticated direto em auth_login_attempts → negado
