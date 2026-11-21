@@ -1,7 +1,10 @@
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { OverlayContainer } from '@angular/cdk/overlay';
+import { isPlatformBrowser } from '@angular/common';
+import { ChangeDetectionStrategy, Component, computed, DestroyRef, effect, inject, input, PLATFORM_ID } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { NgIcon } from '@ng-icons/core';
 
+import { ThemeService } from '@/core/theme/theme.service';
 import { Focinho } from '@/shared/components/faro/focinho/focinho';
 import { Logo } from '@/shared/components/faro/logo/logo';
 
@@ -14,15 +17,28 @@ const ACTIVE = 'bg-foreground text-background';
 /**
  * Casca do app do tutor (contrato `shells.contract.md` §2): barra inferior no celular (só nas
  * telas-raiz), trilho no tablet e menu lateral no desktop. Só apresentação: não importa `core/auth`.
+ * É a única casca que aplica o tema escuro (§6.3): a classe `dark` fica neste hospedeiro e é replicada
+ * no contêiner de overlays enquanto a casca existir; nunca em `html` nem em `body`.
  */
 @Component({
   selector: 'app-tutor-shell',
   imports: [RouterLink, RouterLinkActive, NgIcon, Focinho, Logo],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { class: 'block', 'data-testid': 'tutor-shell' },
+  host: { class: 'block', '[class.dark]': 'dark()', 'data-testid': 'tutor-shell' },
   templateUrl: './tutor-shell.html',
 })
 export class TutorShell {
+  private readonly theme = inject(ThemeService);
+  private readonly overlays = inject(OverlayContainer);
+  protected readonly dark = computed(() => this.theme.resolved() === 'dark');
+
+  constructor() {
+    if (!isPlatformBrowser(inject(PLATFORM_ID))) return;
+    const container = this.overlays.getContainerElement();
+    effect(() => container.classList.toggle('dark', this.dark()));
+    inject(DestroyRef).onDestroy(() => container.classList.remove('dark'));
+  }
+
   readonly items = input<NavItem[]>(TUTOR_NAV);
   /** `true` nas telas-raiz: mostra a barra inferior no celular. */
   readonly bottomNav = input(false);

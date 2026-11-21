@@ -40,7 +40,7 @@
     i18n-aria-label
     data-testid="tutor-shell-sidebar"
   >
-    <app-logo class="mb-[22px]" [height]="48" />
+    <app-logo class="mb-[22px]" [height]="48" [tone]="dark() ? 'on-dark' : 'on-light'" />
     @for (item of items(); track item.id) {
       <a
         #rla="routerLinkActive"

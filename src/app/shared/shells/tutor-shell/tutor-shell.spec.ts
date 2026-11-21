@@ -1,6 +1,9 @@
+import { OverlayContainer } from '@angular/cdk/overlay';
 import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
+
+import { ThemeService } from '@/core/theme/theme.service';
 
 import { TutorShell } from './tutor-shell';
 
@@ -81,5 +84,99 @@ describe('TutorShell', () => {
     expect(main?.tagName).toBe('MAIN');
     expect(main?.id).toBe('conteudo');
     expect(main?.getAttribute('tabindex')).toBe('-1');
+  });
+});
+
+describe('TutorShell · tema', () => {
+  const original = window.matchMedia;
+
+  /** Controla o `matchMedia` em vez de depender do ambiente. */
+  function stubSystem(dark: boolean) {
+    Object.defineProperty(window, 'matchMedia', {
+      writable: true,
+      configurable: true,
+      value: (query: string) => ({
+        matches: dark,
+        media: query,
+        addEventListener: () => undefined,
+        removeEventListener: () => undefined,
+      }),
+    });
+  }
+
+  beforeEach(() => {
+    stubSystem(false);
+    TestBed.configureTestingModule({ providers: [provideRouter([])] });
+  });
+  afterEach(() => {
+    Object.defineProperty(window, 'matchMedia', { writable: true, configurable: true, value: original });
+    document.querySelectorAll('.cdk-overlay-container').forEach((el) => el.classList.remove('dark'));
+  });
+
+  const overlay = () => TestBed.inject(OverlayContainer).getContainerElement();
+  const create = () => {
+    const fixture = TestBed.createComponent(TutorShell);
+    fixture.detectChanges();
+    return fixture;
+  };
+
+  it('o hospedeiro ganha e perde a classe dark conforme o serviço', () => {
+    const theme = TestBed.inject(ThemeService);
+    theme.setPreference('light');
+    const fixture = create();
+    const host = fixture.nativeElement as HTMLElement;
+    expect(host.classList.contains('dark')).toBe(false);
+    theme.setPreference('dark');
+    fixture.detectChanges();
+    expect(host.classList.contains('dark')).toBe(true);
+    theme.setPreference('light');
+    fixture.detectChanges();
+    expect(host.classList.contains('dark')).toBe(false);
+  });
+
+  it('com "system" e o sistema escuro, o hospedeiro é escuro', () => {
+    stubSystem(true);
+    TestBed.inject(ThemeService).setPreference('system');
+    const fixture = create();
+    expect((fixture.nativeElement as HTMLElement).classList.contains('dark')).toBe(true);
+  });
+
+  it('document.documentElement e document.body nunca recebem a classe dark', () => {
+    const theme = TestBed.inject(ThemeService);
+    theme.setPreference('dark');
+    const fixture = create();
+    fixture.detectChanges();
+    expect((document.documentElement.getAttribute('class') ?? '').split(' ').includes('dark')).toBe(false);
+    expect((document.body.getAttribute('class') ?? '').split(' ').includes('dark')).toBe(false);
+    fixture.destroy();
+    expect((document.documentElement.getAttribute('class') ?? '').split(' ').includes('dark')).toBe(false);
+    expect((document.body.getAttribute('class') ?? '').split(' ').includes('dark')).toBe(false);
+  });
+
+  it('o logo do menu lateral usa as letras brancas no escuro e as navy no claro', () => {
+    const theme = TestBed.inject(ThemeService);
+    theme.setPreference('light');
+    const fixture = create();
+    const logo = () => (fixture.nativeElement as HTMLElement).querySelector('[data-testid="tutor-shell-sidebar"] img') as HTMLImageElement;
+    const claro = logo().getAttribute('src');
+    theme.setPreference('dark');
+    fixture.detectChanges();
+    expect(logo().getAttribute('src')).not.toBe(claro);
+    expect(logo().getAttribute('src')).toBe('/logos/logo-full-dark.svg');
+  });
+
+  it('o contêiner de overlays ganha dark no escuro, perde ao voltar ao claro e ao destruir a casca', () => {
+    const theme = TestBed.inject(ThemeService);
+    theme.setPreference('dark');
+    const fixture = create();
+    expect(overlay().classList.contains('dark')).toBe(true);
+    theme.setPreference('light');
+    fixture.detectChanges();
+    expect(overlay().classList.contains('dark')).toBe(false);
+    theme.setPreference('dark');
+    fixture.detectChanges();
+    expect(overlay().classList.contains('dark')).toBe(true);
+    fixture.destroy();
+    expect(overlay().classList.contains('dark')).toBe(false);
   });
 });
