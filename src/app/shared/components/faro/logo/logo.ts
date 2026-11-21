@@ -10,6 +10,7 @@ import { LOGO } from './brand-assets';
   template: `<img
     [src]="src()"
     alt="Faro"
+    i18n-alt
     [attr.width]="width()"
     [attr.height]="height()"
     decoding="async"

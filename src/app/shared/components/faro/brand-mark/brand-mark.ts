@@ -14,7 +14,7 @@ const SIZE_CLASSES = {
   imports: [Focinho],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '[class]': 'classes()' },
-  template: `<app-focinho class="w-[60%] text-primary" label="Faro" />`,
+  template: `<app-focinho class="w-[60%] text-primary" label="Faro" i18n-label />`,
 })
 export class BrandMark {
   readonly size = input<44 | 52 | 56>(44);

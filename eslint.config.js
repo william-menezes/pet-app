@@ -160,6 +160,65 @@ module.exports = defineConfig([
     rules: {
       // ── T020d: Proíbe [innerHTML] com binding em templates ──
       '@angular-eslint/template/no-any': 'off', // não relevante aqui
+      // ── T063: texto fixo de interface tem de ser extraível (i18n) ──
+      '@angular-eslint/template/i18n': [
+        'error',
+        {
+          checkId: false,
+          checkText: true,
+          checkAttributes: true,
+          // Atributos técnicos (não são texto para o usuário). Os de texto (`title`, `alt`,
+          // `label`, `placeholder`, `aria-label`, `zTitle`...) continuam exigindo `i18n-<attr>`.
+          ignoreAttributes: [
+            'data-testid',
+            'zType',
+            'zSize',
+            'zId',
+            'zIcon',
+            'rel',
+            'ariaCurrentWhenActive',
+            'tone',
+            'd',
+            'variant',
+            'decoding',
+            'icon',
+            'as',
+            'aria-live',
+            'aria-labelledby',
+            'aria-describedby',
+            'aria-controls',
+            'fill-rule',
+            'clip-rule',
+            'media',
+            'inputmode',
+            'content',
+          ],
+        },
+      ],
+    },
+  },
+
+  // ── T063: a regra de i18n não vale para o código copiado do ZardUI, para a galeria de
+  // desenvolvimento e para a página de resgate (a spec 003 refaz essa tela) ──
+  {
+    files: [
+      'src/app/shared/components/**/*.html',
+      'src/app/shared/core/**/*.html',
+      'src/app/features/dev-gallery/**/*.html',
+      'src/app/features/public/rescue-page/**/*.html',
+    ],
+    ignores: ['src/app/shared/components/faro/**'],
+    rules: {
+      '@angular-eslint/template/i18n': 'off',
+    },
+  },
+
+  // Fixtures de teste (templates inline dos `*.spec.ts`) e o documento HTML raiz (metas, fontes)
+  // não são tela.
+  {
+    files: ['**/*.spec.ts/**', 'src/index.html'],
+    rules: {
+      '@angular-eslint/template/i18n': 'off',
     },
   },
 ]);

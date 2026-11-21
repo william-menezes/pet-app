@@ -1020,7 +1020,7 @@ vestígio de PrimeNG.
 
 ## Phase 8: Polish & Cross-Cutting Concerns
 
-- [ ] T063 Marcar os textos fixos para tradução e ligar a regra de lint: `eslint.config.js`, templates de `src/app/shared/components/faro/**`, `src/app/shared/shells/**`, `src/app/features/auth/**`, `features/public/landing/`, `features/pets/**`, `features/admin/**`
+- [x] T063 Marcar os textos fixos para tradução e ligar a regra de lint: `eslint.config.js`, templates de `src/app/shared/components/faro/**`, `src/app/shared/shells/**`, `src/app/features/auth/**`, `features/public/landing/`, `features/pets/**`, `features/admin/**`
   - **Referência**: `contracts/shared-components.contract.md` §1 (regra 4).
   - **Faça**: ponha `i18n` nos elementos com texto fixo e `i18n-aria-label` (ou `i18n-title`,
     `i18n-placeholder`) nos atributos com texto; em TypeScript, `$localize`. No bloco `**/*.html`
