@@ -672,7 +672,7 @@ e visível em `/dev/ui/components`.
     `"check:ui": "npm run check:tokens && npm run check:stack"`.
   - **Feito quando**: `npm run check:ui` sai com código 0.
 
-- [ ] T039 [US2] Teste e2e do login: `e2e/login-ui.spec.ts`
+- [x] T039 [US2] Teste e2e do login: `e2e/login-ui.spec.ts`
   - **Referência**: `spec.md` US2; `contracts/shared-components.contract.md` §6.
   - **Faça**, em `/auth/login`:
     1. nas larguras `narrow`, `phone`, `tablet` e `desktop`: estão visíveis `login-email`,
