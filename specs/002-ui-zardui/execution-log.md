@@ -236,6 +236,37 @@ Tamanhos depois da Fase 2 (`dist/faro/browser/`): soma dos `.js` sem scripts do 
 
 Tamanhos (`dist/faro/browser/`): soma dos `.js` 792.956 bytes (sem os scripts do service worker: 707.292; linha de base 936.345); soma dos `.css` 53.895 bytes (linha de base 35.752; Fase 2: 95.575). `ngsw-worker.js` e `ngsw.json` continuam (saem na T057).
 
+### Fase 5 (T040 a T050), desvios e decisões
+
+- **Commits**: T040 a T044 (e o `ShellFallback`, arquivo da T045) num só commit `e896c7d`; T045 e T046 em `a84171e`; T047 em `c89131d`; T048 em `5421309`; T049 em `2a02bec`; T050 em `bceb868`; correção posterior (logos duplicados, item exato da galeria, espera do e2e) em `ccf5d0c`.
+- **Aviso temporário**: o seletor é `z-sonner` (não `z-toaster`); `TutorApp` e `AdminApp` trazem `<z-sonner />`.
+- **T041**: a casca **não** aplica o tema escuro nem troca o logo para `on-dark` (é da T052); o `tone` fica `on-light`. A casca não importa `core/auth` (o hospedeiro `TutorApp` é quem lê o `AuthStore`). `leafRouteData` lê `data[key]` só da rota-folha (não herda do pai); o `data: { hub: true }` fica na rota-folha, como no contrato.
+- **T042**: o `app-logo` de 52px do tablet vai dentro de um `div` com as classes de visibilidade. O host do `app-logo` tem `inline-block` e esse `display` vencia o `hidden`/`md:hidden` aplicado direto no `<app-logo>`: na primeira captura apareciam dois logos. Mesma correção na casca do admin. Regra prática: classe de visibilidade em `div` de embrulho, nunca no host de componente com `display` próprio. O nome do fluxo existe duas vezes no DOM (`flow-shell-bar-title` no celular, `flow-shell-column-title` do tablet em diante), uma delas sempre `display: none`.
+- **T043**: no celular e no tablet, a área de toque das abas (44px) vem de `before:-inset-y-0.5` e a `nav` tem `py-1 -my-1` para o pseudo-elemento não ser cortado pelo `overflow-x-auto`.
+- **T044**: o `[footer]` do `app-public-layout` fica fora da folha, dentro da coluna da direita (no desktop, rodapé no pé só da metade direita, como o contrato descreve). `data-testid="public-footer-trust"` e `public-footer-code` são acréscimos (o contrato só fixa `public-footer`).
+- **T045**: `admin.html` já era `<section>` (nada a trocar de `<main>`); só ganhou classes do Tailwind no título e o texto "Placeholder" virou "Provisório". `pets.html` perdeu o cabeçalho próprio; o "Sair" (`login-logout`) ficou dentro da seção. `app.routes.server.ts` ganhou `app/**` e `admin/**` (Client).
+- **T046**: `data-testid="public-landing"` ficou no bloco de conteúdo (o `<main>` agora é do `app-public-layout`). O build pré-renderizou a rota sem aviso.
+- **T047, desvio por reforço**: o contrato usa só padrões com `features/...` (`**/features/pets/**`). Um import relativo curto entre irmãos (`../pets/x`) **não contém** "features/" e escaparia deles, e a regra antiga (`**/pets/**`) pegava. Acrescentei um segundo objeto de `patterns` com `../**/<pasta>/**` para as pastas de feature proibidas; `boundary.mjs` testa as três formas (`@/features/..`, `../../features/..`, `../<pasta>/..`) e o resultado é 51 imports proibidos barrados e 5 permitidos livres. Provado ao contrário: tirei `**/core/theme/**` da regra de propósito e o script saiu com 1 apontando os dois imports (config restaurada).
+- **T048**: as páginas de galeria usam itens de navegação próprios (`gallery-nav.ts`); o "Conta" é `exact: true` porque `/dev/ui` casaria com todas as páginas e deixaria dois itens ativos. O teste novo está em `e2e/dev-gallery.spec.ts` (seis rotas).
+- **T049, e2e**: a galeria é renderizada no servidor em dev. Antes da hidratação, o `href="#conteudo"` do atalho recarrega a página (por causa do `<base href="/">`), e o servidor de dev ainda pode recarregar uma vez; o teste do atalho espera o log "Angular hydrated" e as medições de caixa tentam de novo até haver caixa. No app real (`/app`, `/admin`) isso não ocorre: são CSR. A página pública usa `<a href>` de verdade e não depende disso.
+- **T050**: `dist/faro/stats.json` tem `outputs` e `entryPoint`, então não foi preciso parar. Os guards continuam no pacote inicial: o script **avisa** sobre `core/auth/` (5 arquivos), como manda a tarefa; `core/supabase/` não aparece como fonte porque o `@supabase/supabase-js` é `node_modules`. Nenhum `onload=` nos `.html` e nenhum `<script>` de *event replay* no `index.html` pré-renderizado (a landing); os scripts de replay só existiriam em páginas renderizadas no servidor sob demanda (`:codigo`), que o script não inspeciona (só lê `dist/faro/browser/`).
+- Regras de lint desligadas nesta fase: nenhuma.
+
+### Checkpoint da Phase 5 (2026-11-21)
+
+| Comando | Resultado |
+|---|---|
+| `npm run build` | passou; sem aviso de orçamento; pacote inicial 402,89 kB (108,14 kB transferidos); antes da fase: 389,05 kB |
+| `npm run lint` | passou ("All files pass linting.") |
+| `npm test -- --watch=false` | passou: 46 arquivos, 215 testes (185 + 30 novos das cascas) |
+| `npx playwright test e2e/smoke.spec.ts` | passou (rodado com `ui-shells`, `login-ui`, `dev-gallery` e `ui-identity`: 72 testes verdes, 3 rodadas seguidas) |
+| `npx playwright test e2e/ui-shells.spec.ts` | passou: 40 testes (3 rodadas seguidas verdes) |
+| `npm run check:ui` | passou: tokens (65 variáveis, 46 pares), stack, boundary (51 proibidos barrados, 5 permitidos livres) |
+| `node scripts/ui-checks/public-bundle.mjs --self-test` | saiu com 0 |
+| `npm run build:stats` e `npm run check:bundle` | saíram com 0 |
+
+`check:bundle`, JavaScript pelo fecho estático (informativo): pacote inicial (`main` + `polyfills`) 7 arquivos, 336,4 kB (gzip 108,6 kB); rota `rescue-page` 8 arquivos, 337,3 kB (gzip 109,2 kB); rota `landing` 14 arquivos, 379,4 kB (gzip 124,4 kB). Aviso (exceção conhecida, vira tarefa da spec 003): `core/auth/auth.guard.ts`, `admin.guard.ts`, `anon.guard.ts` (em `main`), `auth.store.ts` e `role-redirect.ts` (em `chunk-`) no fecho público. A meta de 100 KB da spec 003 para a rota pública está bem acima hoje: 109,2 kB gzip na rota de resgate só com o pacote inicial.
+
 ## Regras de lint desligadas
 
 Bloco em `eslint.config.js` com `files` = `src/app/shared/core/**/*.ts`, `src/app/shared/utils/**/*.ts`, `src/app/shared/components/**/*.ts` e `ignores` = `src/app/shared/components/faro/**`:
