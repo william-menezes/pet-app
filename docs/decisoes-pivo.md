@@ -267,6 +267,27 @@ hoje só a RLS barra o papel anônimo nessas tabelas; a permissão em si também
 **O PR nº 1 não foi mesclado**: toca configuração e testes de RLS, e a esteira pede a revisão do
 William antes do merge.
 
+## Estado da implementação (fim de 2026-11-21)
+
+| Item | Estado | Onde |
+|---|---|---|
+| `002-ui-zardui` | **70 de 70 tarefas**, verificação final refeita pela sessão principal | PR nº 2, aguardando revisão do William |
+| CI (GitHub Actions) + reparo da base de banco da `001` | pronto e verde | PR nº 1, aguardando revisão do William |
+| `004-conta-tutor` | não iniciada (108 tarefas) | depende dos dois PRs acima |
+| `003-tag-qr` | não iniciada (112 tarefas) | depende da `004` |
+
+Ordem de merge: PR nº 1 primeiro (leva o CI para `develop`), depois o PR nº 2.
+
+**O que a 002 não cumpriu ou deixou em aberto** (detalhe em `specs/002-ui-zardui/execution-log.md`):
+
+- **Login interativo em até 3 s: não passou** na condição medida (celular, rede de 1,6 Mbps, CPU
+  4x mais lenta): 5,5 a 5,7 s, contra 6,6 a 6,8 s antes da spec. Sem medição em aparelho real.
+- Os guards de autenticação ainda entram no pacote das páginas públicas, e a rota de resgate tem
+  107 kB em gzip contra a meta de 100 kB da 003. As duas coisas são tarefa da 003 (T034B).
+- Nada foi exercitado contra um Supabase de verdade: o ambiente local não está configurado.
+- O painel de marca da casca de fluxo tinha um defeito que vinha do desenho (o focinho gigante
+  cobria o logo no desktop). Corrigido no código e nas 22 telas de referência.
+
 ## Em aberto
 
 - **Design system, partes ainda antigas**: componentes de saúde, `PlanTier`, o kit de telas,
