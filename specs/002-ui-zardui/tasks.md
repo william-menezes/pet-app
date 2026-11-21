@@ -389,7 +389,7 @@ fundo lima, sem uso no código); os arquivos `.css` vazios `src/app/app.css`,
   - **Feito quando**: depois de `npm run build`, este comando imprime `ok`:
     `node -e "const fs=require('fs');for(const f of ['dist/faro/browser/index.csr.html','dist/faro/browser/index.html']){if(fs.readFileSync(f,'utf8').includes('onload='))throw new Error('onload em '+f)}console.log('ok')"`
 
-- [ ] T014 Apoio dos testes e2e: `e2e/support/ui.ts` e a dependência `@axe-core/playwright`
+- [x] T014 Apoio dos testes e2e: `e2e/support/ui.ts` e a dependência `@axe-core/playwright`
   - **Faça**: `npm i -D @axe-core/playwright`. Crie `e2e/support/ui.ts` exportando:
     - `WIDTHS = { narrow: { width: 320, height: 700 }, phone: { width: 390, height: 844 }, tablet: { width: 768, height: 1024 }, desktop: { width: 1440, height: 900 } }`;
     - `expectNoHorizontalScroll(page)`: exige

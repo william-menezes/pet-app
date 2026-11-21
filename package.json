@@ -45,6 +45,7 @@
     "@angular/cli": "^21.2.14",
     "@angular/compiler-cli": "^21.2.0",
     "@angular/localize": "^21.2.16",
+    "@axe-core/playwright": "^4.14.0",
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.60.0",
     "@tailwindcss/postcss": "^4.3.5",
