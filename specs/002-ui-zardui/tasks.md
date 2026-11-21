@@ -1049,7 +1049,7 @@ vestígio de PrimeNG.
   - **Feito quando**: todos os comandos da seção 3 do quickstart passam e as diferenças, se
     houver, estão no log.
 
-- [ ] T066 [P] Atualizar o comentário da CSP: `src/server.ts`
+- [x] T066 [P] Atualizar o comentário da CSP: `src/server.ts`
   - **Referência**: `research.md` §R19. **Não mude a política, só o comentário.**
   - **Faça**: no bloco de comentário do topo, troque a justificativa de `style-src` por:
     "`'unsafe-inline'` continua necessário porque o Angular e o aviso temporário injetam
