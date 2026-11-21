@@ -163,6 +163,22 @@ Resultado: APROVADO
 - **T010, desvio de implementação**: `faro-icons.ts` importa cada glifo por caminho (`@boxicons/js/icons/<Nome>`) e monta o SVG ele mesmo, em vez de usar `createSvgString` do barrel `@boxicons/js`. Motivo: o barrel carrega 4.362 módulos e levou a suíte de testes de 12 s para 86 s (com um teste falhando por tempo). O SVG gerado é o mesmo que `createSvgString` produz (fill `currentColor`, `aria-hidden="true"`), sem `width`/`height`. O resultado do contrato (32 nomes, mesmos glifos) não muda. Nota: `npm i @boxicons/js@1.0.1` gravou `"^1.0.1"` no `package.json` (prefixo padrão do npm; versão instalada 1.0.1). Os testes imprimem avisos "Sourcemap ... points to missing source files" dos glifos do pacote; são ruído e não falha.
 - T011, mapa aplicado (Lucide → nome do Faro): `lucideCircleAlert` → `alert` (alert); `lucideLoaderCircle` → `loader` (button); `lucideCheck` → `check` (checkbox); no sonner, `lucideLoader2` → `loader`, `lucideCircleCheck` → `checkCircle`, `lucideOctagonX` → `alert` (erro), `lucideTriangleAlert` → `warn`, `lucideInfo` → `info`; `lucideTrash2` aparecia só num comentário de exemplo de `alert-dialog.component.ts` e virou `warn`. Os cinco `provideIcons`/`viewProviders` locais foram removidos. Nenhum ícone nem token novo foi acrescentado.
 - T012: classes de foco removidas por script (tokens com variante `focus`/`focus-visible`/`aria-invalid`/`has-[…aria-invalid…]` e utilitário `ring-*`, `border-ring`, `border-destructive/40`, `outline-*`; mais `outline-none`/`outline-hidden`/`ring-offset-*` em qualquer variante) em `button`, `input`, `input-group`, `textarea`, `checkbox`, `switch`, `toggle`, `badge`, `item`, `input-otp`, `alert-dialog`. Todos os controles que tinham `aria-invalid:ring-*` ficaram com `aria-invalid:border-destructive`. Também saíram, no `input-group`, os `has-[…:focus-visible]` (borda e anel do grupo) e as linhas `[&>…:focus-visible]:ring-0!`. Ficaram de propósito, por serem de tarefas seguintes: `ring-1 ring-foreground/10` do painel do diálogo (T023), `data-active:border-ring data-active:ring-3 data-active:ring-ring/50` da célula do `input-otp` (T024: as três bordas), `ring-0` solto em `input`/`textarea` embutidos em grupo. Observação: utilitários `shadow-*`/`ring-*` ficam na camada `utilities`, que vence a camada `base` onde está a regra global de foco; onde um controle ainda tem `shadow-*` (hoje `checkbox`, que a T019 reescreve) a "folga" em `box-shadow` do foco pode ser sobrescrita, mas o `outline` de 2px continua valendo.
+- T013: `optimization` do `production` em `angular.json` com `inlineCritical: false`; depois do build, nenhum `onload=` em `index.csr.html` nem `index.html` (comando da tarefa imprimiu `ok`).
+- T014: `@axe-core/playwright` 4.14.0 (axe-core 4.14.1) em `devDependencies`. `rgb()` de `e2e/support/ui.ts` recebe a propriedade em camelCase (`backgroundColor`), como no `getComputedStyle(el)[property]` da tarefa. O arquivo passa em `tsc --strict` isolado (o `ng lint` não cobre `e2e/`).
+- T015: `/dev/ui` abre em dev e o `import()` da galeria não entra no build de produção (busca por `dev-gallery` e pelo título nos `.js` de `dist/faro` não acha nada). As rotas `/dev/ui/components` etc. listadas no índice ainda não existem (T029, T041 em diante); os links só são clicáveis a partir daí.
+
+### Checkpoint da Phase 2 (2026-11-21)
+
+| Comando | Resultado |
+|---|---|
+| `npm run build` | passou (saída 0). Um aviso: orçamento do bundle inicial, 575,23 kB contra 500 kB (PrimeNG ainda instalado; sai na T037) |
+| `npm run lint` | passou ("All files pass linting.") |
+| `npm test -- --watch=false` | passou: 10 arquivos, 47 testes (44 da linha de base + 3 de `faro-icons.spec.ts`) |
+| `npx playwright test e2e/smoke.spec.ts` | passou: 1 teste |
+| `npx playwright test e2e/dev-gallery.spec.ts` | passou: 1 teste |
+| `npm run check:tokens` | passou: 65 variáveis, 46 pares |
+
+Tamanhos depois da Fase 2 (`dist/faro/browser/`): soma dos `.js` sem scripts do service worker 957.861 bytes (linha de base: 936.345); soma dos `.css` 95.575 bytes (linha de base: 35.752). `ngsw-worker.js` continua no pacote (sai na T057).
 
 ## Regras de lint desligadas
 
