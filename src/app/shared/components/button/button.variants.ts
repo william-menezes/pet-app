@@ -2,45 +2,48 @@ import { cva, type VariantProps } from 'class-variance-authority';
 
 import { mergeClasses } from '@/shared/utils/merge-classes';
 
+/**
+ * Botão do Faro (contrato `shared-components.contract.md` §3.1).
+ * A ordem das chaves importa: `zSize` vem antes de `zType` para que o tipo `link` (`h-auto`, `px-0`)
+ * vença o tamanho; `zLoading` e `zDisabled` vêm por último para vencer as cores do tipo.
+ * O foco é o da regra global de `src/styles.css`: nenhuma classe de foco aqui.
+ */
 export const buttonVariants = cva(
   mergeClasses(
-    "group/button inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-all select-none active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive dark:aria-invalid:border-destructive/50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+    'inline-flex shrink-0 cursor-pointer items-center justify-center gap-2 rounded-full border-[1.5px] border-transparent font-display font-semibold whitespace-nowrap transition-colors duration-150 select-none',
+    'disabled:pointer-events-none disabled:border-transparent disabled:bg-disabled disabled:text-disabled-foreground',
+    '[&_ng-icon]:shrink-0',
   ),
   {
     variants: {
-      zType: {
-        default: 'bg-primary text-primary-foreground [a]:hover:bg-primary/80',
-        destructive:
-          'bg-destructive/10 text-destructive hover:bg-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30',
-        outline:
-          'border-border bg-background hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50',
-        secondary:
-          'bg-secondary text-secondary-foreground hover:bg-secondary/80 aria-expanded:bg-secondary aria-expanded:text-secondary-foreground',
-        ghost:
-          'hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50',
-        link: 'text-primary underline-offset-4 hover:underline',
-      },
       zSize: {
-        default: 'h-8 gap-1.5 px-2.5 has-data-[icon=inline-end]:pe-2 has-data-[icon=inline-start]:ps-2',
-        xs: "h-6 gap-1 rounded-[min(var(--radius-md),10px)] px-2 text-xs in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pe-1.5 has-data-[icon=inline-start]:ps-1.5 [&_svg:not([class*='size-'])]:size-3",
-        sm: "h-7 gap-1 rounded-[min(var(--radius-md),12px)] px-2.5 text-[0.8rem] in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pe-1.5 has-data-[icon=inline-start]:ps-1.5 [&_svg:not([class*='size-'])]:size-3.5",
-        lg: 'h-9 gap-1.5 px-2.5 has-data-[icon=inline-end]:pe-2 has-data-[icon=inline-start]:ps-2',
-        icon: 'size-8',
-        'icon-xs':
-          "size-6 rounded-[min(var(--radius-md),10px)] in-data-[slot=button-group]:rounded-lg [&_svg:not([class*='size-'])]:size-3",
-        'icon-sm': 'size-7 rounded-[min(var(--radius-md),12px)] in-data-[slot=button-group]:rounded-lg',
-        'icon-lg': 'size-9',
+        sm: "relative h-9 gap-1.5 px-3.5 text-sm before:absolute before:inset-x-0 before:-inset-y-1 before:content-['']",
+        md: 'h-11 px-[18px] text-[15px]',
+        default: 'h-12 px-[22px] text-base',
+        lg: 'h-14 px-5 text-[17px]',
+        rescue: 'h-15 w-full gap-2.5 px-6 text-lg md:h-16 md:text-xl',
+        icon: 'size-11 rounded-full p-0',
+      },
+      zType: {
+        default: 'bg-primary text-primary-foreground hover:bg-primary-hover active:bg-primary-press',
+        outline: 'border-foreground bg-card text-foreground hover:bg-background active:bg-muted',
+        ink: 'bg-ink text-ink-foreground hover:bg-ink/90 active:bg-ink/80',
+        ghost: 'bg-transparent text-foreground hover:bg-foreground/5 active:bg-foreground/10',
+        danger: 'bg-transparent text-danger-foreground hover:bg-danger-soft active:bg-danger-soft',
+        destructive: 'bg-destructive text-destructive-foreground hover:bg-destructive-hover',
+        link: 'h-auto min-h-11 rounded-none border-0 px-0 font-sans text-link underline underline-offset-[3px]',
+        secondary: 'bg-muted text-foreground hover:bg-border',
       },
       zShape: {
-        default: 'rounded-md',
+        default: '',
         circle: 'rounded-full',
         square: 'rounded-none',
       },
       zLoading: {
-        true: 'pointer-events-none opacity-50',
+        true: 'pointer-events-none',
       },
       zDisabled: {
-        true: 'pointer-events-none opacity-50',
+        true: 'pointer-events-none border-transparent bg-disabled text-disabled-foreground',
       },
     },
     defaultVariants: {
