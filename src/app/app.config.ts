@@ -17,6 +17,7 @@ import { providePrimeNG } from 'primeng/config';
 import { routes } from './app.routes';
 import { FaroPreset } from '../theme/faro-preset';
 import { GlobalErrorHandler } from './core/error/global-error-handler';
+import { provideZard } from '@/shared/core/provider/providezard';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -49,5 +50,6 @@ export const appConfig: ApplicationConfig = {
       enabled: !isDevMode(),
       registrationStrategy: 'registerWhenStable:30000',
     }),
+    provideZard(),
   ],
 };

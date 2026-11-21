@@ -242,7 +242,7 @@ fundo lima, sem uso no código); os arquivos `.css` vazios `src/app/app.css`,
   - **Feito quando**: a seção `## Spike` do log termina com `Resultado: APROVADO` e os oito itens
     preenchidos, e `git worktree list` mostra só a pasta principal.
 
-- [ ] T004 Inicializar o ZardUI e o Tailwind na branch de trabalho (`components.json`, `.postcssrc.json`, `tsconfig.json`, `src/app/app.config.ts`, `src/styles.css`, `src/app/shared/core/`, `src/app/shared/utils/`)
+- [x] T004 Inicializar o ZardUI e o Tailwind na branch de trabalho (`components.json`, `.postcssrc.json`, `tsconfig.json`, `src/app/app.config.ts`, `src/styles.css`, `src/app/shared/core/`, `src/app/shared/utils/`)
   - **Faça**:
     ```bash
     npx zard-cli@1.12.0 init --yes --type angular --css src/styles.css --app-config src/app/app.config.ts --base-color neutral --no-rtl
