@@ -11,7 +11,8 @@
     "lint": "ng lint",
     "e2e": "playwright test",
     "check:tokens": "node scripts/ui-checks/tokens.mjs",
-    "check:ui": "npm run check:tokens"
+    "check:stack": "node scripts/ui-checks/removed-stack.mjs",
+    "check:ui": "npm run check:tokens && npm run check:stack"
   },
   "private": true,
   "packageManager": "npm@10.9.4",

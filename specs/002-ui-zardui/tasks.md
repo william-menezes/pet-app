@@ -648,7 +648,7 @@ e visível em `/dev/ui/components`.
   - **Feito quando**: os quatro comandos da regra 5 passam; a busca por `primeng`, `primeuix` e
     `primeicons` em `src/`, `angular.json` e `package.json` não acha nada.
 
-- [ ] T038 [US2] Checagem "não sobrou a pilha antiga": `scripts/ui-checks/removed-stack.mjs` e os scripts `check:stack` e `check:ui` em `package.json`
+- [x] T038 [US2] Checagem "não sobrou a pilha antiga": `scripts/ui-checks/removed-stack.mjs` e os scripts `check:stack` e `check:ui` em `package.json`
   - **Referência**: `contracts/design-tokens.contract.md` §1 e §6; `research.md` §R16.
   - **Faça**: script de Node sem dependências que percorre `src/` (arquivos `.ts`, `.html`,
     `.css`) e lê `package.json` e `angular.json`, e falha (código 1, listando arquivo e linha) se:
