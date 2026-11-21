@@ -1,7 +1,7 @@
 import { RenderMode, ServerRoute } from '@angular/ssr';
 
 /**
- * Render mode por rota (ver docs/architecture.md §2.1 e docs/frontend.md §3.1).
+ * Render mode por rota: SSR nas rotas públicas, CSR no app autenticado.
  * - Landing: Prerender (estática, SEO, carga instantânea).
  * - Resgate (`:codigo`, `:codigo/perdido`): Server (vínculo code→pet muda em runtime).
  * - Painel/admin/auth: Client (CSR puro; dados sensíveis, sem ganho de SSR).

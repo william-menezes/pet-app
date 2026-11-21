@@ -19,7 +19,7 @@ import { faroIcons } from './shared/icons/faro-icons';
 
 export const appConfig: ApplicationConfig = {
   providers: [
-    // Zoneless: detecção de mudança por signals (sem zone.js). Ver docs/frontend.md.
+    // Zoneless: detecção de mudança por signals (sem zone.js).
     provideZonelessChangeDetection(),
     provideBrowserGlobalErrorListeners(),
     { provide: ErrorHandler, useClass: GlobalErrorHandler },

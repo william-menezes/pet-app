@@ -1032,7 +1032,7 @@ vestígio de PrimeNG.
     `'warn'`, anote no log e siga (isto **não** é motivo de parada).
   - **Feito quando**: `npm run lint`, `npm run build` e `npm test -- --watch=false` passam.
 
-- [ ] T064 [P] Varredura final de restos em `src/`
+- [x] T064 [P] Varredura final de restos em `src/`
   - **Faça**: procure e elimine em `src/`: comentários que citam PrimeNG, Aura, `FaroPreset`,
     Paleta C, `faro-ds.css`, PWA ou service worker como se existissem (em especial em
     `src/app/app.config.ts`, `src/app/app.routes.ts`, `src/app/app.routes.server.ts`,
