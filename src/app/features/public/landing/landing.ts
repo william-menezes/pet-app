@@ -1,10 +1,12 @@
 import { Component } from '@angular/core';
-import { ButtonModule } from 'primeng/button';
+import { RouterLink } from '@angular/router';
 
-/** Landing pública (rota `/`, prerender). Placeholder de marca — valida tema + fontes. */
+import { ZardButtonComponent } from '@/shared/components/button';
+
+/** Landing pública (rota `/`, prerender). Provisória: o layout definitivo vem na T046. */
 @Component({
   selector: 'app-landing',
-  imports: [ButtonModule],
+  imports: [RouterLink, ZardButtonComponent],
   templateUrl: './landing.html',
   styleUrl: './landing.css',
 })

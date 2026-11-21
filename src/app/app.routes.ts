@@ -16,7 +16,7 @@ export const routes: Routes = [
   {
     path: '',
     loadComponent: () => import('./features/public/landing/landing').then((m) => m.Landing),
-    title: 'Faro — cuidado, saúde e resgate de pets',
+    title: 'Faro — O caminho de volta para casa',
   },
 
   // ── Painel autenticado (CSR lazy, protegido por authGuard) ──
