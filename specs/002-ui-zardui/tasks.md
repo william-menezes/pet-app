@@ -273,7 +273,7 @@ fundo lima, sem uso no código); os arquivos `.css` vazios `src/app/app.css`,
     `sonner`, `spinner`, `skeleton` e `input-otp` em `src/app/shared/components/`; a lista de
     pacotes importados está no log; `npm run build` passa.
 
-- [ ] T006 Exceção de ESLint para o código copiado do ZardUI em `eslint.config.js`
+- [x] T006 Exceção de ESLint para o código copiado do ZardUI em `eslint.config.js`
   - **Faça**: logo depois do primeiro bloco `files: ['**/*.ts']`, acrescente um bloco com
     `files: ['src/app/shared/core/**/*.ts', 'src/app/shared/utils/**/*.ts', 'src/app/shared/components/**/*.ts']`,
     `ignores: ['src/app/shared/components/faro/**']` e as regras

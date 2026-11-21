@@ -34,6 +34,23 @@ module.exports = defineConfig([
     },
   },
 
+  // ── Código copiado do ZardUI (zard-cli): seletores com prefixo `z-` ──
+  // Não se edita o código copiado só para agradar regra de estilo (spec 002, T006).
+  {
+    files: [
+      'src/app/shared/core/**/*.ts',
+      'src/app/shared/utils/**/*.ts',
+      'src/app/shared/components/**/*.ts',
+    ],
+    ignores: ['src/app/shared/components/faro/**'],
+    rules: {
+      '@angular-eslint/component-selector': 'off',
+      '@angular-eslint/directive-selector': 'off',
+      '@typescript-eslint/array-type': 'off',
+      '@typescript-eslint/no-unused-vars': 'off',
+    },
+  },
+
   // ── Invariante Rescue-First / two-bundle (constituição I) ──
   // A rota pública (features/public) deve ser enxuta e independente do painel e da
   // assinatura. Ela NÃO pode importar features do painel, auth nem billing.

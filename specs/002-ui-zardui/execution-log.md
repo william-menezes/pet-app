@@ -154,9 +154,20 @@ Resultado: APROVADO
 - `npx playwright install chromium` foi necessário (navegador ausente na máquina). Isso não altera o repositório.
 - A pasta `test-results/` criada pelo Playwright não está no `.gitignore`; é artefato local e não é commitada.
 
+- T004: `zard-cli@1.12.0 init` rodou sem aviso; só mexeu nos arquivos da lista da condição de parada 5 (`package.json`, `package-lock.json`, `tsconfig.json` com alias `@/*`, `app.config.ts` com `provideZard()`, `src/styles.css`, `.postcssrc.json`, `components.json`, `src/app/shared/core/**`, `src/app/shared/utils/**`). Build passou (aviso de orçamento do bundle inicial: 590,85 kB contra 500 kB, esperado com PrimeNG e Tailwind juntos).
+- **Armadilha de ambiente**: `npm test -- --watch=false` rodado pelo Git Bash (cwd `d:/...` com `d` minúsculo) falha com "Vitest failed to find the runner" nos 9 arquivos; rodado pelo PowerShell (cwd `D:\...`) passa com 44 testes. Rodar `ng test` sempre pelo PowerShell.
+- T005: `add` instalou 19 componentes (os 18 pedidos mais `input-group`, dependência de `input`/`field`). Pacote novo em `dependencies`: só `ngx-sonner`. Imports de `src/app/shared/**` fora de `.`/`@/`: `@angular/*` (incl. `cdk/a11y`, `cdk/bidi`, `cdk/overlay`, `cdk/portal`, `forms/signals`, `core/rxjs-interop`, `platform-browser`), `@ng-icons/core`, `@ng-icons/lucide`, `class-variance-authority`, `clsx`, `ngx-sonner`, `rxjs`, `tailwind-merge`: todos dentro da lista permitida. `npm audit --audit-level=high`: 57 vulnerabilidades (2 baixas, 33 moderadas, 19 altas, 3 críticas), o mesmo número da spike antes dos componentes; `ngx-sonner` não consta entre os pacotes afetados; nada corrigido (regra 7). Build passou.
+
 ## Regras de lint desligadas
 
-(nenhuma até agora)
+Bloco em `eslint.config.js` com `files` = `src/app/shared/core/**/*.ts`, `src/app/shared/utils/**/*.ts`, `src/app/shared/components/**/*.ts` e `ignores` = `src/app/shared/components/faro/**`:
+
+- `@angular-eslint/component-selector`: off (30 ocorrências no código copiado) — T006
+- `@angular-eslint/directive-selector`: off (4 ocorrências) — T006
+- `@typescript-eslint/array-type`: off (1: `field.component.ts`, `ReadonlyArray<T>`) — T006
+- `@typescript-eslint/no-unused-vars`: off (1: `string-template-outlet.directive.ts`, `_ctx` usado só como tipo) — T006
+
+Nenhuma regra de acessibilidade de template foi acusada; `no-restricted-globals` (`localStorage`) continua ligada.
 
 ## Resultado final
 
