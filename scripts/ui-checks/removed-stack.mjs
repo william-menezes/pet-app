@@ -36,6 +36,26 @@ for (const dir of [
   if (existsSync(join(root, dir))) fail(dir, 'pasta que não pode existir');
 }
 
+// ── 10, 11, 12, 14, 15: service worker (T062) ──
+if (/@angular\/service-worker/.test(readFileSync(join(root, 'package.json'), 'utf8'))) {
+  fail('package.json', 'contém @angular/service-worker');
+}
+if (existsSync(join(root, 'ngsw-config.json'))) fail('ngsw-config.json', 'arquivo que não pode existir');
+if (/serviceWorker/.test(readFileSync(join(root, 'angular.json'), 'utf8'))) fail('angular.json', 'contém serviceWorker');
+// Exceção exigida: o arquivo de desligamento fica em public/ por pelo menos 12 meses (research §R12).
+const killSwitch = join(root, 'public/ngsw-worker.js');
+if (!existsSync(killSwitch)) fail('public/ngsw-worker.js', 'o arquivo de desligamento precisa existir');
+else if (!readFileSync(killSwitch, 'utf8').includes('registration.unregister')) {
+  fail('public/ngsw-worker.js', 'não contém registration.unregister');
+}
+const manifestPath = join(root, 'public/manifest.webmanifest');
+if (existsSync(manifestPath)) {
+  const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
+  for (const icon of manifest.icons ?? []) {
+    if (!existsSync(join(root, 'public', icon.src))) fail('public/manifest.webmanifest', `ícone que não existe em public/: ${icon.src}`);
+  }
+}
+
 // ── varredura de src/ ──
 function walk(dir) {
   const out = [];
@@ -56,6 +76,8 @@ const RULE7 = /#[0-9a-fA-F]{6}\b|\b(rgb|rgba|hsl|hsla|oklch)\(/;
 // 8: só a casca do tutor aplica a classe dark. 9: nunca em html nem em body.
 const RULE8 = /class\.dark|classList\.add\('dark'\)|classList\.toggle\('dark'|class="dark/;
 const RULE9 = /(documentElement|body)\.classList.*dark|dark.*(documentElement|body)\.classList/;
+// 13: nada de service worker em src/.
+const RULE13 = /provideServiceWorker|@angular\/service-worker|serviceWorker\.register/;
 
 for (const file of walk(join(root, 'src'))) {
   const rel = relative(root, file).split(sep).join('/');
@@ -74,6 +96,7 @@ for (const file of walk(join(root, 'src'))) {
       if (inApp && !isSpec && !isGlyph && RULE7.test(line)) fail(at, `cor solta: ${line.trim()}`);
       if (inApp && !isSpec && !mayApplyDark && RULE8.test(line)) fail(at, `classe dark fora da casca do tutor: ${line.trim()}`);
       if (RULE9.test(line)) fail(at, `classe dark em html ou body: ${line.trim()}`);
+      if (RULE13.test(line)) fail(at, `service worker: ${line.trim()}`);
     });
 }
 

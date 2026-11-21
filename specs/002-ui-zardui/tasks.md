@@ -1005,7 +1005,7 @@ vestígio de PrimeNG.
   - **Feito quando**: `node -e "JSON.parse(require('fs').readFileSync('public/manifest.webmanifest','utf8'));console.log('ok')"`
     imprime `ok`; `src/index.html` não contém `3A4FD6`; `npm run build` passa.
 
-- [ ] T062 [US5] Checagem "não sobrou service worker": `scripts/ui-checks/removed-stack.mjs`
+- [x] T062 [US5] Checagem "não sobrou service worker": `scripts/ui-checks/removed-stack.mjs`
   - **Faça**: acrescente as regras: (10) `package.json` não contém `@angular/service-worker`;
     (11) `ngsw-config.json` não existe; (12) `angular.json` não contém `serviceWorker`;
     (13) nenhum arquivo de `src/` contém `provideServiceWorker`, `@angular/service-worker` nem
