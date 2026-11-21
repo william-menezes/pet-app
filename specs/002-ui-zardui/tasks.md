@@ -989,7 +989,7 @@ vestígio de PrimeNG.
     `icon-maskable-192x192.png`, `icon-maskable-512x512.png`; existem `public/favicon.svg` e
     `public/favicon.ico` (este com mais de 500 bytes e começando pelos bytes `00 00 01 00`).
 
-- [ ] T061 [US5] Manifest e cabeçalho da página: `public/manifest.webmanifest`, `src/index.html`
+- [x] T061 [US5] Manifest e cabeçalho da página: `public/manifest.webmanifest`, `src/index.html`
   - **Referência**: `research.md` §R13.
   - **Faça**: manifest com `"name": "Faro"`, `"short_name": "Faro"`,
     `"description": "O caminho de volta para casa."`, `"lang": "pt-BR"`, `"start_url": "/"`,
