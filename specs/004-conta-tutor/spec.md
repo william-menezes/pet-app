@@ -567,6 +567,9 @@ Novas:
 
 ### Telas que ainda precisam de desenho
 
+> **Atualização de 2026-11-21**: todas as telas listadas abaixo foram desenhadas, a pedido do
+> William, e estão em `design/telas-v2/`. Falta só a revisão dele, tela a tela.
+
 Têm tela de referência (páginas "MVP v2"; direção aprovada, tela a tela ainda sem revisão do
 William, exceto Entrar): Boas-vindas, Criar conta, Confirmar celular e Entrar. As
 demais seguem o padrão da casca de fluxo ou da casca do app e os componentes do sistema visual,

@@ -322,19 +322,20 @@ Casca do **app** (`app-tutor-shell`): barra inferior no celular, trilho no `md`,
 |---|---|---|---|---|
 | Boas-vindas | `design/telas-v2/V2-boas-vindas*.dc.html` | própria (foto + folha; no `xl`, foto à esquerda) | "O caminho de volta para casa." / "Uma tag com QR na coleira. Quem encontrar o seu pet fala com você na hora, sem precisar de app." | — |
 | Criar conta | `V2-criar-conta*.dc.html` | fluxo, voltar → `/auth` | "Crie sua conta" / "Só o necessário para quem encontrar seu pet falar com você." | "Só o necessário." / "Nome, e-mail e celular. Nada de CPF ou endereço para ativar a sua tag." |
-| Confirme seu e-mail | **sem tela aprovada**: padrão da casca de fluxo + `DESIGN.md` | fluxo, voltar → `/auth/criar-conta` | "Confirme seu e-mail" / "Enviamos um link para {email}. Abra o e-mail e toque em 'Confirmar meu e-mail'. O link vale por 1 hora." | "Falta um passo." / "Confirmar o e-mail protege a sua conta e as suas tags." |
-| Confirmar e-mail (link) | **sem tela aprovada** | fluxo, sem barra | "Confirmar seu e-mail" / "Toque no botão para ativar sua conta." | igual à anterior |
-| Aceitar termos | **sem tela aprovada** | fluxo, sem voltar | "Antes de continuar" / "Para usar o Faro, você precisa aceitar os Termos e a Política de privacidade." | "Só o necessário." / … |
-| Informar celular | **sem tela aprovada** | fluxo | "Qual é o seu celular?" (troca: "Novo celular") / "É por ele que quem achou o seu pet fala com você. Vamos confirmar por SMS." | "Um número que atende." / "É por ele que quem achou o seu pet fala com você. Por isso confirmamos antes." |
-| Confirmar celular | `V2-confirmar-celular*.dc.html` | fluxo, voltar → `/auth/celular` | "Confirme seu celular" / "Enviamos um código de 6 dígitos por SMS para {celular}. É esse número que aparece para quem encontrar seu pet." | igual à anterior |
-| Esqueci a senha | **sem tela aprovada** | fluxo, voltar → `/auth/login` | "Esqueceu a senha?" / "Informe seu e-mail. Enviamos um link para você criar uma nova." | "De volta em um minuto." / "Você cria uma senha nova e continua de onde parou." |
-| Nova senha | **sem tela aprovada** | fluxo, sem voltar | "Crie uma nova senha" / "Use pelo menos 8 caracteres." | igual à anterior |
-| Conta (lista e 5 telas) | **sem tela aprovada**: padrão da casca do app + `DESIGN.md` (cartão, linha de lista, segmentado, botão de texto vermelho) | app | "Conta" | — |
-| Termos / Política | **sem tela aprovada** | página simples clara, coluna de leitura de 680 px | "Termos de uso" / "Política de privacidade" | — |
+| Confirme seu e-mail | `V2-confirmar-email*.dc.html` | fluxo, voltar → `/auth/criar-conta` | "Confirme seu e-mail" / "Enviamos um link para {email}. Abra o e-mail e toque em 'Confirmar meu e-mail'. O link vale por 1 hora." | "Falta um passo." / "Confirmar o e-mail protege a sua conta e as suas tags." |
+| Confirmar e-mail (link) | `V2-confirmar-email-link*.dc.html`; link inválido: `V2-confirmar-email-invalido*.dc.html` | fluxo, sem barra | "Confirmar seu e-mail" / "Toque no botão para ativar sua conta." | igual à anterior |
+| Aceitar termos | `V2-aceite-termos*.dc.html` | fluxo, sem voltar | "Antes de continuar" / "Para usar o Faro, você precisa aceitar os Termos e a Política de privacidade." | "Só o necessário." / … |
+| Informar celular | `V2-informar-celular*.dc.html`; modo troca: `V2-trocar-celular*.dc.html` | fluxo | "Qual é o seu celular?" (troca: "Novo celular") / "É por ele que quem achou o seu pet fala com você. Vamos confirmar por SMS." | "Um número que atende." / "É por ele que quem achou o seu pet fala com você. Por isso confirmamos antes." |
+| Confirmar celular | `V2-confirmar-celular*.dc.html`; estados: `V2-confirmar-celular-erro*`, `-vencido*` (vale também para bloqueado) e `-indisponivel*` | fluxo, voltar → `/auth/celular` | "Confirme seu celular" / "Enviamos um código de 6 dígitos por SMS para {celular}. É esse número que aparece para quem encontrar seu pet." | igual à anterior |
+| Esqueci a senha | `V2-recuperar-senha*.dc.html`; depois do envio: `V2-recuperar-senha-enviado*.dc.html` | fluxo, voltar → `/auth/login` | "Esqueceu a senha?" / "Informe seu e-mail. Enviamos um link para você criar uma nova." | "De volta em um minuto." / "Você cria uma senha nova e continua de onde parou." |
+| Nova senha | `V2-nova-senha*.dc.html`; link inválido: `V2-nova-senha-invalido*.dc.html` | fluxo, sem voltar | "Crie uma nova senha" / "Use pelo menos 8 caracteres." | igual à anterior |
+| Conta (lista e 5 telas) | `V2-conta*.dc.html`: lista, `-dados`, `-celular`, `-celular-pendente`, `-senha`, `-aparencia`, `-privacidade` e `-excluir` (diálogo), em claro e escuro | app | "Conta" | — |
+| Termos / Política | `V2-legal-termos*.dc.html` (modelo de página; o texto é `TODO(LEGAL_TEXTS)`) | página simples clara, coluna de leitura de 680 px | "Termos de uso" / "Política de privacidade" | — |
 
-Para as telas sem referência aprovada, **não inventar padrão novo**: usar a casca e os componentes
-existentes, uma frase grande, um botão principal, e registrar no relatório que precisam de passada
-de design.
+**Todas as telas têm desenho de referência desde 2026-11-21.** As que não tinham foram desenhadas a
+pedido do William e renderizadas em navegador, mas ele ainda não as revisou uma a uma. Siga o
+desenho; **onde a tela e este contrato divergirem em texto ou comportamento, vale este contrato**, e
+a divergência vai para o relatório final. Não invente padrão visual novo.
 
 ### Comportamento por tela
 

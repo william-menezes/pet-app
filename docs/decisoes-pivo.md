@@ -214,7 +214,22 @@ tarefas na 002, 96 na 004 e 105 na 003.
 - **Termos e Política de privacidade**: o William envia depois. `TODO(LEGAL_TEXTS)` continua.
 - **Proteção contra ataque e automação: adotar tudo.** `TODO(CAPTCHA)` deixa de ser pergunta.
   As proteções ficam num contrato de endurecimento nas specs 004 e 003.
-- **Telas que faltavam**: o William pediu o desenho. Entram em `design/telas-v2/` e no canvas.
+- **Telas que faltavam: desenhadas.** 31 telas novas, cada uma em celular, tablet e desktop (as do
+  app também no tema escuro), num total de 93 arquivos em `design/telas-v2/`:
+  - conta e acesso (004): confirme seu e-mail, confirmação pelo link, link inválido, aceite dos
+    termos, informar celular, trocar celular, três estados de erro da confirmação do celular,
+    esqueci a senha, link enviado, nova senha, link de recuperação inválido;
+  - seção Conta (004): lista, dados pessoais, celular (confirmado e não confirmado), senha,
+    aparência, privacidade e o diálogo de exclusão;
+  - tag (003): "Seus pets", fila do admin e auditoria do admin;
+  - página de Termos e Política (modelo; o texto final é `TODO(LEGAL_TEXTS)`).
+  As duas telas do PIN foram redesenhadas com a opção do WhatsApp marcada e o aviso. O logo novo
+  entrou em todas as telas. **As 180 telas foram renderizadas em navegador**: todas cabem na altura
+  e na largura declaradas, e uma amostra foi conferida por captura.
+- **Um código real estava nas telas.** Um código do lote-001 (o último da folha) aparecia como exemplo na tela de
+  códigos do admin e em dois documentos da 003, e foi publicado no GitHub no merge de 2026-11-21.
+  Foi trocado por um código sintético. O código continua no histórico do git: sem o PIN ele não
+  ativa nada, mas vale tratar essa tag como de teste, ou reescrever o histórico se preferir.
 - **Implementação liberada**, pelos subagentes em Sonnet, começando pela 002. A sessão principal
   não implementa: planeja, confere cada checkpoint e resolve o que for ambíguo.
 
@@ -222,7 +237,7 @@ tarefas na 002, 96 na 004 e 105 na 003.
 
 - **Design system, partes ainda antigas**: componentes de saúde, `PlanTier`, o kit de telas,
   a capa e os cartões de marca. O CSS dos componentes ainda não tem estilos do tema escuro.
-- **Telas não conferidas renderizadas**: as medidas foram calculadas, não vistas.
+- **Telas**: renderizadas e medidas em 2026-11-21; falta a revisão do William tela a tela.
 
 - `TODO(BILLING_MODEL)`: assinatura vs. tag comprada.
 - `TODO(EMAIL_PROVIDER)` e `TODO(SMS_PROVIDER)`: conta Google, ainda não ativada; produto de SMS

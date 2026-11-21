@@ -9,8 +9,10 @@ const F = dOf('d:/willi/dev/pet-app/pet-app/public/logos/logo-compact.svg');
 const W = dOf(path.join(S0, '..', 'dl', 'whatsapp.svg'));
 
 const PHOTO = '/_blob/934b5d39967c388fdc7cfbe8aae9fc18';
-const LOGO = '/_blob/3f589dbbc6b5c1fd9c5c7efbee877f21';
-const LOGOD = '/_blob/3922b9f4b2dd47be0788cb3cf1fc3fc1';
+// Logo em Outfit (2026-11-21), embutido como SVG para a tela não depender de arquivo externo.
+const logoInner = (f) => fs.readFileSync('d:/willi/dev/pet-app/pet-app/public/logos/' + f, 'utf8').replace(/^[\s\S]*?<svg[^>]*>/, '').replace(/<\/svg>\s*$/, '').replace(/\/>/g, '></path>').trim();
+const LOGO = logoInner('logo-full-light.svg');
+const LOGOD = logoInner('logo-full-dark.svg');
 const ALT = 'Paçoca, um vira-lata caramelo de orelhas caídas, sorrindo para a câmera';
 const FD = "font-family: 'Outfit', Inter, system-ui, sans-serif";
 const FB = 'font-family: Inter, system-ui, sans-serif';
@@ -64,6 +66,15 @@ const P = {
   search: '<path d="M10 18c1.85 0 3.54-.63 4.9-1.69l4.4 4.4 1.41-1.41-4.4-4.4A7.95 7.95 0 0 0 18 10c0-4.41-3.59-8-8-8s-8 3.59-8 8 3.59 8 8 8m0-14c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6 2.69-6 6-6"></path>',
   tag: '<path d="M11.71 2.29A1 1 0 0 0 11 2H3c-.55 0-1 .45-1 1v8c0 .27.11.52.29.71l10 10c.2.2.45.29.71.29s.51-.1.71-.29l8-8a.996.996 0 0 0 0-1.41zM13 19.59l-9-9V4h6.59l9 9z"></path><path d="M7.5 6a1.5 1.5 0 1 0 0 3 1.5 1.5 0 1 0 0-3"></path>',
   list: '<path d="M8 6h13v2H8zM8 11h13v2H8zM8 16h13v2H8zM3 6h2v2H3zM3 11h2v2H3zM3 16h2v2H3z"></path>',
+  phone: '<path d="M18.07 22h.35c.47-.02.9-.26 1.17-.64l2.14-3.09c.23-.33.32-.74.24-1.14s-.31-.74-.64-.97l-4.64-3.09a1.47 1.47 0 0 0-.83-.25c-.41 0-.81.16-1.1.48l-1.47 1.59c-.69-.43-1.61-1.07-2.36-1.82-.72-.72-1.37-1.64-1.82-2.36l1.59-1.47c.54-.5.64-1.32.23-1.93L7.84 2.67c-.22-.33-.57-.57-.97-.64a1.455 1.455 0 0 0-1.13.24L2.65 4.41c-.39.27-.62.7-.64 1.17-.03.69-.16 6.9 4.68 11.74 4.35 4.35 9.81 4.69 11.38 4.69ZM6.88 10.05c-.16.15-.21.39-.11.59.05.09 1.15 2.24 2.74 3.84 1.6 1.6 3.75 2.7 3.84 2.75.2.1.44.06.59-.11l1.99-2.15 3.86 2.57-1.7 2.46c-1.16 0-6.13-.24-9.99-4.1S4 7.06 4 5.91l2.46-1.7 2.57 3.86-2.15 1.99Z"></path>',
+  mail: '<path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2m0 2v.51l-8 6.22-8-6.22V6zM4 18V9.04l7.39 5.74c.18.14.4.21.61.21s.43-.07.61-.21L20 9.03v8.96H4Z"></path>',
+  contrast: '<path d="M20 2H4c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2m-1.41 2L4 18.59V4zM5.41 20 20 5.41V20z"></path><path d="M7 11h2V9h2V7H9V5H7v2H5v2h2zM13 15h6v2h-6z"></path>',
+  shield: '<path d="m20.42,6.11l-7.97-4c-.28-.14-.62-.14-.9,0L3.58,6.11c-.31.15-.51.45-.55.79-.01.11-.96,10.77,8.55,15.01.13.06.27.09.41.09s.28-.03.41-.09c9.51-4.25,8.57-14.9,8.55-15.01-.03-.34-.24-.64-.55-.79Zm-8.42,13.79c-6.74-3.27-7.06-10.26-7-12.26l7-3.51,7,3.51c.04,1.99-.33,9.02-7,12.27Z"></path>',
+  download: '<path d="M12 16.41 18.71 9.71 17.29 8.29 13 12.59 13 4 11 4 11 12.59 6.71 8.29 5.29 9.71 12 16.41z"></path><path d="M4 18H20V20H4z"></path>',
+  exit: '<path d="M15 11H8v2h7v4l6-5-6-5z"></path><path d="M5 21h7v-2H5V5h7V3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2"></path>',
+  trash: '<path d="M17 6V4c0-1.1-.9-2-2-2H9c-1.1 0-2 .9-2 2v2H2v2h2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8h2V6zM9 4h6v2H9zM6 20V8h12v12z"></path><path d="M9 10h2v8H9zM13 10h2v8h-2z"></path>',
+  refresh: '<path d="M19.07 4.93a9.9 9.9 0 0 0-3.18-2.14 10.12 10.12 0 0 0-7.79 0c-1.19.5-2.26 1.23-3.18 2.14S3.28 6.92 2.78 8.11A9.95 9.95 0 0 0 1.99 12h2c0-1.08.21-2.13.63-3.11.4-.95.98-1.81 1.72-2.54.73-.74 1.59-1.31 2.54-1.71 1.97-.83 4.26-.83 6.23 0 .95.4 1.81.98 2.54 1.72.17.17.33.34.48.52L16 9.01h6V3l-2.45 2.45c-.15-.18-.31-.36-.48-.52M19.37 15.11c-.4.95-.98 1.81-1.72 2.54-.73.74-1.59 1.31-2.54 1.71-1.97.83-4.26.83-6.23 0-.95-.4-1.81-.98-2.54-1.72-.17-.17-.33-.34-.48-.52l2.13-2.13H2v6l2.45-2.45c.15.18.31.36.48.52.92.92 1.99 1.64 3.18 2.14 1.23.52 2.54.79 3.89.79s2.66-.26 3.89-.79c1.19-.5 2.26-1.23 3.18-2.14s1.64-1.99 2.14-3.18c.52-1.23.79-2.54.79-3.89h-2c0 1.08-.21 2.13-.63 3.11Z"></path>',
+  file: '<path d="m19.94 7.68-.03-.09a.8.8 0 0 0-.2-.29l-5-5c-.09-.09-.19-.15-.29-.2l-.09-.03a.8.8 0 0 0-.26-.05c-.02 0-.04-.01-.06-.01H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2v-12s-.01-.04-.01-.06c0-.09-.02-.17-.05-.26ZM6 20V4h7v4c0 .55.45 1 1 1h4v11z"></path><path d="M8 11h8v2H8zM8 15h8v2H8zM8 7h3v2H8z"></path>',
   block: '<path d="M12 2C6.49 2 2 6.49 2 12s4.49 10 10 10 10-4.49 10-10S17.51 2 12 2M4 12c0-1.85.63-3.54 1.69-4.9l11.21 11.21A7.95 7.95 0 0 1 12 20c-4.41 0-8-3.59-8-8m14.31 4.9L7.1 5.69A7.95 7.95 0 0 1 12 4c4.41 0 8 3.59 8 8 0 1.85-.63 3.54-1.69 4.9"></path>',
 };
 const ico = (n, size, fill) => `<svg aria-hidden="true" width="${size}" height="${size}" viewBox="0 0 24 24" fill="${fill}" style="flex-shrink: 0">${P[n]}</svg>`;
@@ -159,7 +170,7 @@ const radioCard = (T, o) => `<button role="radio" aria-checked="${!!o.sel}" styl
 const note = (T, icon, t) => `<div style="display: flex; align-items: flex-start; gap: 10px; font-size: 13px; line-height: 1.45; color: ${T.muted}">${ico(icon, 18, T.muted)}<span>${t}</span></div>`;
 const infoCard = (T, icon, title, text) => `<div style="background: ${T.card}; border-radius: 20px; padding: 14px 16px; display: flex; align-items: flex-start; gap: 12px">${tile40(T, icon)}<div style="display: flex; flex-direction: column; gap: 4px"><span style="font-size: 15px; font-weight: 600; color: ${T.strong}">${title}</span><span style="font-size: 14px; line-height: 1.45; color: ${T.text}">${text}</span></div></div>`;
 const photo = (pos, radius = 0) => `<img src="${PHOTO}" alt="${ALT}" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: ${pos}${radius ? `; border-radius: ${radius}px` : ''}"></img>`;
-const logoImg = (src, h, extra = '') => `<img src="${src}" alt="Faro" style="display: block; height: ${h}px; width: auto; align-self: flex-start; ${extra}"></img>`;
+const logoImg = (src, h, extra = '') => `<svg role="img" aria-label="Faro" width="${Math.round((h * 770) / 290)}" height="${h}" viewBox="0 0 770 290" fill="none" style="display: block; flex-shrink: 0; align-self: flex-start; ${extra}">${src}</svg>`;
 const mark = (o, size = 44) => `<span style="position: absolute; top: ${o}px; left: ${o}px; width: ${size}px; height: ${size}px; border-radius: 999px; background: #FFFFFF; display: flex; align-items: center; justify-content: center">${focinho(Math.round(size * 0.6), '#84C32E', '', 'Faro')}</span>`;
 // Painel de marca navy com o focinho gigante (login, fluxos e páginas públicas sem foto).
 const brandPanel = (w, headline, sub, o = {}) => `<div style="position: relative; ${w ? `width: ${w}px; flex-shrink: 0` : `height: ${o.h}px; flex-shrink: 0`}; background: ${NAVY[700]}; overflow: hidden; padding: ${o.pad || '48px 56px 56px'}; box-sizing: border-box; display: flex; flex-direction: column">
@@ -169,7 +180,7 @@ ${headline ? `<div style="flex-grow: 1"></div><span style="position: relative; $
 </div>`;
 
 // ---------- cascas ----------
-const TUTOR_NAV = [['Início', 'home', 'painel'], ['Pets', 'paw', 'pet'], ['Scans', 'scan', 'scans'], ['Conta', 'user', null]];
+const TUTOR_NAV = [['Início', 'home', 'painel'], ['Pets', 'paw', 'pets'], ['Scans', 'scan', 'scans'], ['Conta', 'user', 'conta']];
 const navItems = (S, T, active) => TUTOR_NAV.map(([t, i, base]) => ({ t, i, on: t === active, href: base ? fname(base, S, T) : '#' }));
 const bottomNav = (S, T, active) => `<nav aria-label="Navegação principal" style="margin: 12px 16px 16px; background: ${T.card}; border-radius: 999px; padding: 6px; box-shadow: ${T.shadow}; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; flex-shrink: 0">${navItems(S, T, active).map((n) => `<a href="${n.href}"${n.on ? ' aria-current="page"' : ''} style="height: 52px; border-radius: 999px; ${n.on ? `background: ${T.selBg}; color: ${T.selFg}` : `color: ${T.muted}`}; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; text-decoration: none; font-size: 11px; font-weight: 600">${ico(n.i, 20, n.on ? T.selFg : T.muted)}${n.t}</a>`).join('')}</nav>`;
 const rail = (S, T, active) => `<nav aria-label="Navegação principal" style="width: 88px; flex-shrink: 0; background: ${T.card}; padding: 22px 0; display: flex; flex-direction: column; align-items: center; gap: 8px">

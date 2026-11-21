@@ -255,7 +255,7 @@ Colunas sensíveis (`activation_pin_hash`, `ip_hash`, `location_token_hash`) nã
 Tutora **Ana**, que no seed é o **tutor A** já existente (`tutor.a@faro.test`, criado pela `001` e
 completado pela `004`; esta spec não cria nem altera usuários), pets **Paçoca** (cão, tag `7K3M-Q9XA-C` ativa desde 02 nov) e
 **Mel** (gata, sem tag); lote `lote-teste` com 6 códigos em situações variadas
-(`2FX8-CN73-F` disponível, `YRDZ-0QAZ-D` bloqueado, `PYC6-D7XD-3` anulado); 3 scans do Paçoca. Os
+(`2FX8-CN73-F` disponível, `T6EV-BXPY-W` bloqueado, `PYC6-D7XD-3` anulado); 3 scans do Paçoca. Os
 PINs do seed são conhecidos e servem só para desenvolvimento. **O seed nunca roda em produção.**
 **Fonte única dos códigos de exemplo**: os códigos acima são ilustrativos. A tarefa de seed gera os
 seis códigos com o módulo de código e grava o resultado em `e2e/fixtures/seed-codes.json`

@@ -409,8 +409,8 @@
 - [ ] T080 [US7] [FE] Tela "Detalhe do código" conforme `V2-admin-codigo*.dc.html`: vínculo, scans,
   histórico, ações com confirmação, exibição única do PIN novo. **Feito quando**: teste cobre cada ação.
 - [ ] T081 [P] [US7] [FE] Tela "Fila": scans de tags não vinculadas, pedidos de 2ª via, tags
-  travadas. Seguir a casca do admin e os componentes de lista. **Feito quando**: teste de componente.
-- [ ] T082 [P] [US7] [FE] Tela "Auditoria": lista filtrável por evento e por código.
+  travadas, conforme `V2-admin-fila*.dc.html` (três seções, filtro por chips; no celular, um cartão por linha). **Feito quando**: teste de componente.
+- [ ] T082 [P] [US7] [FE] Tela "Auditoria" conforme `V2-admin-auditoria*.dc.html`: lista filtrável por evento e por código, com "Carregar mais".
   **Feito quando**: teste de componente.
 - [ ] T083 [US7] [QA] `e2e/admin.spec.ts`: criar lote, baixar o pacote, bloquear um código e
   conferir "tag não encontrada" na página pública, reemitir PIN, encerrar vínculo; tutor comum não

@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Dados pessoais · celular</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com"></link>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"></link>
+<style>
+body{margin:0}
+a{color:#B8C0E2}a:hover{color:#F3F5FC}
+</style>
+</helmet>
+<div style="position: relative; width: 390px; min-height: 844px; box-sizing: border-box; background: #0B0F2A; font-family: Inter, system-ui, sans-serif; color: #F3F5FC; display: flex; flex-direction: column; overflow: hidden">
+<div style="padding: 12px 16px 0; flex-shrink: 0"><div style="display: flex; align-items: center; gap: 12px; min-height: 48px"><a href="V2-conta-escuro.dc.html" aria-label="Voltar" style="position: relative; width: 44px; height: 44px; border-radius: 999px; border: none; background: #161C4A; display: flex; align-items: center; justify-content: center; padding: 0; flex-shrink: 0; text-decoration: none"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="#F3F5FC" style="flex-shrink: 0"><path d="M14.29 6.29 8.59 12l5.7 5.71 1.42-1.42-4.3-4.29 4.3-4.29z"></path></svg></a><h1 style="margin: 0; flex-grow: 1; font-family: 'Outfit', Inter, system-ui, sans-serif; font-size: 19px; font-weight: 600; color: #F3F5FC">Dados pessoais</h1></div></div>
+<div style="flex-grow: 1; padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; flex-direction: column; gap: 6px"><label for="cdnome" style="font-size: 14px; font-weight: 600; color: #F3F5FC">Nome</label><div style="position: relative"><input id="cdnome" type="text" value="Ana Souza" style="height: 54px; width: 100%; box-sizing: border-box; border-radius: 12px; border: 1.5px solid #7C87C4; background: #161C4A; padding: 0 16px 0 16px; font-family: Inter, system-ui, sans-serif; font-size: 16px; color: #F3F5FC"></input></div></div><div style="display: flex; flex-direction: column; gap: 6px"><label for="cdemail" style="font-size: 14px; font-weight: 600; color: #F3F5FC">E-mail</label><input id="cdemail" type="email" value="ana@email.com" readonly style="height: 54px; width: 100%; box-sizing: border-box; border-radius: 12px; border: 1.5px solid #2B3470; background: #1F2760; padding: 0 16px; font-family: Inter, system-ui, sans-serif; font-size: 16px; color: #A6ADD0"></input><span style="display: flex; align-items: center; gap: 6px; font-size: 13px; color: #A6ADD0"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="#A6ADD0" style="flex-shrink: 0"><path d="M6 22h12c1.1 0 2-.9 2-2v-9c0-1.1-.9-2-2-2h-1V7c0-2.76-2.24-5-5-5S7 4.24 7 7v2H6c-1.1 0-2 .9-2 2v9c0 1.1.9 2 2 2M9 7c0-1.65 1.35-3 3-3s3 1.35 3 3v2H9zm-3 4h12v9H6z"></path></svg>O e-mail não pode ser alterado por aqui.</span></div><div style="flex-grow: 1; min-height: 4px"></div>
+</div>
+<div style="padding: 0 16px 20px; display: flex; flex-direction: column; gap: 8px; flex-shrink: 0"><button disabled style="height: 56px; width: 100%; padding: 0 20px; box-sizing: border-box; border-radius: 999px; display: flex; align-items: center; justify-content: center; gap: 10px; font-family: 'Outfit', Inter, system-ui, sans-serif; font-size: 18px; font-weight: 600; text-decoration: none; flex-shrink: 0; background: #1F2760; color: #A6ADD0; border: none"><span>Salvar alterações</span></button></div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

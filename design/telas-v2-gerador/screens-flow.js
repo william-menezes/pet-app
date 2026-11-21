@@ -10,6 +10,8 @@ const SIDE = ['O caminho<br>de volta<br>para casa.', 'A tag com QR Code que ajud
 const summary = (S, sub, back) => `<div style="background: ${T.card}; border-radius: 20px; padding: 12px 14px; display: flex; align-items: center; gap: 12px">${avatar(T, 48)}<span style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0"><span style="font-size: 15px; font-weight: 600">Paçoca</span><span style="font-size: 13px; color: ${T.muted}">${sub}</span></span>${textLink(T, 'Trocar', to(back, S))}</div>`;
 const lockNote = () => note(T, 'lock', 'Por segurança, a tag é travada por alguns minutos depois de várias tentativas erradas.');
 const support = () => small(`Perdeu o cartão? ${textLink(T, 'Fale com o suporte')}`);
+// Opção de liberar o WhatsApp na ativação: começa marcada, com o aviso logo abaixo (decisão de 2026-11-21).
+const whatsOpt = () => `<div style="background: ${T.card}; border-radius: 20px; padding: 4px 14px 14px; display: flex; flex-direction: column">${checkbox(T, 'wopt', 'Quero que quem achar o Paçoca possa me chamar no WhatsApp', true)}<span style="padding-left: 30px; font-size: 13px; line-height: 1.45; color: ${T.muted}">Seu WhatsApp vai aparecer na página do Paçoca para quem escanear a tag. Você pode desligar depois em O que estranhos veem.</span></div>`;
 const codeChip = () => `<div style="display: flex"><span style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px 0 16px; border-radius: 999px; background: ${T.card}; ${FD}; font-size: 16px; font-weight: 600; letter-spacing: 0.02em">${ico('qr', 18, T.strong)}7K3M-Q9XA-C${ico('check', 18, T.okFg)}</span></div>`;
 
 // ----- Boas-vindas -----
@@ -32,7 +34,7 @@ const welcome = (S, h) => {
 const loginForm = (S, k, hs) => `${h1(T, 'Que bom<br>te ver de novo.', hs, 'line-height: 1.02')}
 ${para(T, 'Entre para cuidar das tags dos seus pets.', 16, 12)}
 <div style="margin-top: 22px">${stack([field(T, `${k}email`, 'E-mail', { type: 'email', value: 'ana@email.com' }), field(T, `${k}senha`, 'Senha', { type: 'password', value: 'senhasegura', trail: eyeBtn(T) })])}</div>
-<div style="margin-top: 8px; display: flex; align-items: center; justify-content: space-between; gap: 12px">${checkbox(T, `${k}manter`, 'Manter conectado')}${textLink(T, 'Esqueci a senha')}</div>
+<div style="margin-top: 8px; display: flex; align-items: center; justify-content: space-between; gap: 12px">${checkbox(T, `${k}manter`, 'Manter conectado')}${textLink(T, 'Esqueci a senha', to('recuperar-senha', S))}</div>
 ${gap(12)}${btn(T, 'Entrar', { fs: 18, href: to('painel', S) })}${gap(16)}${orLine()}${gap(16)}${btn(T, 'Entrar com o Google', { kind: 'outline', icon: 'google' })}`;
 const signupLine = (S) => small(`Ainda não tem conta? ${textLink(T, 'Criar conta', to('criar-conta', S))}`);
 const login = (S, h) => {
@@ -62,19 +64,19 @@ module.exports = [
       title: 'Criar conta', h, bar: 'back', barHref: to('boas-vindas', S), side: ['Só o<br>necessário.', 'Nome, e-mail e celular. Nada de CPF ou endereço para ativar a sua tag.'],
       body: `${head(S, 'Crie sua conta', 'Só o necessário para quem encontrar seu pet falar com você.')}
 ${stack([field(T, 'ccnome', 'Nome', { value: 'Ana Souza' }), field(T, 'ccemail', 'E-mail', { type: 'email', value: 'ana@email.com' }), field(T, 'cccel', 'Celular', { type: 'tel', value: '(11) 98765-4421', help: 'Vamos confirmar este número por SMS.' }), field(T, 'ccsenha', 'Senha', { type: 'password', ph: 'Pelo menos 8 caracteres', trail: eyeBtn(T) })])}
-${checkbox(T, 'cctermos', `Li e aceito os ${textLink(T, 'Termos')} e a ${textLink(T, 'Política de privacidade')}.`)}`,
-      footer: [btn(T, 'Criar conta', { fs: 18, href: to('confirmar-celular', S) }), `<div style="width: 100%">${orLine()}</div>`, btn(T, 'Continuar com o Google', { kind: 'outline', icon: 'google' }), small(`Já tem conta? ${textLink(T, 'Entrar', to('entrar', S))}`)],
+${checkbox(T, 'cctermos', `Li e aceito os ${textLink(T, 'Termos', to('legal-termos', S))} e a ${textLink(T, 'Política de privacidade', to('legal-termos', S))}.`)}`,
+      footer: [btn(T, 'Criar conta', { fs: 18, href: to('confirmar-email', S) }), `<div style="width: 100%">${orLine()}</div>`, btn(T, 'Continuar com o Google', { kind: 'outline', icon: 'google' }), small(`Já tem conta? ${textLink(T, 'Entrar', to('entrar', S))}`)],
     }),
   },
   {
     base: 'confirmar-celular', name: 'Confirmar celular', group: 'conta', H: { m: 844, t: 1024, d: 900 },
     fn: (S, T_, h) => flow(S, {
-      title: 'Confirmar celular', h, bar: 'back', barHref: to('criar-conta', S), side: ['Um número<br>que atende.', 'É por ele que quem achou o seu pet fala com você. Por isso confirmamos antes.'],
+      title: 'Confirmar celular', h, bar: 'back', barHref: to('informar-celular', S), side: ['Um número<br>que atende.', 'É por ele que quem achou o seu pet fala com você. Por isso confirmamos antes.'],
       body: `${head(S, 'Confirme seu celular', 'Enviamos um código de 6 dígitos por SMS para (11) 98765-4421. É esse número que aparece para quem encontrar seu pet.')}
 ${cells(T, ['4', '8', '2', '9'], 4, 'Dígito')}
 <div style="display: flex; align-items: center; gap: 8px; font-size: 14px; color: ${T.muted}">${ico('clock', 18, T.muted)}Reenviar em 0:42</div>
 ${S.k === 'm' ? grow(8) : ''}`,
-      footer: [btn(T, 'Confirmar', { fs: 18, disabled: true }), small(`Número errado? ${textLink(T, 'Corrigir', to('criar-conta', S))}`)],
+      footer: [btn(T, 'Confirmar', { fs: 18, disabled: true }), small(`Número errado? ${textLink(T, 'Corrigir', to('informar-celular', S))}`)],
     }),
   },
   {
@@ -96,6 +98,7 @@ ${S.k === 'm' ? grow(4) : ''}`,
       body: `${head(S, 'Agora, o PIN do cartão', 'São 6 caracteres impressos no cartão que veio com a tag. O PIN vale uma vez só.')}
 ${cells(T, ['K', '4', '7', 'Q', '9', 'M'], -1, 'Caractere do PIN')}
 ${summary(S, 'Tag 7K3M-Q9XA-C · lida pelo QR', 'ativacao-pet')}
+${whatsOpt()}
 ${lockNote()}
 ${S.k === 'm' ? grow(4) : ''}`,
       footer: [btn(T, 'Ativar tag', { fs: 18, href: to('ativacao-sucesso', S) }), support()],
@@ -136,6 +139,7 @@ ${S.k === 'm' ? grow(4) : ''}`,
       body: `${head(S, 'Digite o PIN do cartão', 'São 6 caracteres e vêm no cartão dentro da embalagem. O PIN vale uma vez só.')}
 ${cells(T, ['K', '4', '7'], 3, 'Caractere do PIN')}
 ${summary(S, 'Tag 7K3M-Q9XA-C', 'vincular-codigo')}
+${whatsOpt()}
 ${lockNote()}
 ${S.k === 'm' ? grow(4) : ''}`,
       footer: [btn(T, 'Ativar tag', { fs: 18, disabled: true }), support()],

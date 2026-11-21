@@ -1,6 +1,6 @@
 // Gera todas as telas do "MVP v2", o manifesto para o canvas e a checagem de contraste.
 const { fs, path, OUT, L, D, SZ, NAVY, fname } = require('./lib');
-const screens = [...require('./screens-public'), ...require('./screens-flow'), ...require('./screens-app'), ...require('./screens-admin')];
+const screens = [...require('./screens-public'), ...require('./screens-flow'), ...require('./screens-app'), ...require('./screens-admin'), ...require('./screens-extra')];
 
 const manifest = [];
 for (const s of screens) {

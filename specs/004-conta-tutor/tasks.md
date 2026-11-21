@@ -59,10 +59,12 @@ constituição exige revisão de segurança e privacidade.
     `supabase test db`, `deno test supabase/functions/`. Tudo verde antes de seguir.
 13. **Git**: trabalhe na branch `004-conta-tutor`, criada a partir de `develop`. **Nunca** commite
     em `homolog` ou `master`. Mensagens no padrão do repositório (`:sparkles: feat: …`).
-14. **Telas sem referência aprovada** (confirmar e-mail, aceite, informar celular, recuperar
-    senha, nova senha, Conta, páginas legais): siga o padrão da casca de fluxo ou da casca do app e
-    os componentes de `DESIGN.md`. Não crie padrão visual novo. Liste-as no relatório final como
-    "precisam de passada de design".
+14. **Telas de referência**: todas as telas desta spec têm desenho em `design/telas-v2/` desde
+    2026-11-21 (tabela em `contracts/frontend-services.contract.md` §4). As de confirmar e-mail,
+    aceite, informar celular, recuperar senha, nova senha, Conta e a página legal foram desenhadas
+    a pedido do William e ainda não foram revisadas por ele uma a uma. Siga o desenho; onde ele
+    conflitar com o contrato, vale o contrato, e o conflito vai para o relatório final. Não crie
+    padrão visual novo.
 
 ## Format: `- [ ] ID [P?] [Story] [BE|FE|QA] Descrição`
 
@@ -339,7 +341,7 @@ verificar sessão de tutor com aceite registrado; antes de confirmar, o login é
   e implementar o estado **de espera** (URL sem `token_hash`): e-mail do estado do roteador,
   reenvio com contagem de 60 s, campo de e-mail quando não há estado, mensagem uniforme depois do
   reenvio, links "E-mail errado? Voltar" e "Já confirmei. Entrar", e avanço automático por
-  `PostAuthNavigator.go()` se a sessão aparecer. Sem tela aprovada: padrão da casca de fluxo
+  `PostAuthNavigator.go()` se a sessão aparecer. Tela: `V2-confirmar-email*.dc.html`
   (regra 14). **Feito quando**: o teste cobre a contagem (relógio falso), o reenvio chamando
   `resendConfirmation`, a mensagem `confirm-email-resent-notice` e o modo sem estado.
 - [ ] T036 [US1] [FE] No mesmo componente, implementar o estado **do link** (URL com
@@ -464,7 +466,7 @@ e ver `phone_is_confirmed` verdadeiro; repetir com código errado, vencido, reen
   `phone-entry.html`, `phone-entry.spec.ts`) e trocar o `ShellFallback` da rota `/auth/celular`
   por ela. Só o modo **primeira confirmação** (o modo troca é a T086): campo pré-preenchido com o
   número pendente, "Enviar código por SMS", "Agora não" ⇒ `PostAuthNavigator.go({ skipPhone: true })`,
-  erros de `start` com os textos de `contracts/phone-verify-start.edge.md`. Sem tela aprovada
+  erros de `start` com os textos de `contracts/phone-verify-start.edge.md`. Tela: `V2-informar-celular*.dc.html`
   (regra 14). **Feito quando**: o teste cobre o pré-preenchimento, o envio com sucesso (navega
   para `/auth/confirmar-celular` preservando `returnUrl`), `invalid_phone`, `rate_limited` e o
   "Agora não".
@@ -518,7 +520,7 @@ depois de aceitar, e é convidada a confirmar o celular, podendo adiar.
   `accept-terms.html`, `accept-terms.spec.ts`) e trocar o `ShellFallback` da rota `/auth/termos`.
   Caixa de aceite com os links para `/legal/termos` e `/legal/privacidade`; "Aceitar e continuar"
   desabilitado sem a caixa ⇒ `AccountService.acceptTerms()` ⇒ `PostAuthNavigator.go()`; botão de
-  texto "Sair" ⇒ `AccountService.logout()`. Sem tela aprovada (regra 14). **Feito quando**: o
+  texto "Sair" ⇒ `AccountService.logout()`. Tela de referência na tabela do contrato (regra 14). **Feito quando**: o
   teste cobre o botão desabilitado, o aceite com navegação, a falha de rede (mensagem e botão
   reabilitado) e o "Sair".
 - [ ] T063 [US3] [FE] Conferir `src/app/features/auth/callback/oauth-callback.ts`: sucesso usa
@@ -569,13 +571,13 @@ senha pelo link; a antiga deixa de valer.
 - [ ] T069 [US4] [FE] Criar a tela `src/app/features/auth/forgot-password/` (3 arquivos) e
   registrar `/auth/recuperar-senha` com `anonGuard`. Campo de e-mail, "Enviar link", estado
   `forgot-password-sent` com o texto fixo do contrato, "Voltar para entrar", botão desabilitado
-  por 60 s depois de cada envio. Sem tela aprovada (regra 14). **Feito quando**: o teste cobre a
+  por 60 s depois de cada envio. Tela de referência na tabela do contrato (regra 14). **Feito quando**: o teste cobre a
   validação de formato, a mesma tela de confirmação para qualquer resposta e a contagem.
 - [ ] T070 [US4] [FE] Criar a tela `src/app/features/auth/reset-password/` (3 arquivos) e
   registrar `/auth/nova-senha` **sem guard**. Sem `token_hash` ⇒ estado `reset-password-invalid`;
   campo "Nova senha" com mostrar; "Salvar nova senha" ⇒ `resetPassword`; sucesso ⇒
   `/auth/login?senha=alterada`; `invalid_link` ⇒ "Pedir novo link". Nenhuma chamada ao carregar.
-  Sem tela aprovada (regra 14). **Feito quando**: o teste prova que nada é chamado na criação e
+  Tela de referência na tabela do contrato (regra 14). **Feito quando**: o teste prova que nada é chamado na criação e
   cobre senha de 7 caracteres, sucesso e link inválido.
 - [ ] T071 [US4] [FE] Em `src/app/features/auth/login/`: o link "Esqueci a senha" passa a navegar
   para `/auth/recuperar-senha` (sem o `aria-label` "(em breve)"), e `?senha=alterada` mostra um
@@ -641,7 +643,7 @@ os dados pessoais sumiram e que a trilha de auditoria ficou sem identificação.
   (`data: { hub: true }`) e criar `src/app/features/account/account-home/` (3 arquivos): cabeçalho
   com nome e e-mail, as cinco linhas e o botão "Sair" (§4 do contrato, "Conta (lista)"). Ligar em
   `src/app/app.routes.ts` como filho de `app`: `{ path: 'conta', loadChildren: … }` **antes** do
-  `**` do `ShellFallback`. Sem tela aprovada (regra 14); tema do app (claro e escuro).
+  `**` do `ShellFallback`. Tela de referência na tabela do contrato (regra 14); tema do app (claro e escuro).
   **Feito quando**: o teste confere os `data-testid` `account-*`, o selo do celular nos dois
   estados e que "Sair" chama `AccountService.logout()`; no navegador, `/app/conta` abre com o item
   "Conta" ativo na navegação.

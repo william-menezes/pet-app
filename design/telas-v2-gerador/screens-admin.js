@@ -2,7 +2,7 @@
 const { FD, FB, L: T, LOGO, pick, fname, ico, page, h1, h2, para, btn, textLink, badge, chip, chipRow, tile40, row, group, infoCard, logoImg } = require('./lib');
 
 const to = (b, S) => fname(b, S, T);
-const NAV = [['Lotes', 'list', 'admin-lotes'], ['Códigos', 'qr', 'admin-codigos'], ['Fila de scans', 'scan', null], ['Auditoria', 'clock', null]];
+const NAV = [['Lotes', 'list', 'admin-lotes'], ['Códigos', 'qr', 'admin-codigos'], ['Fila de scans', 'scan', 'admin-fila'], ['Auditoria', 'clock', 'admin-auditoria']];
 const adminBadge = () => `<span style="display: inline-flex; align-items: center; height: 24px; padding: 0 10px; border-radius: 999px; background: ${T.selBg}; color: ${T.selFg}; font-size: 12px; font-weight: 600">Admin</span>`;
 const shell = (S, h, title, active, body) => {
   const items = NAV.map(([t, i, b]) => ({ t, i, on: t === active, href: b ? to(b, S) : '#' }));
@@ -50,7 +50,7 @@ ${infoCard(T, 'info', 'O pacote de um lote aparece uma vez só', 'O PDF das etiq
 };
 
 // ----- Códigos -----
-const ROWS = [['7K3M-Q9XA-C', 'Ativo', 'Paçoca · Ana S.', 'Hoje, 14:32'], ['2FX8-CN73-F', 'Disponível', '—', '—'], ['03RZ-68EH-W', 'Ativo', 'Luna · Bruno M.', '15 nov'], ['YRDZ-0QAZ-D', 'Bloqueado', '—', '12 nov'], ['PYC6-D7XD-3', 'Anulado', 'Thor · Carla R.', '08 nov'], ['9QS4-P7AM-4', 'Disponível', '—', '—']];
+const ROWS = [['7K3M-Q9XA-C', 'Ativo', 'Paçoca · Ana S.', 'Hoje, 14:32'], ['2FX8-CN73-F', 'Disponível', '—', '—'], ['03RZ-68EH-W', 'Ativo', 'Luna · Bruno M.', '15 nov'], ['T6EV-BXPY-W', 'Bloqueado', '—', '12 nov'], ['PYC6-D7XD-3', 'Anulado', 'Thor · Carla R.', '08 nov'], ['TJ27-9DDB-B', 'Disponível', '—', '—']];
 const codigos = (S, h) => {
   const search = `<div style="position: relative; flex-grow: 1; min-width: 0"><span style="position: absolute; left: 16px; top: 15px">${ico('search', 20, T.muted)}</span><input type="search" aria-label="Buscar código, pet ou tutor" placeholder="Buscar código, pet ou tutor" style="height: 50px; width: 100%; box-sizing: border-box; border-radius: 999px; border: 1.5px solid ${T.control}; background: ${T.card}; padding: 0 18px 0 46px; ${FB}; font-size: 16px; color: ${T.strong}"></input></div>`;
   const filters = `<div style="display: flex; gap: 8px; overflow-x: auto; flex-shrink: 0">${['Todos', 'Disponíveis', 'Ativos', 'Bloqueados', 'Anulados'].map((t, i) => chip(T, t, i === 0)).join('')}</div>`;
@@ -86,8 +86,64 @@ const detalhe = (S, h) => {
 ${pick(S, `${vinculo}${acoes}${scans}${hist}`, `${vinculo}${acoes}${scans}${hist}`, `<div style="display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 20px">${colS(20, vinculo + scans + hist)}${colS(20, acoes)}</div>`)}`);
 };
 
+// ----- Fila e Auditoria (desenhadas em 2026-11-21) -----
+// Lista genérica: tabela no tablet e no desktop; no celular, um cartão por linha.
+const listOrTable = (S, cols, rows) => (S.k === 'm'
+  ? `<div style="display: flex; flex-direction: column; gap: 10px; flex-shrink: 0">${rows.map((r) => `<${r.href ? `a href="${r.href}"` : 'div'} style="background: ${T.card}; border-radius: 20px; padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; text-decoration: none; color: ${T.strong}"><div style="display: flex; align-items: center; justify-content: space-between; gap: 10px">${r.cells[0]}${r.cells[1]}</div>${r.cells.slice(2).map((c, i) => `<span style="font-size: ${i === 0 ? 14 : 13}px; color: ${i === 0 ? T.text : T.muted}">${c}</span>`).join('')}</${r.href ? 'a' : 'div'}>`).join('')}</div>`
+  : table(cols, rows));
+const section = (title, sub, inner) => `<div style="display: flex; flex-direction: column; gap: 10px; flex-shrink: 0"><div>${h2(T, title, 20)}${para(T, sub, 14, 4)}</div>${inner}</div>`;
+const textBtn = (label) => `<a href="#" style="font-size: 14px; font-weight: 600; text-underline-offset: 3px; white-space: nowrap">${label}</a>`;
+const searchBox = (label) => `<div style="position: relative; flex-grow: 1; min-width: 0"><span style="position: absolute; left: 16px; top: 15px">${ico('search', 20, T.muted)}</span><input type="search" aria-label="${label}" placeholder="${label}" style="height: 50px; width: 100%; box-sizing: border-box; border-radius: 999px; border: 1.5px solid ${T.control}; background: ${T.card}; padding: 0 18px 0 46px; ${FB}; font-size: 16px; color: ${T.strong}"></input></div>`;
+
+const fila = (S, h) => {
+  const href = to('admin-codigo', S);
+  const filters = `<div style="display: flex; gap: 8px; overflow-x: auto; flex-shrink: 0">${['Tudo · 6', 'Scans sem vínculo · 3', '2ª via · 2', 'Travadas · 1'].map((t, i) => chip(T, t, i === 0)).join('')}</div>`;
+  const scans = listOrTable(S, [['Código', '1.3fr'], ['Situação', '0.9fr'], ['Quando', '1fr'], ['Local', '1.6fr']], [
+    { href, cells: [code('T6EV-BXPY-W'), badge(T, 'Bloqueado', 'amber'), 'Hoje, 10:12', muted('São Paulo, SP · aproximada')] },
+    { href, cells: [code('PYC6-D7XD-3'), badge(T, 'Anulado', 'danger'), 'Ontem, 19:40', muted('Campinas, SP · aproximada')] },
+    { href, cells: [code('2FX8-CN73-F'), badge(T, 'Disponível', 'neu'), '18 nov, 08:03', muted('Santos, SP · aproximada')] },
+  ]);
+  const segunda = listOrTable(S, [['Código', '1.3fr'], ['Tipo', '0.7fr'], ['Pet e tutor', '1.4fr'], ['Pedido em', '0.8fr'], ['', '1.2fr']], [
+    { cells: [code('03RZ-68EH-W'), badge(T, 'Dano', 'neu'), 'Luna · Bruno M.', muted('19 nov'), textBtn('Marcar como resolvido')] },
+    { cells: [code('PYC6-D7XD-3'), badge(T, 'Perda', 'danger'), 'Thor · Carla R.', muted('08 nov'), textBtn('Marcar como resolvido')] },
+  ]);
+  const travadas = listOrTable(S, [['Código', '1.3fr'], ['Situação', '0.9fr'], ['Motivo', '1.6fr'], ['Destrava em', '1.2fr']], [
+    { href, cells: [code('TJ27-9DDB-B'), badge(T, 'Travada', 'danger'), '20 erros de PIN em 24 h', muted('amanhã, 09:15')] },
+  ]);
+  return shell(S, h, 'Admin: fila', 'Fila de scans', `${titleBlock(S, 'Fila', 'O que pede atenção: scans de tags sem dono, pedidos de 2ª via e tags travadas.')}
+${filters}
+${section('Scans de tags sem vínculo', 'Alguém escaneou uma tag bloqueada, anulada ou ainda não ativada. Pode ser um pet perdido.', scans)}
+${section('Pedidos de 2ª via', 'Dano: reimprima o mesmo código. Perda: o código antigo já foi anulado; envie uma tag nova.', segunda)}
+${section('Tags travadas', 'Muitas tentativas de PIN erradas. A trava sai sozinha no horário indicado.', travadas)}`);
+};
+
+const auditoria = (S, h) => {
+  const filters = `<div style="display: flex; gap: 8px; overflow-x: auto; flex-shrink: 0">${['Todos', 'Ativação', 'PIN', 'Lotes', 'Vínculos', 'Situação', 'Conta'].map((t, i) => chip(T, t, i === 0)).join('')}</div>`;
+  const ev = (t, raw) => `<span style="display: flex; flex-direction: column; gap: 1px"><span style="font-weight: 600">${t}</span><span style="font-size: 12px; color: ${T.muted}">${raw}</span></span>`;
+  const R = [
+    ['Hoje, 14:32', ev('Scan registrado', 'scan_recorded'), code('7K3M-Q9XA-C'), 'visitante', 'localização aproximada'],
+    ['Hoje, 11:05', ev('PIN errado', 'activation_failed'), code('2FX8-CN73-F'), 'bruno@email.com', 'tentativa 2 de 5'],
+    ['20 nov, 16:20', ev('PIN reemitido', 'pin_reissued'), code('03RZ-68EH-W'), 'admin', 'cartão perdido'],
+    ['19 nov, 09:41', ev('Código bloqueado', 'status_changed'), code('T6EV-BXPY-W'), 'admin', 'disponível → bloqueado'],
+    ['17 nov, 10:00', ev('Lote criado', 'batch_created'), code('lote-001'), 'admin', '54 códigos'],
+    ['02 nov, 18:40', ev('Tag ativada', 'tag_activated'), code('7K3M-Q9XA-C'), 'ana@email.com', 'pet Paçoca'],
+  ];
+  const list = S.k === 'm'
+    ? `<div style="display: flex; flex-direction: column; gap: 10px; flex-shrink: 0">${R.map(([when, e, c, who, det]) => `<div style="background: ${T.card}; border-radius: 20px; padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; font-size: 14px; color: ${T.strong}"><div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 10px">${e}<span style="font-size: 13px; color: ${T.muted}; white-space: nowrap">${when}</span></div>${c}<span style="font-size: 13px; color: ${T.muted}">${who} · ${det}</span></div>`).join('')}</div>`
+    : table(pick(S, [], [['Quando', '0.9fr'], ['Evento', '1.2fr'], ['Código', '1.2fr'], ['Quem', '1.2fr']], [['Quando', '0.9fr'], ['Evento', '1.2fr'], ['Código ou lote', '1.1fr'], ['Quem', '1.2fr'], ['Detalhe', '1.4fr']]),
+      R.map(([when, e, c, who, det]) => ({ cells: pick(S, [], [muted(when), e, c, who], [muted(when), e, c, who, muted(det)]) })));
+  return shell(S, h, 'Admin: auditoria', 'Auditoria', `${titleBlock(S, 'Auditoria', 'Tudo o que mexe com tags, PINs, vínculos e contas. Só leitura.')}
+<div style="display: flex; flex-shrink: 0">${searchBox('Buscar por código ou lote')}</div>
+${filters}
+${list}
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; flex-shrink: 0"><span style="font-size: 14px; color: ${T.muted}">Mostrando 6 de 128 eventos</span>${btn(T, 'Carregar mais', { kind: 'outline', h: 48, fs: 15, full: false })}</div>
+<div style="display: flex; align-items: flex-start; gap: 10px; font-size: 13px; line-height: 1.45; color: ${T.muted}">${ico('lock', 18, T.muted)}<span>A auditoria nunca guarda PIN, número de telefone nem endereço IP.</span></div>`);
+};
+
 module.exports = [
   { base: 'admin-lotes', name: 'Admin · lotes', group: 'admin', H: { m: 980, t: 1024, d: 900 }, fn: (S, T_, h) => lotes(S, h) },
   { base: 'admin-codigos', name: 'Admin · códigos', group: 'admin', H: { m: 1180, t: 1024, d: 900 }, fn: (S, T_, h) => codigos(S, h) },
   { base: 'admin-codigo', name: 'Admin · detalhe do código', group: 'admin', H: { m: 1560, t: 1500, d: 900 }, fn: (S, T_, h) => detalhe(S, h) },
+  { base: 'admin-fila', name: 'Admin · fila', group: 'admin', H: { m: 1640, t: 1320, d: 960 }, fn: (S, T_, h) => fila(S, h) },
+  { base: 'admin-auditoria', name: 'Admin · auditoria', group: 'admin', H: { m: 1420, t: 1024, d: 900 }, fn: (S, T_, h) => auditoria(S, h) },
 ];

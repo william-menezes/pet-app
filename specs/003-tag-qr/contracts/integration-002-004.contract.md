@@ -49,7 +49,7 @@ volta ao cadastro. As filhas de `app` e de `admin` já são `Client` (`app/**` e
 | Caminho | Tela | Referência | `data.hub` |
 |---|---|---|---|
 | `/app` | Painel | `V2-painel` | `true` |
-| `/app/pets` | Seus pets | **sem tela de referência**: a lista "Seus pets" do painel em página inteira, com "Adicionar pet" | `true` |
+| `/app/pets` | Seus pets | `V2-pets*.dc.html` (claro e escuro) | `true` |
 | `/app/pets/:petId` | Página do pet | `V2-pet` | — |
 | `/app/pets/:petId/editar` | Editar dados do pet | reutiliza os formulários de `/novo-pet` | — |
 | `/app/pets/:petId/visibilidade` | O que estranhos veem | `V2-visibilidade` | — |
@@ -67,8 +67,8 @@ volta ao cadastro. As filhas de `app` e de `admin` já são `Client` (`app/**` e
 | `/admin` | Lotes | `V2-admin-lotes` |
 | `/admin/codigos` | Códigos | `V2-admin-codigos` |
 | `/admin/codigos/:code` | Detalhe do código | `V2-admin-codigo` |
-| `/admin/fila` | Fila de scans de tags bloqueadas | sem tela de referência (lista simples) |
-| `/admin/auditoria` | Auditoria | sem tela de referência (lista simples) |
+| `/admin/fila` | Fila: scans de tags sem vínculo, pedidos de 2ª via e tags travadas | `V2-admin-fila*.dc.html` |
+| `/admin/auditoria` | Auditoria | `V2-admin-auditoria*.dc.html` |
 
 Os itens de `ADMIN_NAV` da `002` ficam como estão.
 

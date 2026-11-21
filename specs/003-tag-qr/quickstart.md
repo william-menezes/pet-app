@@ -33,14 +33,14 @@ Os códigos abaixo são ilustrativos. Os códigos reais do seed estão em `e2e/f
 | Tutora | `ana@email.com` (senha de desenvolvimento no `seed.sql`) |
 | Pets | Paçoca (cão, tag `7K3M-Q9XA-C` ativa) e Mel (gata, sem tag) |
 | Tag disponível | `2FX8-CN73-F` (PIN de desenvolvimento no `seed.sql`) |
-| Tag bloqueada / anulada | `YRDZ-0QAZ-D` / `PYC6-D7XD-3` |
+| Tag bloqueada / anulada | `T6EV-BXPY-W` / `PYC6-D7XD-3` |
 | Admin | `admin@faro.test` |
 
 ## Roteiro de conferência
 
 1. **Resgate**: abra `http://localhost:4000/7K3M-Q9XA-C` em janela anônima. Veja o Paçoca e o botão
    do WhatsApp. Desligue o JavaScript e recarregue: a página continua útil.
-2. **Mesma mensagem**: abra `/YRDZ-0QAZ-D`, `/PYC6-D7XD-3` e `/AAAA-AAAA-A`. As três são iguais.
+2. **Mesma mensagem**: abra `/T6EV-BXPY-W`, `/PYC6-D7XD-3` e `/AAAA-AAAA-A`. As três são iguais.
 3. **Normalização**: `/7k3m q9xa c` abre o Paçoca.
 4. **Scan**: depois do passo 1, confira `select count(*) from scan_events;` e o e-mail no Inbucket
    (`http://127.0.0.1:54324`). Recarregue: a contagem não muda.
