@@ -962,7 +962,7 @@ vestígio de PrimeNG.
     terceiro confere que, depois de carregar `/`, `getRegistrations()` está vazia.
   - **Feito quando**: `npx playwright test e2e/legacy-sw.spec.ts` passa.
 
-- [ ] T060 [US5] Gerar os ícones do app: `scripts/generate-icons.mjs`, `public/favicon.svg`, `public/favicon.ico`, `public/icons/`; apagar os seis PNGs antigos
+- [x] T060 [US5] Gerar os ícones do app: `scripts/generate-icons.mjs`, `public/favicon.svg`, `public/favicon.ico`, `public/icons/`; apagar os seis PNGs antigos
   - **Referência**: `research.md` §R13.
   - **Faça**: script de Node que usa `chromium` de `@playwright/test`:
     1. lê o atributo `d` do `<path>` de `public/logos/logo-compact.svg` (o `viewBox` do desenho
