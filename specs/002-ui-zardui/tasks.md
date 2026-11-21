@@ -142,7 +142,7 @@ fundo lima, sem uso no código); os arquivos `.css` vazios `src/app/app.css`,
 
 **Objetivo**: saber de onde se parte e tirar o que é roadmap.
 
-- [ ] T001 Conferir o ponto de partida e medir a linha de base; criar `specs/002-ui-zardui/execution-log.md`
+- [x] T001 Conferir o ponto de partida e medir a linha de base; criar `specs/002-ui-zardui/execution-log.md`
   - **Faça**:
     1. `git branch --show-current`. Se a resposta for `master`, `homolog` ou `develop`: **PARE e
        reporte**. A branch esperada é `002-ui-zardui` (ou a que o William deixou preparada).
@@ -160,7 +160,7 @@ fundo lima, sem uso no código); os arquivos `.css` vazios `src/app/app.css`,
   - **Feito quando**: o arquivo existe, os quatro comandos estão registrados como aprovados e a
     tabela de tamanhos está preenchida.
 
-- [ ] T002 [P] Remover os stubs do roadmap: `src/app/features/health-records/index.ts`, `src/app/features/reminders/index.ts`, `src/app/features/subscription/index.ts`, `src/app/shared/index.ts`
+- [x] T002 [P] Remover os stubs do roadmap: `src/app/features/health-records/index.ts`, `src/app/features/reminders/index.ts`, `src/app/features/subscription/index.ts`, `src/app/shared/index.ts`
   - **Faça**: apague os quatro arquivos (e as três pastas de feature, que ficam vazias). Em
     `src/app/models/index.ts`, troque o comentário para
     `// models/ — tipos e DTOs do domínio (Pet, TagCode, TagAssignment, RescueProfile, ScanEvent).`
