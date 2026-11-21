@@ -1,19 +1,21 @@
 import { cva, type VariantProps } from 'class-variance-authority';
 
-export const inputOtpVariants = cva('flex items-center has-disabled:opacity-50');
+/**
+ * Células de código (contrato §3.7): 6 posições em grade, até 368px. Cada célula tem 60px, Outfit
+ * 26px semibold e três bordas: vazia (1,5px, `border-input`), preenchida (1,5px, `border-foreground`)
+ * e ativa (2,5px, `border-foreground`). O foco visível é o da regra global.
+ */
+export const inputOtpVariants = cva('grid max-w-[368px] grid-cols-6 gap-2 has-disabled:opacity-50');
 
-export const inputOtpGroupVariants = cva(
-  'flex items-center rounded-lg has-aria-invalid:border-destructive [&>z-input-otp-slot:first-child_input]:rounded-s-lg [&>z-input-otp-slot:first-child_input]:border-s [&>z-input-otp-slot:last-child_input]:rounded-e-lg',
-);
+/** Os grupos não desenham nada: as células ficam direto na grade. */
+export const inputOtpGroupVariants = cva('contents');
 
 export const inputOtpSlotVariants = cva(
-  'relative flex items-center justify-center border-y border-e border-input bg-transparent text-center transition-all focus:z-10 disabled:cursor-not-allowed aria-invalid:border-destructive data-active:z-10 data-active:border-ring data-active:ring-3 data-active:ring-ring/50 data-active:aria-invalid:border-destructive dark:bg-input/30',
+  'relative h-[60px] w-full min-w-0 rounded-md border-[1.5px] border-input bg-card text-center font-display font-semibold text-foreground uppercase transition-colors duration-150 disabled:cursor-not-allowed aria-invalid:border-destructive data-filled:border-foreground data-active:border-[2.5px] data-active:border-foreground data-active:aria-invalid:border-destructive',
   {
     variants: {
       zSize: {
-        sm: 'size-7 text-xs',
-        default: 'size-8 text-sm',
-        lg: 'size-10 text-base',
+        default: 'text-[26px]',
       },
     },
     defaultVariants: {
@@ -25,9 +27,7 @@ export const inputOtpSlotVariants = cva(
 export const inputOtpSeparatorVariants = cva('flex items-center', {
   variants: {
     zSize: {
-      sm: "[&_svg:not([class*='size-'])]:size-3",
       default: "[&_svg:not([class*='size-'])]:size-4",
-      lg: "[&_svg:not([class*='size-'])]:size-5",
     },
   },
   defaultVariants: {
@@ -40,3 +40,6 @@ export type ZardInputOtpVariants = VariantProps<typeof inputOtpVariants>;
 export type ZardInputOtpSlotVariants = VariantProps<typeof inputOtpSlotVariants>;
 export type ZardInputOtpGroupVariants = VariantProps<typeof inputOtpGroupVariants>;
 export type ZardInputOtpSeparatorVariants = VariantProps<typeof inputOtpSeparatorVariants>;
+
+/** Modo de entrada: `numeric` (código por SMS) ou `alphanumeric` (PIN de ativação, `0-9` e `A-Z`). */
+export type ZardInputOtpMode = 'numeric' | 'alphanumeric';

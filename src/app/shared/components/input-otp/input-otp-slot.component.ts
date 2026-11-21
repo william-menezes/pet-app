@@ -30,13 +30,16 @@ import { inputOtpSlotVariants } from './input-otp.variants';
       [value]="char()"
       [attr.maxlength]="1"
       [attr.inputmode]="inputOtp?.inputMode() || 'numeric'"
-      [attr.autocomplete]="'one-time-code'"
+      [attr.autocomplete]="inputOtp?.autocomplete() ?? 'one-time-code'"
+      [attr.autocapitalize]="inputOtp?.autocapitalize() ?? null"
+      spellcheck="false"
       [attr.aria-label]="ariaLabel()"
       [attr.aria-invalid]="invalid() ? 'true' : null"
       [disabled]="inputOtp?.disabled()"
       [readonly]="inputOtp?.zReadonly()"
       [class]="classes()"
       [attr.data-active]="isActive() ? '' : null"
+      [attr.data-filled]="char() ? '' : null"
       (input)="onInput($event)"
       (focus)="onFocus($event)"
       (blur)="onBlur()"
@@ -90,7 +93,10 @@ export class ZardInputOtpSlotComponent {
 
   readonly ariaLabel = computed(() => {
     const total = this.inputOtp?.effectiveMaxLength() ?? this.zIndex() + 1;
-    return `One-time password digit ${this.zIndex() + 1} of ${total}`;
+    const position = this.zIndex() + 1;
+    return this.inputOtp?.zMode() === 'alphanumeric'
+      ? $localize`Caractere ${position}:position: de ${total}:total:`
+      : $localize`Dígito ${position}:position: de ${total}:total:`;
   });
 
   getInputElement(): HTMLInputElement {

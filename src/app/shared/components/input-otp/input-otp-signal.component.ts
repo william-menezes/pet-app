@@ -14,7 +14,12 @@ import { ZardInputOtpComponent } from './input-otp.component';
 @Component({
   selector: 'z-input-otp-signal, [z-input-otp-signal]',
   template: `
-    <div [class]="classes()" [attr.data-input-otp-container]="''">
+    <div
+      [class]="classes()"
+      [attr.data-input-otp-container]="''"
+      role="group"
+      [attr.aria-label]="zAriaLabel() || null"
+    >
       @if (!hasSlots()) {
         @for (i of range(); track i) {
           <input
@@ -23,8 +28,12 @@ import { ZardInputOtpComponent } from './input-otp.component';
             [value]="tokens()[i - 1] || ''"
             [attr.maxlength]="1"
             [attr.inputmode]="inputMode()"
-            [attr.autocomplete]="'one-time-code'"
+            [attr.autocomplete]="autocomplete()"
+            [attr.autocapitalize]="autocapitalize()"
+            spellcheck="false"
             [attr.aria-label]="ariaLabel(i)"
+            [attr.data-active]="allSelected() || focusedIndex() === i - 1 ? '' : null"
+            [attr.data-filled]="tokens()[i - 1] ? '' : null"
             [disabled]="disabled()"
             [readonly]="zReadonly()"
             [class]="slotClasses(i - 1)"

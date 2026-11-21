@@ -25,7 +25,13 @@ import { mergeClasses } from '@/shared/utils/merge-classes';
 
 import { ZARD_INPUT_OTP_SLOT, type ZardInputOtpSlotApi } from './input-otp.tokens';
 import { isInputElement, isInputEvent } from './input-otp.utils';
-import { inputOtpSlotVariants, inputOtpVariants, type ZardInputOtpSize } from './input-otp.variants';
+import { REGEXP_ONLY_DIGITS_AND_CHARS } from './input-otp.utils';
+import {
+  inputOtpSlotVariants,
+  inputOtpVariants,
+  type ZardInputOtpMode,
+  type ZardInputOtpSize,
+} from './input-otp.variants';
 
 type OnTouchedType = () => void;
 type OnChangeType = (value: string) => void;
@@ -33,7 +39,12 @@ type OnChangeType = (value: string) => void;
 @Component({
   selector: 'z-input-otp, [z-input-otp]',
   template: `
-    <div [class]="classes()" [attr.data-input-otp-container]="''">
+    <div
+      [class]="classes()"
+      [attr.data-input-otp-container]="''"
+      role="group"
+      [attr.aria-label]="zAriaLabel() || null"
+    >
       @if (!hasSlots()) {
         @for (i of range(); track i) {
           <input
@@ -42,10 +53,13 @@ type OnChangeType = (value: string) => void;
             [value]="tokens()[i - 1] || ''"
             [attr.maxlength]="1"
             [attr.inputmode]="inputMode()"
-            [attr.autocomplete]="'one-time-code'"
+            [attr.autocomplete]="autocomplete()"
+            [attr.autocapitalize]="autocapitalize()"
+            spellcheck="false"
             [attr.aria-label]="ariaLabel(i)"
             [attr.aria-invalid]="zInvalid() ? 'true' : null"
-            [attr.data-active]="allSelected() ? '' : null"
+            [attr.data-active]="allSelected() || focusedIndex() === i - 1 ? '' : null"
+            [attr.data-filled]="tokens()[i - 1] ? '' : null"
             [disabled]="disabled()"
             [readonly]="zReadonly()"
             [class]="slotClasses(i - 1)"
@@ -83,6 +97,10 @@ export class ZardInputOtpComponent implements ControlValueAccessor, AfterContent
 
   readonly zMaxLength = input<number | undefined>(undefined);
   readonly zPattern = input<string>('[0-9]');
+  /** `numeric`: só dígitos (código por SMS). `alphanumeric`: `0-9` e `A-Z` (PIN de ativação). Sem normalização aqui. */
+  readonly zMode = input<ZardInputOtpMode>('numeric');
+  /** Nome acessível do conjunto das células (obrigatório), por exemplo "Código de 6 dígitos". */
+  readonly zAriaLabel = input<string>();
   readonly class = input<ClassValue>('');
   readonly zReadonly = input(false, { transform: booleanAttribute });
   readonly zIntegerOnly = input(true, { transform: booleanAttribute });
@@ -100,8 +118,13 @@ export class ZardInputOtpComponent implements ControlValueAccessor, AfterContent
   /** Set by Ctrl/Cmd+A: every slot reads as selected so a copy takes the whole value. */
   readonly allSelected = signal<boolean>(false);
   readonly classes = computed(() => mergeClasses(inputOtpVariants(), this.class()));
-  readonly inputMode = computed(() => (this.zIntegerOnly() ? 'numeric' : 'text'));
-  readonly patternRegex = computed(() => new RegExp(this.zPattern()));
+  readonly inputMode = computed(() => (this.zMode() === 'numeric' && this.zIntegerOnly() ? 'numeric' : 'text'));
+  readonly patternRegex = computed(
+    () => new RegExp(this.zMode() === 'alphanumeric' ? REGEXP_ONLY_DIGITS_AND_CHARS : this.zPattern()),
+  );
+  /** Código por SMS pode ser preenchido pelo teclado; o PIN não. */
+  readonly autocomplete = computed(() => (this.zMode() === 'alphanumeric' ? 'off' : 'one-time-code'));
+  readonly autocapitalize = computed(() => (this.zMode() === 'alphanumeric' ? 'characters' : null));
 
   readonly hasSlots = signal(false);
   readonly effectiveMaxLength = computed(() => this.zMaxLength() ?? (this.hasSlots() ? this.slots().length : 6));
@@ -131,7 +154,10 @@ export class ZardInputOtpComponent implements ControlValueAccessor, AfterContent
   }
 
   ariaLabel(position: number): string {
-    return `One-time password digit ${position} of ${this.effectiveMaxLength()}`;
+    const total = this.effectiveMaxLength();
+    return this.zMode() === 'alphanumeric'
+      ? $localize`Caractere ${position}:position: de ${total}:total:`
+      : $localize`Dígito ${position}:position: de ${total}:total:`;
   }
 
   slotClasses(index: number): string {
