@@ -793,7 +793,7 @@ vestígio de PrimeNG.
   - **Feito quando**: `npm run build` e `npm run lint` passam e `e2e/dev-gallery.spec.ts`, com um
     teste novo que visita as seis rotas e espera o `data-testid` de cada uma, passa.
 
-- [ ] T049 [US3] Teste e2e das cascas: `e2e/ui-shells.spec.ts`
+- [x] T049 [US3] Teste e2e das cascas: `e2e/ui-shells.spec.ts`
   - **Referência**: `spec.md` US3 (cenários 1 a 10).
   - **Faça**:
     1. `/dev/ui/tutor`: em `phone`, `tutor-shell-bottom-nav` visível, `tutor-shell-rail` e
