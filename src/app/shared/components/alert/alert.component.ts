@@ -3,6 +3,7 @@ import { ChangeDetectionStrategy, Component, computed, input, TemplateRef, ViewE
 import { NgIcon } from '@ng-icons/core';
 import type { ClassValue } from 'clsx';
 
+import type { FaroIconName } from '@/shared/icons/faro-icons';
 import { ZardStringTemplateOutletDirective } from '@/shared/core/directives/string-template-outlet.directive';
 import { mergeClasses } from '@/shared/utils/merge-classes';
 
@@ -15,6 +16,12 @@ import {
   type ZardAlertTypeVariants,
 } from './alert.variants';
 
+const ALERT_ICONS: Record<ZardAlertTypeVariants, FaroIconName> = {
+  neutral: 'info',
+  success: 'checkCircle',
+  danger: 'alert',
+};
+
 @Component({
   selector: 'z-alert, [z-alert]',
   imports: [NgIcon, ZardStringTemplateOutletDirective],
@@ -22,7 +29,7 @@ import {
     @if (zIcon() || iconName()) {
       <span [class]="iconClasses()" data-slot="alert-icon">
         <ng-container *zStringTemplateOutlet="zIcon()">
-          <ng-icon [name]="iconName()" class="size-4!" />
+          <ng-icon [name]="iconName()" class="size-5!" aria-hidden="true" />
         </ng-container>
       </span>
     }
@@ -63,13 +70,14 @@ export class ZardAlertComponent {
   readonly zIcon = input<TemplateRef<void> | string>();
   readonly zRole = input<'alert' | 'status'>();
   readonly zTitle = input<string | TemplateRef<void>>('');
-  readonly zType = input<ZardAlertTypeVariants>('default');
+  readonly zType = input<ZardAlertTypeVariants>('neutral');
 
   protected readonly actionClasses = computed(() => alertActionVariants());
   protected readonly classes = computed(() => mergeClasses(alertVariants({ zType: this.zType() }), this.class()));
   protected readonly descriptionClasses = computed(() => alertDescriptionVariants({ zType: this.zType() }));
   protected readonly iconClasses = computed(() => alertIconVariants());
-  protected readonly role = computed(() => this.zRole() ?? (this.zAction() ? 'status' : 'alert'));
+  /** Erro anuncia como `alert`; neutro e sucesso, como `status` (contrato §3.6). */
+  protected readonly role = computed(() => this.zRole() ?? (this.zType() === 'danger' ? 'alert' : 'status'));
   protected readonly titleClasses = computed(() => alertTitleVariants());
 
   protected readonly iconName = computed((): string | undefined => {
@@ -78,10 +86,6 @@ export class ZardAlertComponent {
       return customIcon;
     }
 
-    if (this.zType() === 'destructive') {
-      return 'alert';
-    }
-
-    return undefined;
+    return ALERT_ICONS[this.zType()];
   });
 }

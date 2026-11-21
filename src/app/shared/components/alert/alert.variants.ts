@@ -1,42 +1,42 @@
 import { cva, type VariantProps } from 'class-variance-authority';
 
+/**
+ * Aviso (contrato §3.6): sem borda. Só existem `neutral`, `success` e `danger`: não há aviso âmbar
+ * (âmbar é do modo perdido) nem azul.
+ */
 export const alertVariants = cva(
-  "group/alert relative grid w-full gap-0.5 rounded-lg border px-2.5 py-2 text-start text-sm has-data-[slot='alert-action']:pe-18 has-data-[slot='alert-icon']:grid-cols-[auto_1fr] has-data-[slot='alert-icon']:gap-x-2 **:data-[slot='alert-icon']:row-span-2 **:data-[slot='alert-icon']:translate-y-0.5 **:data-[slot='alert-icon']:text-current [&_[data-slot='alert-icon']_svg:not([class*='size-'])]:size-4",
+  "group/alert relative flex w-full items-start gap-3 rounded-card-sm px-3.5 py-3 text-start text-sm leading-[1.45] has-data-[slot='alert-action']:pe-18",
   {
     variants: {
       zType: {
-        default: 'bg-card text-card-foreground',
-        destructive:
-          "bg-card text-destructive **:data-[slot='alert-description']:text-destructive/90 [&_[data-slot='alert-icon']_svg]:text-current",
+        neutral: 'bg-neutral-soft text-neutral-foreground',
+        success: 'bg-success-soft text-success-foreground',
+        danger: 'bg-danger-soft text-danger-foreground',
       },
     },
     defaultVariants: {
-      zType: 'default',
+      zType: 'neutral',
     },
   },
 );
 
-export const alertIconVariants = cva('shrink-0 self-start text-base!');
+export const alertIconVariants = cva('mt-px shrink-0 self-start text-current');
 
 export const alertActionVariants = cva('absolute top-2 end-2');
 
-export const alertTitleVariants = cva(
-  "font-medium group-has-data-[slot='alert-icon']/alert:col-start-2 [&_a]:underline [&_a]:underline-offset-3 [&_a]:hover:text-foreground",
-);
+export const alertTitleVariants = cva('font-semibold [&_a]:underline [&_a]:underline-offset-[3px]');
 
-export const alertDescriptionVariants = cva(
-  'text-sm text-balance md:text-pretty [&_a]:underline [&_a]:underline-offset-3 [&_a]:hover:text-foreground [&_p:not(:last-child)]:mb-4',
-  {
-    variants: {
-      zType: {
-        default: 'text-muted-foreground',
-        destructive: '',
-      },
-    },
-    defaultVariants: {
-      zType: 'default',
+export const alertDescriptionVariants = cva('text-sm text-balance md:text-pretty [&_a]:underline [&_a]:underline-offset-[3px] [&_p:not(:last-child)]:mb-4', {
+  variants: {
+    zType: {
+      neutral: '',
+      success: '',
+      danger: '',
     },
   },
-);
+  defaultVariants: {
+    zType: 'neutral',
+  },
+});
 
 export type ZardAlertTypeVariants = NonNullable<VariantProps<typeof alertVariants>['zType']>;
