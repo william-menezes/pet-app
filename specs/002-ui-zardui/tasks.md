@@ -181,7 +181,7 @@ fundo lima, sem uso no código); os arquivos `.css` vazios `src/app/app.css`,
 
 **⚠️ CRÍTICO**: nenhuma história começa antes do checkpoint desta fase.
 
-- [ ] T003 **Spike de compatibilidade ZardUI × Angular 21, numa cópia de trabalho separada. Tem condição de PARADA.**
+- [x] T003 **Spike de compatibilidade ZardUI × Angular 21, numa cópia de trabalho separada. Tem condição de PARADA.**
   - **Referência**: `research.md` §R1 e §R2.
   - **Faça** (um comando por linha; a pasta `../faro-spike-002` fica **fora** do repositório; se
     ela já existir, PARE e reporte):
