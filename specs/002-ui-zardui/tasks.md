@@ -1059,7 +1059,7 @@ vestígio de PrimeNG.
   - **Feito quando**: `git diff src/server.ts` mostra mudança só em linhas de comentário;
     `git diff vercel.json` está vazio; `npm run build` passa.
 
-- [ ] T067 [P] Atualizar a orientação de runtime: `CLAUDE.md` e a memória do agente em `.claude/agent-memory/frontend-angular/`
+- [x] T067 [P] Atualizar a orientação de runtime: `CLAUDE.md` e a memória do agente em `.claude/agent-memory/frontend-angular/`
   - **Faça**, em `CLAUDE.md` (edições pontuais, sem reescrever):
     1. "Estado atual do código": o código não importa mais PrimeNG; a migração `002` foi feita;
     2. em "Commands": `npx zard-cli@1.12.0 add <componente> --yes` (com o número da versão) e as
