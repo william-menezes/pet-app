@@ -1,240 +1,193 @@
-<!-- login.html — T028 (refatorado para 100% componentes nativos PrimeNG, 2026-07-01)
-     Tela de login do painel Faro.
-     data-testid conforme ui-ux.md §8 (mapa completo).
-     A11y: WCAG 2.1 AA, aria-live, aria-describedby, targets ≥ 44px.
-     Paleta C / FaroPreset / Aura — sem verde-lima, sem âmbar de modo perdido.
--->
-<p-toast position="top-center" />
+<!-- Login do Faro. Referência: design/telas-v2/V2-entrar*.dc.html; contrato shared-components §6.
+     Celular e tablet: coluna única com o focinho gigante. Desktop: painel de marca à esquerda. -->
+<z-sonner />
 
-<div class="login-page" [class.login-page--loading]="isLoading()">
-  <main class="login-main" aria-labelledby="login-heading">
+<div
+  class="relative flex min-h-dvh flex-col overflow-hidden bg-background xl:flex-row"
+  [attr.aria-busy]="isLoading()">
+  <app-focinho
+    class="pointer-events-none absolute -top-[74px] -right-[76px] w-[270px] text-primary md:-top-[150px] md:-right-[150px] md:w-[520px] xl:hidden" />
 
-    <!-- Card de login -->
-    <div class="login-card">
+  <!-- Painel de marca: só no desktop -->
+  <div class="hidden xl:flex xl:w-1/2 xl:shrink-0">
+    <app-brand-panel class="flex-1" variant="page" [headline]="brandHeadline" [sub]="brandSub" />
+  </div>
 
-      <!-- Marca — logo full; troca por tema (light/dark) via CSS -->
-      <div class="login-brand">
-        <img
-          class="login-logo login-logo--light"
-          src="/logos/logo-full-light.svg"
-          alt="Faro"
-          width="118"
-          height="44" />
-        <img
-          class="login-logo login-logo--dark"
-          src="/logos/logo-full-dark.svg"
-          alt="Faro"
-          width="118"
-          height="44" />
-      </div>
+  <main
+    class="relative flex flex-1 flex-col pt-14 md:items-center md:justify-center md:pt-0 md:pb-14 xl:pb-0"
+    aria-labelledby="login-heading">
+    <div class="flex flex-1 flex-col px-5 pt-[26px] pb-[22px] md:w-[440px] md:flex-none md:p-0 xl:w-[400px]">
 
-      <!-- Título (único h1 na página) -->
-      <h1 id="login-heading" class="login-title">Bem-vindo de volta</h1>
-      <p class="login-subtitle">Entre na sua conta para acessar o Faro.</p>
+      <!-- Logo: na coluna no celular e no tablet; no desktop ele está no painel -->
+      <div class="mb-[22px] md:hidden"><app-logo tone="on-light" [height]="48" /></div>
+      <div class="mb-7 hidden md:block xl:hidden"><app-logo tone="on-light" [height]="60" /></div>
 
-      <!-- ── Banner: sessão expirada (FR-012) ── -->
+      <h1
+        id="login-heading"
+        class="font-display text-[40px] leading-[1.02] font-bold tracking-[-0.03em] text-foreground md:text-[52px] xl:text-[44px]">
+        <span class="block" i18n>Que bom</span>
+        <span class="block" i18n>te ver de novo.</span>
+      </h1>
+      <p class="mt-3 text-base leading-[1.45] text-text" i18n>Entre para cuidar das tags dos seus pets.</p>
+
+      <!-- Sessão expirada (FR-012) -->
       @if (showSessionExpired()) {
-        <p-message
-          severity="info"
-          [pt]="{ root: { role: 'status', 'aria-live': 'polite' }, text: { 'data-testid': 'login-session-expired' } }"
-          styleClass="login-banner">
-          Sua sessão expirou. Entre de novo para continuar de onde parou.
-        </p-message>
+        <z-alert
+          class="mt-4"
+          zType="neutral"
+          zDescription="Sua sessão expirou. Entre de novo para continuar de onde parou."
+          i18n-zDescription
+          data-testid="login-session-expired" />
       }
 
-      <!-- ── Banner: logout confirmado (FR-010) ── -->
+      <!-- Logout confirmado (FR-010) -->
       @if (showLoggedOut()) {
-        <p-message
-          severity="success"
-          [pt]="{ root: { role: 'status', 'aria-live': 'polite' }, text: { 'data-testid': 'login-logged-out' } }"
-          styleClass="login-banner">
-          Você saiu com segurança.
-        </p-message>
+        <z-alert class="mt-4" zType="success" zDescription="Você saiu com segurança." i18n-zDescription data-testid="login-logged-out" />
       }
 
-      <!-- ── Banner de erro de formulário (FR-014/019/018) ── -->
+      <!-- Erro do formulário (FR-014/019/018) -->
       @if (formError() && !isUnconfirmed()) {
-        <p-message
-          [severity]="bannerSeverity"
-          [pt]="{ text: { 'data-testid': 'login-error' } }"
-          styleClass="login-banner">
-          {{ errorBannerMessage() }}
-        </p-message>
+        <z-alert class="mt-4" [zType]="bannerType" [zDescription]="errorBannerMessage() ?? ''" data-testid="login-error" />
       }
 
-      <!-- ── Banner: e-mail não confirmado (FR-024) ── -->
+      <!-- E-mail não confirmado (FR-024) -->
       @if (isUnconfirmed()) {
-        <p-message
-          severity="info"
-          [pt]="{ text: { 'data-testid': 'login-unconfirmed-notice' } }"
-          styleClass="login-banner">
-          <div class="login-banner__body">
-            <p class="login-banner__text">
-              Confirme seu e-mail para entrar. Não recebeu o e-mail de confirmação?
-            </p>
-            <button
-              type="button"
-              pButton
-              text
-              (click)="onResendConfirmation()"
-              data-testid="login-resend-confirmation">
-              Reenviar e-mail de confirmação
-            </button>
-          </div>
-        </p-message>
+        <z-alert class="mt-4" zType="neutral" [zDescription]="unconfirmedBody" data-testid="login-unconfirmed-notice" />
+        <ng-template #unconfirmedBody>
+          <p i18n>Confirme seu e-mail para entrar. Não recebeu o e-mail de confirmação?</p>
+          <button
+            type="button"
+            z-button
+            zType="link"
+            class="mt-1 text-sm"
+            (click)="onResendConfirmation()"
+            data-testid="login-resend-confirmation"
+            i18n>
+            Reenviar e-mail de confirmação
+          </button>
+        </ng-template>
       }
 
-      <!-- ── Formulário ── -->
       <form
-        class="login-form"
+        class="mt-[22px] flex flex-col"
         [formGroup]="form"
         (ngSubmit)="onSubmit()"
         novalidate
-        aria-label="Formulário de login">
+        aria-label="Formulário de login"
+        i18n-aria-label>
+        <div class="flex flex-col gap-3.5">
+          <div z-field>
+            <label z-field-label for="login-email-input" i18n>E-mail</label>
+            <input
+              z-input
+              id="login-email-input"
+              type="email"
+              formControlName="email"
+              autocomplete="email"
+              inputmode="email"
+              aria-required="true"
+              [attr.aria-invalid]="emailCtrl.touched && emailCtrl.invalid ? 'true' : null"
+              [attr.aria-describedby]="emailFieldError ? 'login-email-input-error' : null"
+              data-testid="login-email" />
+            @if (emailFieldError) {
+              <z-field-error id="login-email-input-error" data-testid="login-email-error">{{ emailFieldError }}</z-field-error>
+            }
+          </div>
 
-        <!-- Campo E-mail -->
-        <div class="login-field">
-          <label for="login-email-input" class="login-label">E-mail</label>
-          <input
-            id="login-email-input"
-            type="email"
-            pInputText
-            fluid
-            formControlName="email"
-            autocomplete="email"
-            inputmode="email"
-            aria-required="true"
-            [invalid]="emailCtrl.touched && emailCtrl.invalid"
-            [attr.aria-invalid]="emailCtrl.touched && emailCtrl.invalid ? 'true' : null"
-            [attr.aria-describedby]="emailCtrl.touched && emailCtrl.invalid ? 'login-email-input-error' : null"
-            data-testid="login-email" />
-          @if (emailFieldError) {
-            <p-message
-              severity="error"
-              size="small"
-              variant="simple"
-              [id]="'login-email-input-error'"
-              [pt]="{ text: { 'data-testid': 'login-email-error' } }">
-              {{ emailFieldError }}
-            </p-message>
-          }
+          <div z-field>
+            <label z-field-label for="login-password-input" i18n>Senha</label>
+            <div class="relative">
+              <input
+                z-input
+                id="login-password-input"
+                class="pr-[52px]"
+                [type]="showPassword() ? 'text' : 'password'"
+                formControlName="password"
+                autocomplete="current-password"
+                aria-required="true"
+                [attr.aria-invalid]="passwordCtrl.touched && passwordCtrl.invalid ? 'true' : null"
+                [attr.aria-describedby]="passwordFieldError ? 'login-password-input-error' : null"
+                data-testid="login-password" />
+              <button
+                type="button"
+                z-button
+                zType="ghost"
+                zSize="icon"
+                class="absolute top-[5px] right-[5px]"
+                [attr.aria-pressed]="showPassword()"
+                [attr.aria-label]="showPassword() ? hidePasswordLabel : showPasswordLabel"
+                (click)="showPassword.set(!showPassword())"
+                data-testid="login-password-toggle">
+                <ng-icon [name]="showPassword() ? 'eyeOff' : 'eye'" size="20" class="text-muted-foreground" aria-hidden="true" />
+              </button>
+            </div>
+            @if (passwordFieldError) {
+              <z-field-error id="login-password-input-error" data-testid="login-password-error">{{ passwordFieldError }}</z-field-error>
+            }
+          </div>
         </div>
 
-        <!-- Campo Senha -->
-        <div class="login-field">
-          <label for="login-password-input" class="login-label">Senha</label>
-          <p-password
-            inputId="login-password-input"
-            formControlName="password"
-            [toggleMask]="true"
-            [feedback]="false"
-            fluid
-            autocomplete="current-password"
-            aria-required="true"
-            [invalid]="passwordCtrl.touched && passwordCtrl.invalid"
-            [attr.aria-invalid]="passwordCtrl.touched && passwordCtrl.invalid ? 'true' : null"
-            [attr.aria-describedby]="passwordCtrl.touched && passwordCtrl.invalid ? 'login-password-input-error' : null"
-            [pt]="{
-              pcInputText: { root: { 'data-testid': 'login-password' } },
-              maskIcon: { 'data-testid': 'login-password-toggle' },
-              unmaskIcon: { 'data-testid': 'login-password-toggle' }
-            }">
-          </p-password>
-          @if (passwordFieldError) {
-            <p-message
-              severity="error"
-              size="small"
-              variant="simple"
-              [id]="'login-password-input-error'"
-              [pt]="{ text: { 'data-testid': 'login-password-error' } }">
-              {{ passwordFieldError }}
-            </p-message>
-          }
-        </div>
-
-        <!-- Checkbox "Manter conectado" (FR-007) -->
-        <div class="login-remember">
-          <p-checkbox
-            binary
-            formControlName="rememberMe"
-            inputId="login-remember-input"
-            ariaLabel="Manter conectado"
-            data-testid="login-remember" />
-          <label for="login-remember-input" class="login-remember__text">Manter conectado</label>
-        </div>
-
-        <!-- Botão "Entrar" (ação primária) -->
-        <p-button
-          type="submit"
-          label="Entrar"
-          [fluid]="true"
-          [loading]="isLoading()"
-          loadingIcon="pi pi-spin pi-spinner"
-          [disabled]="submitButtonDisabled"
-          [attr.aria-busy]="isLoading()"
-          styleClass="login-btn login-btn--primary"
-          data-testid="login-submit" />
-
-        <!-- Divisor "ou" -->
-        <p-divider align="center" type="solid">ou</p-divider>
-
-        <!-- Botão "Entrar com Google" (US2) -->
-        <button
-          type="button"
-          pButton
-          outlined
-          fluid
-          class="login-btn login-btn--google"
-          [disabled]="isLoading() || isGoogleDisabled()"
-          (click)="onGoogleLogin()"
-          aria-label="Entrar com Google"
-          data-testid="login-google">
-          <!-- Ícone G do Google (SVG inline, sem dependência externa) -->
-          <svg
-            aria-hidden="true"
-            width="20"
-            height="20"
-            viewBox="0 0 48 48"
-            fill="none">
-            <path d="M43.6 20.5H42V20H24v8h11.3C33.65 32.55 29.27 35 24 35c-6.63 0-12-5.37-12-12s5.37-12 12-12c3.06 0 5.84 1.16 7.96 3.04l5.66-5.66C34.1 5.52 29.3 3 24 3 12.95 3 4 11.95 4 23s8.95 20 20 20c11.05 0 20-8.95 20-20 0-1.34-.14-2.65-.4-3.5Z" fill="#FFC107"/>
-            <path d="m6.3 14.09 6.58 4.83C14.56 15.08 18.96 12 24 12c3.06 0 5.84 1.16 7.96 3.04l5.66-5.66C34.1 5.52 29.3 3 24 3 16.32 3 9.66 7.63 6.3 14.09Z" fill="#FF3D00"/>
-            <path d="M24 43c5.17 0 9.88-1.97 13.44-5.18l-6.2-5.25A12 12 0 0 1 24 35c-5.25 0-9.62-3.43-11.29-8.17l-6.53 5.03C9.52 38.23 16.23 43 24 43Z" fill="#4CAF50"/>
-            <path d="M43.6 20.5H42V20H24v8h11.3a12.04 12.04 0 0 1-4.07 5.57l6.2 5.25C37.12 42.35 44 37 44 24c0-1.34-.14-2.65-.4-3.5Z" fill="#1976D2"/>
-          </svg>
-          <span>Entrar com Google</span>
-        </button>
-
-      </form>
-
-      <!-- Links auxiliares -->
-      <nav class="login-links" aria-label="Links auxiliares">
-        <a
-          href="#"
-          class="login-link"
-          (click)="onProvisionalLink($event)"
-          aria-label="Esqueceu a senha? (em breve)"
-          data-testid="login-forgot-link">
-          Esqueceu a senha?
-        </a>
-        <p class="login-links__signup">
-          Ainda não tem conta?
+        <!-- "Manter conectado" (FR-007) e "Esqueci a senha" -->
+        <div class="mt-2 flex items-center justify-between gap-3">
+          <z-checkbox formControlName="rememberMe" zId="login-remember-input" data-testid="login-remember" i18n>
+            Manter conectado
+          </z-checkbox>
           <a
             href="#"
-            class="login-link"
+            class="inline-flex min-h-11 items-center text-sm font-medium text-link underline underline-offset-[3px] hover:text-foreground"
             (click)="onProvisionalLink($event)"
-            aria-label="Criar conta (em breve)"
-            data-testid="login-signup-link">
-            Criar conta
+            aria-label="Esqueci a senha (em breve)"
+            i18n-aria-label
+            data-testid="login-forgot-link">
+            <span i18n>Esqueci a senha</span>
           </a>
-        </p>
-      </nav>
+        </div>
 
-    </div><!-- /login-card -->
+        <button
+          type="submit"
+          z-button
+          zSize="lg"
+          class="mt-3 w-full text-lg"
+          [zLoading]="isLoading()"
+          [disabled]="submitButtonDisabled"
+          data-testid="login-submit"
+          i18n>
+          Entrar
+        </button>
 
-    <!-- Rodapé -->
-    <footer class="login-footer">
-      <p>Protegido por Faro &#x1F43E;</p>
-    </footer>
+        <!-- Divisor "ou" -->
+        <div class="my-4 flex items-center gap-3 text-[13px] text-muted-foreground">
+          <span class="h-px flex-1 bg-border" aria-hidden="true"></span>
+          <span i18n>ou</span>
+          <span class="h-px flex-1 bg-border" aria-hidden="true"></span>
+        </div>
 
+        <button
+          type="button"
+          z-button
+          zType="outline"
+          zSize="lg"
+          class="w-full"
+          [disabled]="isLoading() || isGoogleDisabled()"
+          (click)="onGoogleLogin()"
+          data-testid="login-google">
+          <app-google-glyph />
+          <span i18n>Entrar com o Google</span>
+        </button>
+      </form>
+
+      <p class="mt-auto flex flex-wrap items-center justify-center gap-x-1 pt-7 text-sm text-text md:mt-7 md:pt-0">
+        <span i18n>Ainda não tem conta?</span>
+        <a
+          href="#"
+          class="inline-flex min-h-11 items-center font-medium text-link underline underline-offset-[3px] hover:text-foreground"
+          (click)="onProvisionalLink($event)"
+          aria-label="Criar conta (em breve)"
+          i18n-aria-label
+          data-testid="login-signup-link">
+          <span i18n>Criar conta</span>
+        </a>
+      </p>
+    </div>
   </main>
 </div>

@@ -575,7 +575,7 @@ e visível em `/dev/ui/components`.
 **Independent Test**: `npm test -- --watch=false` (o `login.spec.ts` inteiro) e
 `npx playwright test e2e/login-ui.spec.ts`.
 
-- [ ] T031 [US2] Migrar o formulário de login: `src/app/features/auth/login/login.ts` e `login.html`; apagar `login.css`
+- [x] T031 [US2] Migrar o formulário de login: `src/app/features/auth/login/login.ts` e `login.html`; apagar `login.css`
   - **Referência**: `contracts/shared-components.contract.md` §6.1, §6.2, §6.3; tela
     `design/telas-v2/V2-entrar.dc.html` (se a pasta `design/` existir na máquina; o contrato basta).
   - **Faça**: em `login.ts`, tire os oito imports do PrimeNG e os itens correspondentes de
@@ -590,7 +590,7 @@ e visível em `/dev/ui/components`.
     ainda importa `primeng/api`; isso é resolvido na T033); a busca por `primeng` e por `<p-` em
     `login.ts` e `login.html` não acha nada.
 
-- [ ] T032 [US2] Layout do login nas três larguras: `src/app/features/auth/login/login.html`
+- [x] T032 [US2] Layout do login nas três larguras: `src/app/features/auth/login/login.html`
   - **Referência**: `contracts/shared-components.contract.md` §6.4 (tabela por largura); telas
     `V2-entrar.dc.html`, `V2-entrar-tablet.dc.html`, `V2-entrar-desktop.dc.html`.
   - **Faça**: focinho gigante no celular e no tablet; `app-logo` na coluna; no desktop,
