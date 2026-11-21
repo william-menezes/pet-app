@@ -212,8 +212,22 @@ tarefas na 002, 96 na 004 e 105 na 003.
   a verificação de telefone do Google gera e confere o código do lado dela, o que pode pedir um
   ajuste no contrato da 004 (`specs/004-conta-tutor/research.md`, `TODO(SMS_PROVIDER)`).
 - **Termos e Política de privacidade**: o William envia depois. `TODO(LEGAL_TEXTS)` continua.
-- **Proteção contra ataque e automação: adotar tudo.** `TODO(CAPTCHA)` deixa de ser pergunta.
-  As proteções ficam num contrato de endurecimento nas specs 004 e 003.
+- **Proteção contra ataque e automação: adotar tudo.** `TODO(CAPTCHA)` deixa de ser pergunta. O
+  desenho está em dois contratos (`specs/004-conta-tutor/contracts/security-hardening.contract.md`
+  e o equivalente da 003), com 12 tarefas novas na 004 e 7 na 003. Em resumo:
+  - desafio anti-robô (Cloudflare Turnstile) em entrar, criar conta, reenviar confirmação,
+    recuperar senha e nas confirmações de identidade; **nunca** na página da tag;
+  - limites de taxa onde faltavam: chamadas ao guarda de login, confirmação do código SMS,
+    exclusão de conta, recuperação, ativação, operações do tutor, registro de scan, admin; e tetos
+    globais para o caso de a chave do servidor vazar;
+  - cabeçalhos: HSTS, política própria e mais estrita para a página da tag, câmera liberada só
+    onde o QR é lido;
+  - banco: função nova só é chamável com permissão explícita, e um teste que varre o catálogo
+    reprova tabela sem RLS;
+  - repositório: varredura de segredos com gancho de commit, auditoria de dependências e CI no
+    GitHub, que passa a ser o lugar onde os testes de banco rodam;
+  - o que depende de painel está em `docs/seguranca-producao.md`.
+  **Não incluído, por ser funcionalidade nova**: segundo fator para o admin (recomendado).
 - **Telas que faltavam: desenhadas.** 31 telas novas, cada uma em celular, tablet e desktop (as do
   app também no tema escuro), num total de 93 arquivos em `design/telas-v2/`:
   - conta e acesso (004): confirme seu e-mail, confirmação pelo link, link inválido, aceite dos

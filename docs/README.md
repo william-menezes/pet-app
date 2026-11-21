@@ -54,4 +54,6 @@ Descrevem a plataforma de saúde por assinatura, em PrimeNG. Cada um tem um avis
 - **Depois, sem ordem**: emergência, família e cuidadores, peso, relatório para o veterinário.
 - **Ideia, sem compromisso**: checagem de sintomas por IA.
 
+- [`seguranca-producao.md`](seguranca-producao.md): o que o William precisa ligar nos painéis (Supabase, Vercel, Cloudflare, GitHub) antes de abrir.
+
 *Última atualização: 2026-11-21. Constituição em v2.1.0.*

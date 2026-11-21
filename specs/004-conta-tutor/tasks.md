@@ -751,6 +751,68 @@ senha e escolher a aparência.
 
 ---
 
+## Phase 10: Endurecimento contra ataque e automação
+
+**Objetivo**: aplicar `contracts/security-hardening.contract.md`. Decisão do William em
+2026-11-21. Leia o contrato inteiro antes da primeira tarefa. As tarefas de banco e de função desta
+fase dependem só da Phase 2; as de tela dependem das telas das histórias 1, 4, 5 e 6.
+
+- [ ] T097 [BE] Migration `0017_endurecimento_base.sql` e `supabase/tests/security_catalog.test.sql`,
+  conforme o contrato §6 (privilégios padrão, `search_path` das funções da `001`,
+  `statement_timeout` por papel, remoção do `pg_graphql`) e os ajustes de `[api]` no
+  `config.toml`. **Feito quando**: o portão de catálogo passa; uma função criada sem `GRANT`
+  dentro do teste não é executável por `authenticated`; os testes da `001` continuam verdes.
+- [ ] T098 [BE] Limites novos do contrato §2 em `phone-verify-confirm`, `account-delete` e
+  `password-recovery` (escopos `otp:confirm:h`, `acct:delete:h`, `recover:calls:ip`).
+  **Feito quando**: `deno test` cobre cada linha da tabela, inclusive o que **não** pode ser
+  gravado no estouro.
+- [ ] T099 [BE] Endurecer `login-guard` conforme o contrato §2: escopo `guard:ip:m`, `detail`
+  filtrado, `user_id` do corpo ignorado, corpo até 2 KB, recusa sem `HASH_SALT`.
+  **Feito quando**: `deno test` cobre os cinco pontos e os testes existentes da `001` passam.
+- [ ] T100 [P] [BE] Regras comuns das Edge Functions (contrato §5): `readJsonObject` com limite,
+  `unknown_field`, só `POST`/`OPTIONS`, `verify_jwt` por função, `deno.json` com versões exatas e
+  `deno.lock` versionado. **Feito quando**: `deno test` cobre `413`, `400` e `405`; nenhum
+  import com versão flutuante em `supabase/functions/` (`grep` vazio).
+- [ ] T101 [BE] Configuração do Auth (contrato §4 e §1): rotação de refresh token, entrada anônima
+  e vínculo manual desligados, seção `[auth.captcha]` com Turnstile e o segredo por variável de
+  ambiente. Use as chaves de teste do Turnstile no ambiente local, copiadas da documentação da
+  Cloudflare. **Se a CLI recusar alguma chave, PARE e relate.** **Feito quando**:
+  `supabase start` sobe sem aviso de chave desconhecida e uma chamada a `signUp` sem token é
+  recusada.
+- [ ] T102 [BE] Repassar o token do desafio ao Auth: `password-recovery` (passo 7) e
+  `_shared/reauth.ts`; corpo `captcha_token` em `phone-verify-start` (troca) e `account-delete`;
+  código de erro `captcha_failed`. **Feito quando**: `deno test` prova que o token chega ao Auth
+  e que `captcha_failed` não conta como falha de senha.
+- [ ] T103 [FE] Componente `app-turnstile` (`src/app/shared/components/faro/turnstile/`) e a
+  chave `turnstileSiteKey` nos ambientes, conforme o contrato §1. **Feito quando**: teste
+  unitário prova que sem chave nenhum script é carregado e que `reset()` zera o token;
+  `npm run check:bundle` mostra que o pacote inicial não contém `challenges.cloudflare.com`.
+- [ ] T104 [FE] Usar o desafio em "Entrar", "Criar conta", "Confirme seu e-mail" (reenvio),
+  "Esqueci a senha", "Trocar celular", "Senha" e no diálogo de exclusão; `reset()` depois de cada
+  envio; texto de `captcha_failed`. **Feito quando**: teste de componente de cada tela cobre o
+  envio com token e o erro `captcha_failed`.
+- [ ] T105 [FE] Cabeçalhos (contrato §3): `src/security-headers.ts`, uso no `src/server.ts` com
+  o middleware **antes** dos arquivos estáticos, `vercel.json` com as duas políticas e
+  `scripts/security/check-headers.mjs` (`npm run check:headers`). **Feito quando**:
+  `check:headers` passa e falha se alguém editar só um dos dois lugares.
+- [ ] T106 [P] [QA] Checagens do repositório (contrato §7): `check:secrets` com o gancho de
+  pre-commit, `check:audit` com a triagem registrada em `specs/004-conta-tutor/execution-log.md`,
+  `check:templates` e `check:prod-config`. **Feito quando**: cada script passa no estado atual e
+  reprova o exemplo ruim que o próprio teste cria e apaga.
+- [ ] T107 [QA] CI: `.github/workflows/ci.yml` (job do app e job do Supabase local) e
+  `.github/dependabot.yml`, conforme o contrato §7. **Feito quando**: o workflow é válido
+  (`actionlint` ou a validação do `gh`) e, depois do primeiro push da branch, os dois jobs ficam
+  verdes. Se não houver permissão para dar push, deixe o arquivo pronto e relate.
+- [ ] T108 [QA] `e2e/security/headers.spec.ts` e `e2e/security/captcha.spec.ts` (contrato §9).
+  **Feito quando**: passam com as chaves de teste, e o caso da chave que sempre reprova mostra
+  `captcha_failed` nas quatro telas.
+
+**Checkpoint**: todos os comandos da regra 12, mais `npm run check:headers`, `check:secrets`,
+`check:audit`, `check:templates` e `check:prod-config`. Confira com o William o que ainda está
+aberto em `docs/seguranca-producao.md`.
+
+---
+
 ## Dependencies & Execution Order
 
 ### Entre fases

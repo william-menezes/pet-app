@@ -484,6 +484,45 @@ impresso antes de o MVP ficar pronto.
 
 ---
 
+## Phase 12: Endurecimento contra ataque e automação
+
+**Objetivo**: aplicar `contracts/security-hardening.contract.md` (decisão do William em
+2026-11-21). Depende da fase de endurecimento da `004` (portão de catálogo, cabeçalhos, CI). Leia
+os dois contratos antes da primeira tarefa.
+
+- [ ] T101 [BE] Migration `0035_endurecimento_tags.sql`: `rpc_guard`, os escopos novos, o teto de
+  20 pets por tutor, o teto de 3 pedidos de 2ª via abertos e os limites do bucket `pet-photos`
+  (contrato §4 e §6). Chamar `rpc_guard` no começo de cada RPC da tabela do §4.
+  **Feito quando**: `supabase/tests/endurecimento_tags.test.sql` passa e o portão
+  `security_catalog.test.sql` continua verde com todas as tabelas da `003`.
+- [ ] T102 [BE] Chave do servidor (contrato §2): comparação em tempo constante, chave anterior
+  aceita durante a rotação, recusa de chave com menos de 32 caracteres, tetos globais
+  `resolve_global_min` e `scan_global_min` com um evento de auditoria por minuto.
+  **Feito quando**: `deno test` cobre os seis casos do contrato §7.
+- [ ] T103 [BE] `register-scan`: limites `scan_ip_min` e `scan_ip_hour` (contrato §3).
+  **Feito quando**: o 21º pedido do mesmo `ip_hash` em um minuto devolve `200` e não grava scan
+  nem envia e-mail.
+- [ ] T104 [FE] `POST /api/scan` e `/api/scan/location` no servidor do app: só JSON, até 2 KB,
+  chave desconhecida recusada, IP só dos cabeçalhos da Vercel (contrato §3). Política `tag` de
+  cabeçalhos nas rotas públicas da tag e piso de 150 ms nos três estados (contrato §1).
+  **Feito quando**: teste do servidor cobre `413`, `415` e `400`, e `npm run check:headers` passa.
+- [ ] T105 [P] [BE] Admin (contrato §5): `is_admin()` conferido dentro de `admin-labels`; limites
+  de `admin-create-batch`, `admin_reissue_pin` e `admin_end_assignment`.
+  **Feito quando**: pgTAP e `deno test` cobrem `forbidden` para tutor e `too_many_requests` no
+  estouro.
+- [ ] T106 [P] [FE] Texto e tratamento de `too_many_requests` e de `pet_limit` nas telas do
+  tutor; todo link da página da tag para o app como `<a href>` comum (contrato §1).
+  **Feito quando**: teste de componente cobre os dois erros e um teste prova que a página da tag
+  não usa `routerLink` para fora dela.
+- [ ] T107 [QA] `e2e/security/tag-page-hardening.spec.ts` (contrato §7) e o passo a passo de
+  rotação da chave em `quickstart.md`. **Feito quando**: passa; a rotação foi executada uma vez
+  no ambiente local seguindo o roteiro.
+
+**Checkpoint**: todos os testes da spec, os dois portões de segurança e a conferência no preview
+(T037A) repetida depois dos cabeçalhos novos.
+
+---
+
 ## Dependencies & Execution Order
 
 - **Setup → Foundational → histórias**. Nenhuma história começa antes do checkpoint da Phase 2.

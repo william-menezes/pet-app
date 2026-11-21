@@ -7,7 +7,7 @@ desenha a conta. O que cada lado entrega e consome está aqui. Lido em 2026-11-2
 > Quem implementa a `004` **não edita** `specs/003-tag-qr/`. Divergência entre este arquivo e a
 > `003` é motivo para parar e relatar.
 
-Ordem das migrations: `004` = 0008–0019; `003` = 0020–0034. Por isso a `003` pode referenciar os
+Ordem das migrations: `004` = 0008–0019; `003` = 0020–0035 (a 0035 é a de endurecimento da `003`; a de endurecimento da `004` é a 0017). Por isso a `003` pode referenciar os
 objetos da `004` diretamente, e a `004` só chama os da `003` **em tempo de execução**.
 
 ---

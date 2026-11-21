@@ -114,8 +114,8 @@ várias contas confirmadas consegue gastar até o teto diário de SMS; o teto li
 
 > **Decisão do William em 2026-11-21**: o SMS será contratado numa **conta Google**, que ainda
 > **não está ativada**. O produto exato fica a confirmar. **Atenção ao encaixe**: a verificação de
-> telefone do Google (Firebase Authentication / Identity Platform) costuma gerar e conferir o
-> código do lado dela, enquanto esta spec gera, guarda o hash e confere o código na nossa função,
+> telefone do Google (Firebase Authentication / Identity Platform) **gera e confere o código do
+> lado dela** e não aceita um texto nosso (conferido na documentação do Google em 2026-11-21), enquanto esta spec gera, guarda o hash e confere o código na nossa função,
 > atrás da porta `SmsSender`. Se o produto escolhido não permitir enviar um texto nosso, o driver
 > real deixa de ser um "enviador" e passa a ser um "verificador", e `phone-verify-start` /
 > `confirm_phone` precisam de um ajuste de contrato. **Conferir na documentação do Google antes de
@@ -254,8 +254,9 @@ O Supabase Auth aceita Cloudflare Turnstile ou hCaptcha em cadastro, login, recu
 É a única medida que fecha os riscos residuais das linhas "Auth" acima. Não entra nesta spec
 porque altera a tela de entrada (`001`/`002`), acrescenta um terceiro ao CSP e pede decisão do
 dono. `RegistrationService` e `PasswordService` já aceitam um `captchaToken` opcional para a
-mudança ser pequena. **Decisão do William em 2026-11-21: adotar.** O desenho e as tarefas ficam no
-contrato de endurecimento desta spec.
+mudança ser pequena. **Decisão do William em 2026-11-21: adotar.** O desenho está em
+`contracts/security-hardening.contract.md` e as tarefas na Phase 10. Conferido na documentação em
+2026-11-21: o Auth aceita hCaptcha e Turnstile; a recusa de senhas vazadas existe só no plano Pro.
 
 ## R9. Senha
 

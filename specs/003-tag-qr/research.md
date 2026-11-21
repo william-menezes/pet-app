@@ -77,7 +77,7 @@ lote-001, então fica registrado para lotes futuros: `TODO(PIN_LENGTH)` para dec
 **Motivo**: travar só por tag permitiria a qualquer pessoa com uma foto da tag impedir o dono de
 ativar. Travar só por conta permitiria força bruta com muitas contas.
 
-**Alternativa**: CAPTCHA. Rejeitado no MVP: atrito para o tutor legítimo e mais uma dependência.
+**Alternativa**: CAPTCHA no PIN. Rejeitado, e a decisão foi mantida em 2026-11-21 (`contracts/security-hardening.contract.md` §4): o desafio entra no cadastro e na entrada, não aqui. Motivo original: atrito para o tutor legítimo e mais uma dependência.
 
 ## 5. Como a página pública obtém os dados
 
