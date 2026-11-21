@@ -12,7 +12,7 @@ const TYPES: Record<ZardButtonTypeVariants, string[]> = {
 };
 
 const SIZES: Record<ZardButtonSizeVariants, string[]> = {
-  sm: ['h-9', 'px-3.5', 'text-sm', 'before:-inset-y-1'],
+  sm: ['h-9', 'px-3.5', 'text-sm', 'before:-inset-y-1.5'],
   md: ['h-11', 'text-[15px]'],
   default: ['h-12', 'text-base'],
   lg: ['h-14', 'text-[17px]'],

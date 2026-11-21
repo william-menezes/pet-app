@@ -27,8 +27,8 @@ import { ZardSwitchComponent } from '@/shared/components/switch';
     <div class="grid max-w-[520px] gap-5" data-testid="gallery-lists">
       <div z-card data-testid="dev-card">
         <div z-card-header>
-          <h3 z-card-title i18n>Paçoca</h3>
-          <p z-card-description i18n>Tag ativa desde ontem.</p>
+          <div z-card-title zTitle="Paçoca"></div>
+          <p z-card-description zDescription="Tag ativa desde ontem." i18n-zDescription></p>
         </div>
         <div z-card-content i18n>Cartão sem borda e sem sombra, com raio de 20px.</div>
       </div>

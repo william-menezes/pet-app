@@ -1,3 +1,7 @@
+/* TEMPORÁRIO (spec 002, Fase 3): a folha antiga fica numa camada de baixa prioridade para que o tema novo (src/styles.css) vença.
+   Este arquivo e a camada somem na T037. */
+@layer legacy, ng-icon, theme, base, components, utilities;
+@layer legacy {
 /* ============================================================
    Faro — Design System (app)  ·  PT-BR  ·  WCAG 2.1 AA
    Tokens exatos do brief · Poppins + Inter · light theme
@@ -518,3 +522,4 @@ select.f-control{ padding-right:38px; cursor:pointer; }
 .f-contrast .pv{ width:30px; height:24px; border-radius:6px; display:grid; place-items:center; font-size:12px; font-weight:700; }
 .f-contrast .pass{ color:var(--success); font-weight:700; }
 .f-ratio{ font-family:"JetBrains Mono",monospace; }
+}

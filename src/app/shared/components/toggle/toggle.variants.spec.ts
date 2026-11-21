@@ -17,8 +17,8 @@ describe('toggleVariants (chip)', () => {
     expect(toggleVariants()).not.toContain('primary');
   });
 
-  it('a área de toque chega a 44px (after estende 3px acima e abaixo)', () => {
-    expect(classes).toContain('after:-inset-y-[3px]');
+  it('a área de toque chega a 44px (after estende 5px acima e abaixo)', () => {
+    expect(classes).toContain('after:-inset-y-[5px]');
   });
 
   it('o tipo segmented tem 40px, sem borda, e escolhido em tinta', () => {

@@ -26,7 +26,6 @@ import {
   changeDetection: ChangeDetectionStrategy.OnPush,
   encapsulation: ViewEncapsulation.None,
   host: {
-    role: 'list',
     'data-slot': 'item-group',
     '[class]': 'classes()',
   },

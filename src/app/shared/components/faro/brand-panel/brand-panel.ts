@@ -29,8 +29,8 @@ const HEADLINE_CLASSES = {
   template: `
     <app-focinho class="pointer-events-none absolute text-primary" [class]="focinhoClasses()" data-testid="brand-panel-focinho" />
     <div class="relative z-10 flex flex-1 flex-col">
-      <app-logo class="md:hidden" tone="on-dark" [height]="52" />
-      <app-logo class="hidden md:block" tone="on-dark" [height]="60" />
+      <div class="md:hidden"><app-logo tone="on-dark" [height]="52" /></div>
+      <div class="hidden md:block"><app-logo tone="on-dark" [height]="60" /></div>
 
       @if (headline().length) {
         <p

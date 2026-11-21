@@ -17,7 +17,7 @@ export const buttonVariants = cva(
   {
     variants: {
       zSize: {
-        sm: "relative h-9 gap-1.5 px-3.5 text-sm before:absolute before:inset-x-0 before:-inset-y-1 before:content-['']",
+        sm: "relative h-9 gap-1.5 px-3.5 text-sm before:absolute before:inset-x-0 before:-inset-y-1.5 before:content-['']",
         md: 'h-11 px-[18px] text-[15px]',
         default: 'h-12 px-[22px] text-base',
         lg: 'h-14 px-5 text-[17px]',
