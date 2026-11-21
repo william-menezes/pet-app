@@ -325,6 +325,18 @@ Só o deslocamento horizontal mudou (largura e topo iguais); a variante `page` n
 
 Tamanhos (`dist/faro/browser/`): soma dos `.js` 741.188 bytes (linha de base 936.345 sem os scripts do service worker; 1.022.009 com eles); soma dos `.css` 58.452 bytes (linha de base 35.752). Arquivo de service worker no pacote: só o `ngsw-worker.js` de desligamento.
 
+### Fase 8 (T063 a T070), desvios e decisões
+
+- **Commits**: T063 em `772caee`; T064 em `8b17057`; T066 em `540b844`; T067 em `4f88c5c`; T065, T068, T069 e T070 no commit do log final (ver relatório).
+- **T063**: regra `@angular-eslint/template/i18n` ligada como `error` (`checkText` e `checkAttributes`), não como `warn`. A regra tratou como "texto" todo atributo (`data-testid`, `zType`, `tone`...); a lista `ignoreAttributes` ficou só com atributos técnicos (`data-testid`, `zType`, `zSize`, `zId`, `zIcon`, `rel`, `ariaCurrentWhenActive`, `tone`, `d`, `variant`, `decoding`, `icon`, `as`, `aria-live`, `aria-labelledby`, `aria-describedby`, `aria-controls`, `fill-rule`, `clip-rule`, `media`, `inputmode`, `content`). Atributos de texto (`title`, `alt`, `label`, `placeholder`, `aria-label`, `zTitle`...) continuam exigindo `i18n-<atributo>`. A regra só achou três textos sem marca (todos o nome "Faro" em `label`/`alt`): `brand-mark.ts`, `logo.ts`, `tutor-shell.html`; ganharam `i18n-label`/`i18n-alt`. O resto da interface já estava marcado. Provada ao contrário com um template de sonda em `features/pets/` (texto fixo e `alt` sem marca: 2 erros; sonda apagada). Textos em TypeScript (`$localize`) não foram varridos por regra: a tarefa só liga a regra de template.
+- **T064**: a busca literal por `primeng|aura|faropreset|paleta c|faro-ds` (sem diferenciar maiúsculas) acha uma ocorrência: "Restaura" (verbo em português) em `src/app/core/auth/auth.service.ts:56`, porque contém "aura". Falso positivo; não foi alterado. Com palavra inteira (`-w`) a busca é vazia. Foram trocadas duas referências a `docs/frontend.md` e `docs/architecture.md` em `app.config.ts` e `app.routes.server.ts`. Nenhum emoji em `src/` (varredura por faixa Unicode em `.ts` e `.html`). `login.ts` e `app.routes.ts` já estavam limpos.
+- **T065**: seguidas as seções 2 e 3 do quickstart. Seção 2 (endereços) coberta pelos e2e `dev-gallery`, `ui-shells` e `ui-theme` (as rotas `/dev/ui/*`, a chave `faro.theme` e o seletor Claro/Escuro/Sistema existem); `npm start` não foi rodado (regra 5). Seção 3: os sete comandos passaram (ver "Resultado final"). Seções 4 a 6: os caminhos de arquivo citados existem. **Nenhuma diferença encontrada entre o quickstart e o implementado**; o quickstart não foi editado.
+- **T066**: `git diff src/server.ts` só em comentário; `git diff vercel.json` vazio; build passou.
+- **T067**: os dois arquivos de memória obsoletos existiam e foram apagados com `git rm`. `CLAUDE.md`: quatro edições pontuais (estado do código, comandos, estrutura, uma linha em "Recent Changes"). Em "Recent Changes" a linha antiga "Implementação ainda não iniciada" (2026-11-21) ficou como histórico; não foi reescrita. A busca por `PrimeNG` na memória do agente só acha menções históricas.
+- **T068**: ver "Resultado final". O baseline foi reconstruído de verdade (`git archive 2cf0173` numa pasta temporária fora do repositório, `npm ci`, `npm run build`) para comparar o que a página inicial carrega; os totais bateram com a linha de base já registrada (1.022.009 / 936.345 / 35.752).
+- **T070**: o logo em Outfit chegou em 2026-11-21 (commit `b341fd9`; arquivos já em `public/logos/`). Nada em `public/logos/` foi editado. Conferido por script: `brand-assets.ts` só tem o `d` do focinho (os dois wordmarks são servidos como arquivo, por `LOGO.onLight`/`LOGO.onDark`); esse `d` é idêntico (sem espaços e quebras) ao único path de `logo-compact.svg`; `logo-compact2.svg` tem o mesmo path. Os três `logo-full-*.svg` têm `width="770" height="290" viewBox="0 0 770 290"` (igual a `LOGO.width`/`LOGO.height`) e o segundo path de cada um é o mesmo focinho deslocado em (+496, +43): o desenho do focinho não mudou, então `brand-assets.ts`, `logo-compact.svg` e os ícones não precisam de troca. Achado: `tutor-shell.spec.ts` citava `/logos/logo-full-dark.svg` e quebrava o "só acha `brand-assets.ts`"; o teste passou a usar `LOGO.onDark`. Depois disso a busca por `/logos/` em `src/` só acha `brand-assets.ts`. `npm test` (238), `e2e/login-ui.spec.ts` (13) e `npm run check:ui` passam. **Conflito de texto**: a lista "Verificação final" do `tasks.md` manda a T070 continuar desmarcada com nota de bloqueio; a ordem desta execução (o logo chegou) prevaleceu e a T070 foi marcada `[x]`.
+- Regras de lint desligadas nesta fase: `template/i18n` nos caminhos listados abaixo.
+
 ## Regras de lint desligadas
 
 Bloco em `eslint.config.js` com `files` = `src/app/shared/core/**/*.ts`, `src/app/shared/utils/**/*.ts`, `src/app/shared/components/**/*.ts` e `ignores` = `src/app/shared/components/faro/**`:
@@ -334,8 +346,67 @@ Bloco em `eslint.config.js` com `files` = `src/app/shared/core/**/*.ts`, `src/ap
 - `@typescript-eslint/array-type`: off (1: `field.component.ts`, `ReadonlyArray<T>`) — T006
 - `@typescript-eslint/no-unused-vars`: off (1: `string-template-outlet.directive.ts`, `_ctx` usado só como tipo) — T006
 
+Bloco da T063 em `eslint.config.js`: `@angular-eslint/template/i18n` (ligada como `error` para todo `**/*.html`, inclusive templates inline) fica **off** em `src/app/shared/components/**/*.html` (exceto `faro/`), `src/app/shared/core/**/*.html`, `src/app/features/dev-gallery/**/*.html`, `src/app/features/public/rescue-page/**/*.html`, nos templates inline de `**/*.spec.ts` e em `src/index.html` (os dois últimos são acréscimos: fixtures de teste e o documento raiz). Mais `ignoreAttributes` com 23 atributos técnicos (ver Fase 8).
+
 Nenhuma regra de acessibilidade de template foi acusada; `no-restricted-globals` (`localStorage`) continua ligada.
 
 ## Resultado final
 
-(a preencher no fim da spec)
+Data: 2026-11-21. Branch `002-ui-zardui`.
+
+### Verificação final (rodada em 2026-11-21, nesta ordem)
+
+| Comando | Resultado |
+|---|---|
+| `npm run build` | passou (saída 0); sem aviso de orçamento; pacote inicial 397,33 kB (106,51 kB transferidos) |
+| `npm run lint` | passou ("All files pass linting.") |
+| `npm test -- --watch=false` | passou: 48 arquivos, 238 testes |
+| `npm run check:ui` | passou: 65 variáveis, 46 pares; `check:stack` ok; `check:boundary` ok (51 barrados, 5 livres) |
+| `npm run build:stats` | passou (saída 0) |
+| `npm run check:bundle` | passou (saída 0), com o aviso conhecido de `core/auth` no fecho público (ver SC-007) |
+| `node scripts/ui-checks/public-bundle.mjs --self-test` | passou (saída 0) |
+| `npm run e2e` | passou: 87 testes, 57 s |
+
+Itens da lista de conferência: `package.json` sem `primeng`/`primeicons`/`@primeuix`/`@angular/service-worker`/`lucide`/`fontsource` (0 ocorrências); `angular.json` `styles` = `["src/styles.css"]`, sem `serviceWorker`, produção com `inlineCritical: false`; não existem `src/styles/`, `src/theme/`, `ngsw-config.json`, as três pastas do roadmap nem `shared/index.ts`; existem `public/ngsw-worker.js` (com `registration.unregister`), `public/fonts/` com 4 `.woff2` e `OFL.txt`, `favicon.svg`, `components.json`, `.postcssrc.json`; `login.spec.ts` contra o commit de partida remove só o import de `primeng/api` e `MessageService,`; `supabase/` e `vercel.json` sem diferença contra o commit de partida; `/logos/` em `src/` só em `brand-assets.ts`; `app.html` só com `<router-outlet />`.
+
+### Antes × depois (T068)
+
+Linha de base reconstruída do commit `2cf0173`; "depois" é o build desta execução. Gzip com nível 9.
+
+| Medida | Antes | Depois |
+|---|---|---|
+| Soma de todos os `.js` (com scripts de service worker) | 1.022.009 | 741.239 (inclui o `ngsw-worker.js` de desligamento, 1.112) |
+| Soma dos `.js` sem scripts de service worker | 936.345 | 740.127 |
+| Soma dos `.css` | 35.752 | 58.452 |
+| `index.html` (prerenderizado) | 78.658 | 9.437 |
+| `index.csr.html` | 19.357 | 1.358 |
+| Página inicial (`<script src>` + `modulepreload` + `.css` do `index.html`), bytes | 575.967 em 10 arquivos | 441.409 em 15 arquivos |
+| Página inicial, gzip (js + css) | 154.879 | 137.054 |
+| Página inicial, gzip contando o `index.html` | 166.359 | 140.312 |
+| Casca CSR (`index.csr.html`: js + css), bytes | 493.889 em 8 arquivos | 397.335 em 8 arquivos |
+| Casca CSR, gzip (js + css) | 135.292 | 120.816 |
+
+A página inicial não ficou mais pesada: caiu em tudo. O CSS cresceu (+22.700 bytes: Tailwind e ZardUI no lugar do CSS do PrimeNG e do tema antigo), mas o JS caiu mais.
+
+### Critérios de sucesso (T068)
+
+| Critério | Como foi medido | Valor | Passou? |
+|---|---|---|---|
+| SC-001 contraste 4,5:1 e 3:1, claro e escuro | `npm run check:tokens`: 46 pares, tolerância 0,02 contra o contrato | 46 de 46 | Sim, para os pares do contrato de tokens. Pares montados em tela só passam pelo axe (SC-004) |
+| SC-002 verificações e cenários do 001 iguais | testes do login (os originais mais 4 novos) e `e2e/login-ui.spec.ts` | 238 unitários e 13 e2e do login passam | Sim para o que é automático. Os cenários de aceitação do 001 que dependem do Supabase real não foram reexecutados (Supabase local não configurado) |
+| SC-003 sem rolagem horizontal, sem corte nem sobreposição em 320, 390, 768, 1440 | e2e: login (3 larguras), `ui-identity` (320), `ui-shells` (celular, tablet, desktop em todas as páginas) | rolagem horizontal: 0 falhas; respiro focinho/logo >= 24 px em 1280 e 1440 | Parcial: a rolagem é automática; "cortado ou sobreposto" só tem teste no painel de fluxo; nas demais telas foi por captura e olho |
+| SC-004 axe sem violação grave ou crítica, nos dois temas | e2e com axe: login, catálogo, cascas, escuro do tutor (celular e desktop) | 0 violações graves/críticas | Sim; catálogo e login só existem no tema claro por regra (escuro é só do app do tutor) |
+| SC-005 alvo de toque de 44x44 no login | `login-ui.spec.ts` mede a **altura** de cada controle | altura >= 44 em todos | Parcial: a largura não é medida pelo teste |
+| SC-006 zero ocorrências da identidade anterior | `check:stack` e conferência de `package.json`/`angular.json`/arquivos | 0 | Sim |
+| SC-007 páginas públicas carregam zero partes do app autenticado | `check:bundle` (fecho estático) e ESLint de fronteira | **5 arquivos de `core/auth/` no fecho público** (3 guards no `main`, `auth.store.ts` e `role-redirect.ts` em `chunk-`) | **Não, no rigor da letra.** Os guards ficam no pacote inicial; é exceção conhecida registrada no script (vira tarefa da spec 003). Nenhuma feature autenticada, casca nem overlay entra (fronteira verde) |
+| SC-008 nenhum fora do tutor escuro; preferência mantida | `ui-theme.spec.ts` (10 testes) | 10 de 10; `.dark` só na casca; preferência sobrevive ao recarregar | Sim (uma reabertura testada, não 100% das reaberturas num aparelho real) |
+| SC-009 versão nova no máximo na segunda visita | `legacy-sw.spec.ts` (3 testes) | o arquivo de desligamento cancela o registro antigo; sem registro depois de carregar | Parcial: simulado no Playwright; não medido num aparelho que guardou a versão anterior |
+| SC-010 zero requisições de fonte ou estilo de terceiros | e2e (hosts `fonts.googleapis.com` e `fonts.gstatic.com`) e varredura de `dist/faro/browser` por hosts | só `www.w3.org` (xmlns), `github.com` e `angular.dev` (texto dentro do JS); nenhum host em `.css` ou `.html` | Sim para fontes e estilos |
+| SC-011 trocar o logo exige um lugar | busca por `/logos/` em `src/` | só `brand-assets.ts` (depois do ajuste do spec na T070) | Sim |
+| SC-012 página inicial não mais pesada | tabela acima | 154.879 -> 137.054 gzip (js + css) | Sim |
+| SC-013 login interativo em até 3 s em móvel típico | Playwright + CDP: 390 px, 1,6 Mbps, 150 ms, CPU 4x, `dist/faro/server/server.mjs`, tempo até o campo de e-mail visível e aceitando digitação, 3 rodadas | **depois: 5,5 a 5,7 s; antes (commit de partida): 6,6 a 6,8 s** | **Não passou** nessa condição (a mais dura do Lighthouse); melhorou cerca de 1 s. Sem medição em aparelho real nem em condição mais branda |
+| SC-014 verificações que já existiam continuam passando | suíte inteira | 87 e2e e 238 unitários passam | Sim |
+
+### Tarefas e paradas
+
+Todas as 70 tarefas estão `[x]`. Nenhuma parada. Nenhum `--force`, `--legacy-peer-deps`, `overrides` ou `resolutions` na spec inteira.

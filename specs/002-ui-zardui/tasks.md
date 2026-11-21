@@ -1041,7 +1041,7 @@ vestígio de PrimeNG.
   - **Feito quando**: a busca (sem diferenciar maiúsculas) por `primeng|aura|faropreset|paleta c|faro-ds`
     em `src/` não acha nada; `npm run check:ui` passa.
 
-- [ ] T065 [P] Validar o `specs/002-ui-zardui/quickstart.md`
+- [x] T065 [P] Validar o `specs/002-ui-zardui/quickstart.md`
   - **Faça**: siga as seções 2 e 3 do quickstart do começo ao fim (pelo Playwright, não por
     `npm start`: os endereços da seção 2 são cobertos por `e2e/dev-gallery.spec.ts`). Se algum
     comando ou caminho do quickstart não corresponder ao que foi implementado, **não edite o
@@ -1077,7 +1077,7 @@ vestígio de PrimeNG.
   - **Feito quando**: a busca por `PrimeNG` em `.claude/agent-memory/frontend-angular/` só acha
     menções históricas ("saiu na 002"); `CLAUDE.md` cita `zard-cli@1.12.0`.
 
-- [ ] T068 [P] Medir os critérios de sucesso que são números: `specs/002-ui-zardui/execution-log.md`
+- [x] T068 [P] Medir os critérios de sucesso que são números: `specs/002-ui-zardui/execution-log.md`
   - **Referência**: `spec.md` SC-012.
   - **Faça**: depois de `npm run build`, repita a medição da T001 (passo 4) e escreva em
     `## Resultado final` uma tabela "antes × depois": soma dos `.js` e dos `.css` de
@@ -1087,13 +1087,13 @@ vestígio de PrimeNG.
     o "antes", **não tente otimizar**: escreva o número e o motivo provável.
   - **Feito quando**: a tabela está no log.
 
-- [ ] T069 Verificação final
+- [x] T069 Verificação final
   - **Faça**: rode a seção "Verificação final" deste arquivo, na ordem. Escreva o resultado de
     cada comando em `## Resultado final` do log, e liste as tarefas que ficaram por fazer, os
     desvios e as paradas.
   - **Feito quando**: todos os comandos passam e o log está completo.
 
-- [ ] T070 **BLOQUEADA (depende do William)**: trocar os arquivos do logo quando o novo wordmark em Outfit chegar — `public/logos/logo-full-light.svg`, `public/logos/logo-full-dark.svg` e, se preciso, `src/app/shared/components/faro/logo/brand-assets.ts`
+- [x] T070 **BLOQUEADA (depende do William)**: trocar os arquivos do logo quando o novo wordmark em Outfit chegar — `public/logos/logo-full-light.svg`, `public/logos/logo-full-dark.svg` e, se preciso, `src/app/shared/components/faro/logo/brand-assets.ts`
   - **Não execute até o William entregar os arquivos.** Deixe a tarefa desmarcada.
   - **Faça**, quando chegarem: se os arquivos tiverem os mesmos nomes e a mesma proporção
     (770 × 290), sobrescreva os dois em `public/logos/`. Se o nome ou a proporção mudarem, edite
@@ -1196,22 +1196,22 @@ npm run e2e
 
 Depois confira, um por um:
 
-- [ ] `package.json` não contém `primeng`, `primeicons`, `@primeuix`, `@angular/service-worker`,
+- [x] `package.json` não contém `primeng`, `primeicons`, `@primeuix`, `@angular/service-worker`,
       `lucide` nem `fontsource`.
-- [ ] `angular.json` → `styles` é `["src/styles.css"]`; não há `serviceWorker`; a produção tem
+- [x] `angular.json` → `styles` é `["src/styles.css"]`; não há `serviceWorker`; a produção tem
       `inlineCritical: false`.
-- [ ] Não existem: `src/styles/`, `src/theme/`, `ngsw-config.json`,
+- [x] Não existem: `src/styles/`, `src/theme/`, `ngsw-config.json`,
       `src/app/features/health-records/`, `src/app/features/reminders/`,
       `src/app/features/subscription/`, `src/app/shared/index.ts`.
-- [ ] Existem: `public/ngsw-worker.js` (com `registration.unregister`), `public/fonts/` com quatro
+- [x] Existem: `public/ngsw-worker.js` (com `registration.unregister`), `public/fonts/` com quatro
       `.woff2` e `OFL.txt`, `public/favicon.svg`, `components.json`, `.postcssrc.json`.
-- [ ] `git diff src/app/features/auth/login/login.spec.ts` remove só o import de `primeng/api` e
+- [x] `git diff src/app/features/auth/login/login.spec.ts` remove só o import de `primeng/api` e
       o provider `MessageService`.
-- [ ] `git status --short supabase` está vazio. `git diff vercel.json` está vazio.
-- [ ] A busca por `/logos/` em `src/` só acha
+- [x] `git status --short supabase` está vazio. `git diff vercel.json` está vazio.
+- [x] A busca por `/logos/` em `src/` só acha
       `src/app/shared/components/faro/logo/brand-assets.ts`.
-- [ ] `src/app/app.html` contém só `<router-outlet />`.
-- [ ] `specs/002-ui-zardui/execution-log.md` tem a linha de base, o spike aprovado, os desvios,
+- [x] `src/app/app.html` contém só `<router-outlet />`.
+- [x] `specs/002-ui-zardui/execution-log.md` tem a linha de base, o spike aprovado, os desvios,
       as regras de lint desligadas e o resultado final com a tabela "antes × depois".
 - [ ] A T070 continua desmarcada, com a nota de que depende do William.
 
