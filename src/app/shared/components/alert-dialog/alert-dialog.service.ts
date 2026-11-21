@@ -62,8 +62,8 @@ export class ZardAlertDialogService {
   ): ZardAlertDialogRef<T> {
     return this.create({
       ...config,
-      zOkText: config.zOkText ?? 'Confirm',
-      zCancelText: config.zCancelText ?? 'Cancel',
+      zOkText: config.zOkText ?? $localize`Confirmar`,
+      zCancelText: config.zCancelText ?? $localize`Cancelar`,
       zOkDestructive: config.zOkDestructive ?? false,
     });
   }

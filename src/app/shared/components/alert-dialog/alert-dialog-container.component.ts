@@ -119,10 +119,10 @@ export class ZardAlertDialogOptions<T> {
             type="button"
             data-testid="z-alert-cancel-button"
             z-button
-            zType="outline"
+            zType="ghost"
             (click)="cancelTriggered.emit()"
           >
-            {{ config.zCancelText || 'Cancel' }}
+            {{ config.zCancelText || cancelDefault }}
           </button>
         }
         @if (config.zOkText !== null) {
@@ -134,7 +134,7 @@ export class ZardAlertDialogOptions<T> {
             [zDisabled]="config.zOkDisabled"
             (click)="okTriggered.emit()"
           >
-            {{ config.zOkText || 'Continue' }}
+            {{ config.zOkText || okDefault }}
           </button>
         }
       </z-alert-dialog-footer>
@@ -155,6 +155,9 @@ export class ZardAlertDialogContainerComponent<T> implements ZardAlertDialogHost
 
   readonly okTriggered = output<void>();
   readonly cancelTriggered = output<void>();
+
+  protected readonly cancelDefault = $localize`Cancelar`;
+  protected readonly okDefault = $localize`Continuar`;
 
   readonly titleId = signal<string | null>(null);
   readonly descriptionId = signal<string | null>(null);

@@ -24,16 +24,22 @@ import { sonnerVariants } from './sonner.variants';
 export type ZardSonnerPosition =
   'top-left' | 'top-center' | 'top-right' | 'bottom-left' | 'bottom-center' | 'bottom-right';
 
+/**
+ * Aviso temporário do Faro (contrato §3.6): `bg-toast text-toast-foreground`, raio de 16px, igual nos dois
+ * temas. As variáveis `--normal-*` são as que o CSS do ngx-sonner lê.
+ */
 const DEFAULT_STYLE: Record<string, string> = {
-  '--normal-bg': 'var(--popover)',
-  '--normal-text': 'var(--popover-foreground)',
-  '--normal-border': 'var(--border)',
-  '--border-radius': 'var(--radius)',
+  '--normal-bg': 'var(--toast)',
+  '--normal-text': 'var(--toast-foreground)',
+  '--normal-border': 'var(--toast)',
+  '--border-radius': '16px',
 };
 
 const DEFAULT_TOAST_OPTIONS: ToasterProps['toastOptions'] = {
+  // O CSS do ngx-sonner não está em camada e vence as utilidades do Tailwind: por isso o `!`.
   classes: {
-    toast: 'cn-toast',
+    toast: 'cn-toast px-4! py-3! text-sm! shadow-pop!',
+    actionButton: 'bg-primary! text-primary-foreground! rounded-full! font-display! font-semibold! h-9! px-3.5!',
   },
 };
 
@@ -92,7 +98,8 @@ const DEFAULT_TOAST_OPTIONS: ToasterProps['toastOptions'] = {
 })
 export class ZardSonnerComponent {
   readonly class = input<ClassValue>('');
-  readonly theme = input<'light' | 'dark' | 'system'>('system');
+  /** Sempre claro: o aviso tem a mesma aparência nos dois temas (a cor vem de `--toast`). */
+  readonly theme = input<'light' | 'dark' | 'system'>('light');
   readonly position = input<ZardSonnerPosition>('top-center');
   readonly richColors = input<boolean>(false);
   readonly expand = input<boolean>(false);
