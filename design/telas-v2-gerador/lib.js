@@ -10,7 +10,7 @@ const W = dOf(path.join(S0, '..', 'dl', 'whatsapp.svg'));
 
 const PHOTO = '/_blob/934b5d39967c388fdc7cfbe8aae9fc18';
 // Logo em Outfit (2026-11-21), embutido como SVG para a tela não depender de arquivo externo.
-const logoInner = (f) => fs.readFileSync('d:/willi/dev/pet-app/pet-app/public/logos/' + f, 'utf8').replace(/^[\s\S]*?<svg[^>]*>/, '').replace(/<\/svg>\s*$/, '').replace(/\/>/g, '></path>').trim();
+const logoInner = (f) => fs.readFileSync('d:/willi/dev/pet-app/pet-app/public/logos/' + f, 'utf8').replace(/\r\n/g, '\n').replace(/^[\s\S]*?<svg[^>]*>/, '').replace(/<\/svg>\s*$/, '').replace(/\/>/g, '></path>').trim();
 const LOGO = logoInner('logo-full-light.svg');
 const LOGOD = logoInner('logo-full-dark.svg');
 const ALT = 'Paçoca, um vira-lata caramelo de orelhas caídas, sorrindo para a câmera';
@@ -243,7 +243,7 @@ ${o.body}
 ${inner}
 </div>`);
   }
-  return page(o.title + ' · desktop', S.w, o.h || S.h, T, 'flex-direction: row', `${brandPanel(560, o.side[0], o.side[1], { fw: 560, fr: -180, ft: -120, hs: 56 })}
+  return page(o.title + ' · desktop', S.w, o.h || S.h, T, 'flex-direction: row', `${brandPanel(560, o.side[0], o.side[1], { fw: 560, fr: -264, ft: -136, hs: 56 })}
 <div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column">
 <div style="padding: 24px 32px 0; display: flex; justify-content: flex-end; min-height: 44px; flex-shrink: 0">${barBtn(T, o.bar, o.barHref)}</div>
 <div style="flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 16px 0 56px">
