@@ -67,3 +67,20 @@ describe('BrandPanel', () => {
     expect(Array.from(imgs).map((i) => i.getAttribute('height'))).toEqual(['52', '60']);
   });
 });
+
+describe('BrandPanel · focinho gigante no desktop', () => {
+  const classes = (variant: 'page' | 'flow') => {
+    const fixture = TestBed.createComponent(BrandPanel);
+    fixture.componentRef.setInput('variant', variant);
+    fixture.detectChanges();
+    return (fixture.nativeElement as HTMLElement).querySelector('[data-testid="brand-panel-focinho"]')?.className ?? '';
+  };
+
+  it('na variante flow o focinho fica deslocado para a direita, longe do logo (o e2e mede o respiro de 24px)', () => {
+    expect(classes('flow')).toContain('xl:-right-[245px]');
+  });
+
+  it('a variante page não mudou', () => {
+    expect(classes('page')).toContain('xl:-right-[190px]');
+  });
+});

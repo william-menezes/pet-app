@@ -181,3 +181,18 @@ for (const [name, size] of Object.entries(WIDTHS)) {
     }
   });
 }
+
+test.describe('painel de marca da casca de fluxo', () => {
+  // Desvio do desenho de referência (execution-log): o focinho gigante não pode cobrir o logo.
+  for (const width of [1280, 1440]) {
+    test(`desktop ${width}px: o focinho gigante deixa pelo menos 24px de respiro do logo`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await open(page, '/dev/ui/flow', 'dev-gallery-flow');
+      const logo = await box(page, `${tid('flow-shell-brand-panel')} app-logo img >> visible=true`);
+      const paw = await box(page, tid('brand-panel-focinho'));
+      const gapX = paw.x - (logo.x + logo.width);
+      const gapY = logo.y - (paw.y + paw.height);
+      expect(Math.max(gapX, gapY), `caixas do logo e do focinho: logo ${JSON.stringify(logo)}, focinho ${JSON.stringify(paw)}`).toBeGreaterThanOrEqual(24);
+    });
+  }
+});

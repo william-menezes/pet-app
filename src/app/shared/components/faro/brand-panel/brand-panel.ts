@@ -6,7 +6,7 @@ import { Logo } from '../logo/logo';
 /** Posição e tamanho do focinho gigante (lima) por variante e largura. Classes escritas por inteiro para o Tailwind achar. */
 const FOCINHO_CLASSES = {
   page: 'w-[300px] -top-10 -right-[70px] md:w-[480px] md:-top-20 md:-right-[110px] xl:w-[640px] xl:-top-[130px] xl:-right-[190px]',
-  flow: 'w-[300px] -top-10 -right-[70px] md:w-[480px] md:-top-20 md:-right-[110px] xl:w-[560px] xl:-top-[120px] xl:-right-[180px]',
+  flow: 'w-[300px] -top-10 -right-[70px] md:w-[480px] md:-top-20 md:-right-[110px] xl:w-[560px] xl:-top-[120px] xl:-right-[245px]',
 } as const;
 
 const HEADLINE_CLASSES = {

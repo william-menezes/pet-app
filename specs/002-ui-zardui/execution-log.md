@@ -267,6 +267,28 @@ Tamanhos (`dist/faro/browser/`): soma dos `.js` 792.956 bytes (sem os scripts do
 
 `check:bundle`, JavaScript pelo fecho estático (informativo): pacote inicial (`main` + `polyfills`) 7 arquivos, 336,4 kB (gzip 108,6 kB); rota `rescue-page` 8 arquivos, 337,3 kB (gzip 109,2 kB); rota `landing` 14 arquivos, 379,4 kB (gzip 124,4 kB). Aviso (exceção conhecida, vira tarefa da spec 003): `core/auth/auth.guard.ts`, `admin.guard.ts`, `anon.guard.ts` (em `main`), `auth.store.ts` e `role-redirect.ts` (em `chunk-`) no fecho público. A meta de 100 KB da spec 003 para a rota pública está bem acima hoje: 109,2 kB gzip na rota de resgate só com o pacote inicial.
 
+
+### Fase 6 (T051 a T056), desvios e decisões
+
+- **Commits**: T051 em `f88f917`; T052 e T053 em `d9a026d`; T054, T055 e T056 em `1167232`.
+- **T051**: o serviço lê `localStorage` e `matchMedia` só no navegador (`isPlatformBrowser`), dentro de `try/catch`; além do contrato, remove o ouvinte do `matchMedia` ao ser destruído (`DestroyRef`). No servidor, `setPreference` atualiza o sinal mas não grava.
+- **T052/T053**: o `OverlayContainer` é pego no construtor da casca só no navegador; um `effect` faz `classList.toggle('dark', ...)` e `DestroyRef.onDestroy` remove a classe. Nos testes de unidade o `matchMedia` é controlado por um falso próprio (não depende do `test-setup.ts`). Os testes não usam `localStorage` direto (a regra de lint o restringe fora de `core/`): cada teste fixa a preferência pelo serviço.
+- **T054, fora da tarefa**: a página `/dev/ui/tutor` ganhou um botão lima `dev-gallery-tutor-primary` ("Salvar alterações"). O cenário 8 da T055 pede "o botão principal continua lima" no escuro e a página não tinha nenhum botão `default`.
+- **T055**: o cenário 7 usa `dev-gallery-tutor-open-dialog` (o `dev-gallery-open-dialog` do texto da tarefa existe só em `/dev/ui/components`, que é sempre clara). Em dev a galeria é renderizada no servidor (sempre clara) e o tema só vale após a hidratação: o teste espera o log "Angular hydrated" antes de ler a classe. A segunda parte do cenário 7 (sumir o `.dark` ao sair da casca) navega por `history.pushState` + `popstate`, sem recarregar.
+- **T056**: a regra 9 vale também para `*.spec.ts`; o teste da casca lê a classe de `html`/`body` por `getAttribute('class')` para não acusar a própria regra. Provado ao contrário com um arquivo de sonda em `features/pets/` (saiu com 1 nas duas regras; sonda apagada).
+- Regras de lint desligadas nesta fase: nenhuma.
+
+### Desvio do desenho de referência: focinho gigante do painel de fluxo (fora das tarefas)
+
+No painel de marca da casca de fluxo (variante `flow`, `xl`), o focinho gigante encostava no logo e cobria o "o" do wordmark (mesma cor). Vem do desenho de referência. Medido com o Playwright em 1280 e em 1440 (o painel tem 560px nas duas larguras):
+
+| | caixa do focinho gigante (esq., topo, dir., base) | caixa do logo | respiro horizontal |
+|---|---|---|---|
+| antes (`xl:-right-[180px]`) | 180, -120, 740, 375 | 56, 48, 215, 108 | -35 px (sobreposição) |
+| depois (`xl:-right-[245px]`) | 245, -120, 805, 375 | 56, 48, 215, 108 | 30 px |
+
+Só o deslocamento horizontal mudou (largura e topo iguais); a variante `page` não foi tocada. Proteção: `e2e/ui-shells.spec.ts` (bloco "painel de marca da casca de fluxo", 1280 e 1440) exige respiro de pelo menos 24px entre as caixas; `brand-panel.spec.ts` guarda as classes das duas variantes.
+
 ## Regras de lint desligadas
 
 Bloco em `eslint.config.js` com `files` = `src/app/shared/core/**/*.ts`, `src/app/shared/utils/**/*.ts`, `src/app/shared/components/**/*.ts` e `ignores` = `src/app/shared/components/faro/**`:
