@@ -55,6 +55,18 @@ export const routes: Routes = [
     ],
   },
 
+  // ── Galeria de desenvolvimento (só em dev: o CLI troca `ngDevMode` por `false` em produção,
+  // e o `import()` dentro do ramo some do pacote) · antes de `:codigo/perdido` e `:codigo` ──
+  ...(ngDevMode
+    ? [
+        {
+          path: 'dev/ui',
+          loadChildren: () =>
+            import('./features/dev-gallery/dev-gallery.routes').then((m) => m.DEV_GALLERY_ROUTES),
+        },
+      ]
+    : []),
+
   // ── Resgate público dinâmico (SSR) · `:codigo/perdido` antes de `:codigo` ──
   {
     path: ':codigo/perdido',

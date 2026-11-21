@@ -400,7 +400,7 @@ fundo lima, sem uso no código); os arquivos `.css` vazios `src/app/app.css`,
     - `rgb(page, selector, property)`: devolve `getComputedStyle(el)[property]`.
   - **Feito quando**: `npx playwright test e2e/smoke.spec.ts` passa e `e2e/support/ui.ts` existe.
 
-- [ ] T015 Esqueleto da galeria de desenvolvimento: `src/app/features/dev-gallery/dev-gallery.routes.ts`, `src/app/features/dev-gallery/gallery-index/gallery-index.ts`, `src/app/app.routes.ts`, `e2e/dev-gallery.spec.ts`
+- [x] T015 Esqueleto da galeria de desenvolvimento: `src/app/features/dev-gallery/dev-gallery.routes.ts`, `src/app/features/dev-gallery/gallery-index/gallery-index.ts`, `src/app/app.routes.ts`, `e2e/dev-gallery.spec.ts`
   - **Referência**: `contracts/shells.contract.md` §7 e §8; `research.md` §R14.
   - **Faça**: crie `DEV_GALLERY_ROUTES` (por enquanto só `{ path: '', loadComponent: GalleryIndex }`)
     e o componente `app-gallery-index` com `data-testid="dev-gallery"`, um `<h1>` "Galeria de
