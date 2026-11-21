@@ -53,7 +53,9 @@ admin ver. Os números são folgados de propósito: o objetivo é conter abuso, 
 ## 4. Operações do tutor
 
 Nova função interna `rpc_guard(p_scope text, p_limit int, p_window_seconds int)`, chamada no
-começo de cada RPC, com chave `auth.uid()`. Usa `rate_limit_hit`.
+começo de cada RPC, com chave `auth.uid()`. Usa `rate_limit_hit`. **A contagem só vale porque as
+RPCs não lançam exceção para erro de negócio** (`tutor-rpcs.contract.md`, "Formato de resposta"):
+no estouro, `rpc_guard` devolve o erro e a RPC o **retorna**.
 
 | RPC | Escopo | Limite | No estouro |
 |---|---|---|---|

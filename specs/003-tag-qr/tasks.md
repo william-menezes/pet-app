@@ -36,6 +36,11 @@
     (gerados em T020). **Códigos reais do lote-001 e qualquer PIN nunca entram em arquivo
     versionado** (o repositório é público). Nada que gere ou valide códigos reais vai para
     produção antes de T011 passar.
+13A. **RPC não lança exceção para erro de negócio.** Toda RPC do tutor devolve
+    `{ "ok": false, "error": "<código>" }` em vez de `RAISE EXCEPTION`
+    (`contracts/tutor-rpcs.contract.md`, "Formato de resposta"). Uma exceção desfaria o contador de
+    PIN errado e o limite de chamadas. Em pgTAP, confira o erro com `is(… ->> 'error', …)`, nunca
+    com `throws_ok`.
 14. **Telas de referência**: `design/telas-v2/` é a direção visual aprovada pelo William em 12
     telas-piloto (resgate, modo perdido, painel e entrar, nas três larguras). As outras 75 seguem o
     mesmo sistema, mas ele ainda não as revisou, e nenhuma foi conferida renderizada. Onde a tela
@@ -59,6 +64,15 @@
   2026-11-21; o lote fica em `tools/tag-generator/lote-001/`, **fora do git**.
 - Operacional: `tagfaro.com.br` apontando para a Vercel com a página de contingência no ar antes de
   qualquer tag ser distribuída.
+
+---
+
+## Como verificar tarefas de banco sem Docker (leia antes da Phase 1)
+
+Igual à `004`: a máquina não tem Docker nem a CLI do Supabase. Todo "Feito quando" que cite pgTAP,
+`supabase` ou `deno test` com banco é verificado no job "supabase" do CI: commit, `git push origin
+003-tag-qr`, `gh run watch`, e só então marcar `[x]`. Detalhe em
+`specs/004-conta-tutor/tasks.md`, seção de mesmo nome.
 
 ---
 

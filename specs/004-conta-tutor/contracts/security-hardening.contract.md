@@ -126,6 +126,8 @@ Duas políticas, por tipo de documento:
   confira na documentação da Vercel como regras de cabeçalho sobrepostas se combinam; o teste de
   cabeçalhos no preview (T037A da `003`) é o que vale.
 - `style-src 'unsafe-inline'` continua (decisão da `002`, R19).
+- `upgrade-insecure-requests` e o HSTS só são emitidos quando o pedido chegou por HTTPS (produção
+  e preview). Em `localhost` eles quebrariam a conversa com o Supabase local, que é HTTP.
 
 ## 4. Configuração do Supabase Auth
 
@@ -168,8 +170,9 @@ Valem para as quatro funções desta spec e para `login-guard`:
 2. `search_path` das funções `security definer` da `001` passa a `public, pg_temp`.
 3. `ALTER ROLE anon SET statement_timeout = '3s';` e `ALTER ROLE authenticated SET
    statement_timeout = '8s';`.
-4. `DROP EXTENSION IF EXISTS pg_graphql;`. No `config.toml`, `[api] schemas = ["public"]` e
-   `max_rows = 200`. Nada no Faro usa GraphQL.
+4. `DROP EXTENSION IF EXISTS pg_graphql;`. No `config.toml`, `[api] schemas = ["public"]`. Nada no
+   Faro usa GraphQL. **`max_rows` continua em 1000**: o limite vale também para `service_role` e
+   cortaria em silêncio a geração de etiquetas e a exportação de um lote (até 540 códigos).
 
 **Portão de catálogo**: `supabase/tests/security_catalog.test.sql` (pgTAP), que roda em toda spec
 daqui em diante e falha se:
@@ -197,7 +200,9 @@ O repositório do GitHub é **público**. Isso muda o peso de cada item abaixo.
   `src/app/` (o comentário do `eslint.config.js` promete essa regra, mas ela não existe).
 - **`npm run check:prod-config`**: reprova build de produção com `turnstileSiteKey` vazio, com
   URL do Supabase apontando para `localhost`, ou com qualquer `*_STUB_*` no ambiente.
-- **CI**: `.github/workflows/ci.yml`, em todo PR e em push para `develop`, `homolog` e `master`:
+- **CI** (o arquivo base, com os dois jobs, é criado **antes** desta spec começar, porque todo
+  "Feito quando" de banco depende dele; aqui ele ganha os `check:*` novos):
+  `.github/workflows/ci.yml`, em todo PR e em push para `develop`, `homolog` e `master`:
   `npm ci`, `lint`, `test`, `build` e todos os `check:*`. Um segundo job sobe o Supabase local
   (`supabase/setup-cli` + `supabase start`) e roda `supabase test db` e `deno test`. **Esse job é
   o único lugar em que os testes de banco rodam enquanto a máquina de desenvolvimento não tiver

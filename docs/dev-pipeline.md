@@ -59,6 +59,13 @@ Pare no primeiro checkpoint e me mostre o resultado.
 Ou, pela ferramenta Agent, `subagent_type: backend-supabase | frontend-angular | qa-engineer`,
 dizendo a spec e a fase. Depois de criar ou editar agentes, reinicie a sessão (ou use `/agents`).
 
+## Testes de banco sem Docker
+
+A máquina de desenvolvimento não tem Docker nem a CLI do Supabase. Os testes de banco (pgTAP) e
+das Edge Functions rodam no **GitHub Actions** (`.github/workflows/ci.yml`, job "supabase"): o
+agente faz push da branch da feature e lê o resultado com `gh run watch`. Uma tarefa de banco só é
+marcada como feita com esse job verde.
+
 ## Ordem das specs do MVP
 
 1. `002-ui-zardui` — base visual. Começa pela verificação de compatibilidade do ZardUI com o Angular 21.

@@ -1,9 +1,28 @@
 # Contrato: operações do tutor
 
 Todas são RPCs `security definer` com `search_path` fixo, `EXECUTE` para `authenticated`, e usam
-`auth.uid()` como identidade. Erros são lançados com `RAISE EXCEPTION` usando os códigos abaixo em
-`MESSAGE`; o frontend traduz o código em texto. **Nenhuma mensagem revela a situação de uma tag que
-não é do tutor.**
+`auth.uid()` como identidade. O frontend traduz o código de erro em texto. **Nenhuma mensagem
+revela a situação de uma tag que não é do tutor.**
+
+## Formato de resposta (vale para todas as RPCs deste arquivo)
+
+**Nenhuma RPC daqui lança exceção para erro de negócio.** O PostgREST roda cada chamada numa
+transação: um `RAISE EXCEPTION` desfaz tudo o que a função gravou antes dele, inclusive o contador
+de PIN errado e o registro do limite de chamadas. Com exceção, o bloqueio por tentativas **nunca
+dispararia**. Por isso:
+
+- Sucesso: objeto `jsonb` com `"ok": true` mais os campos descritos em cada função.
+- Erro de negócio (todos os códigos da tabela abaixo): `{ "ok": false, "error": "<código>" }`, com
+  `"retry_after_seconds"` quando o código for `locked` ou `too_many_requests`. A função **retorna**
+  (não lança), e o que ela gravou antes fica gravado.
+- As funções descritas abaixo como `returns void` passam a `returns jsonb` e devolvem
+  `{ "ok": true }`. Onde um exemplo de saída abaixo não mostrar `"ok"`, acrescente-o.
+- `RAISE EXCEPTION` fica só para o que não deveria acontecer (violação de integridade, erro interno).
+- Nos testes pgTAP, erro de negócio se confere com `is(resultado ->> 'error', '<código>')`, nunca
+  com `throws_ok`: o `throws_ok` desfaz a transação e esconde exatamente o defeito que esta regra
+  evita.
+- No frontend, os serviços de `core/tags/` tratam `ok === false` como erro de negócio e só tratam
+  o erro do cliente Supabase como falha de rede ou interna.
 
 ## Códigos de erro
 
@@ -113,7 +132,12 @@ quantos vínculos encerrou. Não apaga códigos. Pode ser chamada duas vezes.
 
 ## Testes obrigatórios (pgTAP)
 
-- PIN certo ativa; PIN errado não ativa e conta tentativa.
+- PIN certo ativa; PIN errado não ativa e conta tentativa. **Depois de um `wrong_pin`, a linha de
+  `tag_pin_attempts` existe e `tag_codes.pin_fail_count_24h` subiu** (prova de que a contagem não
+  foi desfeita pelo erro).
+- Chamadas que falham antes do PIN (`invalid_code`, `pet_not_found`, `tag_unavailable`) também
+  contam no limite de chamadas: a 11ª `check_tag_for_link` com código inválido em um minuto
+  devolve `locked`.
 - 5 erros em 15 min → `locked` para aquela conta; outra conta ainda consegue tentar.
 - 20 erros em 24 h → tag travada para todos; evento de auditoria presente.
 - PIN certo durante bloqueio → `locked`.

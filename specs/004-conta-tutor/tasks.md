@@ -102,6 +102,23 @@ Operacional, para produção (não bloqueia o desenvolvimento): `TODO(SMS_PROVID
 
 ---
 
+## Como verificar tarefas de banco sem Docker (leia antes da Phase 1)
+
+A máquina de desenvolvimento **não tem Docker nem a CLI do Supabase**. `supabase start`,
+`supabase test db` e `deno test` com banco **não rodam localmente**. Eles rodam no job "supabase"
+do CI (`.github/workflows/ci.yml`). Para toda tarefa cujo "Feito quando" cite pgTAP, `supabase`
+ou `deno test`:
+
+1. faça o commit (caminhos explícitos) e `git push origin 004-conta-tutor`;
+2. acompanhe com `gh run watch` (ou `gh run list --branch 004-conta-tutor` e `gh run view <id> --log-failed`);
+3. só marque `[x]` com o job verde. Job vermelho: leia o log, corrija, repita.
+
+Agrupe tarefas pequenas num mesmo push para não esperar o CI a cada linha, mas nunca marque uma
+tarefa de banco sem ter visto o job passar. Se o `deno` estiver instalado na máquina, os testes de
+função que não precisam de banco podem rodar localmente.
+
+---
+
 ## Phase 1: Setup
 
 **Objetivo**: conferir os pré-requisitos e preparar configuração e pastas.
@@ -774,11 +791,12 @@ fase dependem só da Phase 2; as de tela dependem das telas das histórias 1, 4,
   `deno.lock` versionado. **Feito quando**: `deno test` cobre `413`, `400` e `405`; nenhum
   import com versão flutuante em `supabase/functions/` (`grep` vazio).
 - [ ] T101 [BE] Configuração do Auth (contrato §4 e §1): rotação de refresh token, entrada anônima
-  e vínculo manual desligados, seção `[auth.captcha]` com Turnstile e o segredo por variável de
-  ambiente. Use as chaves de teste do Turnstile no ambiente local, copiadas da documentação da
-  Cloudflare. **Se a CLI recusar alguma chave, PARE e relate.** **Feito quando**:
-  `supabase start` sobe sem aviso de chave desconhecida e uma chamada a `signUp` sem token é
-  recusada.
+  e vínculo manual desligados, e a seção `[auth.captcha]` com Turnstile e o segredo por variável de
+  ambiente, **ainda com `enabled = false`** (ligar agora quebraria todo login até as telas
+  enviarem o token; quem liga é a T104). Use as chaves de teste do Turnstile no ambiente local,
+  copiadas da documentação da Cloudflare. **Se a CLI recusar alguma chave, PARE e relate.**
+  **Feito quando**: `supabase start` sobe sem aviso de chave desconhecida e os testes existentes
+  continuam verdes.
 - [ ] T102 [BE] Repassar o token do desafio ao Auth: `password-recovery` (passo 7) e
   `_shared/reauth.ts`; corpo `captcha_token` em `phone-verify-start` (troca) e `account-delete`;
   código de erro `captcha_failed`. **Feito quando**: `deno test` prova que o token chega ao Auth
@@ -789,8 +807,11 @@ fase dependem só da Phase 2; as de tela dependem das telas das histórias 1, 4,
   `npm run check:bundle` mostra que o pacote inicial não contém `challenges.cloudflare.com`.
 - [ ] T104 [FE] Usar o desafio em "Entrar", "Criar conta", "Confirme seu e-mail" (reenvio),
   "Esqueci a senha", "Trocar celular", "Senha" e no diálogo de exclusão; `reset()` depois de cada
-  envio; texto de `captcha_failed`. **Feito quando**: teste de componente de cada tela cobre o
-  envio com token e o erro `captcha_failed`.
+  envio; texto de `captcha_failed`. **Por último**, e só depois de todas as telas enviarem o token:
+  ligar `[auth.captcha] enabled = true` no `config.toml` e ajustar os apoios de E2E que entram
+  pela tela. **Feito quando**: teste de componente de cada tela cobre o envio com token e o erro
+  `captcha_failed`; com o desafio ligado, `signUp` sem token é recusado e toda a suíte de E2E
+  existente continua verde.
 - [ ] T105 [FE] Cabeçalhos (contrato §3): `src/security-headers.ts`, uso no `src/server.ts` com
   o middleware **antes** dos arquivos estáticos, `vercel.json` com as duas políticas e
   `scripts/security/check-headers.mjs` (`npm run check:headers`). **Feito quando**:
@@ -799,10 +820,9 @@ fase dependem só da Phase 2; as de tela dependem das telas das histórias 1, 4,
   pre-commit, `check:audit` com a triagem registrada em `specs/004-conta-tutor/execution-log.md`,
   `check:templates` e `check:prod-config`. **Feito quando**: cada script passa no estado atual e
   reprova o exemplo ruim que o próprio teste cria e apaga.
-- [ ] T107 [QA] CI: `.github/workflows/ci.yml` (job do app e job do Supabase local) e
-  `.github/dependabot.yml`, conforme o contrato §7. **Feito quando**: o workflow é válido
-  (`actionlint` ou a validação do `gh`) e, depois do primeiro push da branch, os dois jobs ficam
-  verdes. Se não houver permissão para dar push, deixe o arquivo pronto e relate.
+- [ ] T107 [QA] CI: acrescentar ao `.github/workflows/ci.yml` (que já existe, com o job do app e o
+  job do Supabase local) os `check:*` desta fase, e criar `.github/dependabot.yml`, conforme o
+  contrato §7. **Feito quando**: depois do push da branch, os dois jobs ficam verdes.
 - [ ] T108 [QA] `e2e/security/headers.spec.ts` e `e2e/security/captcha.spec.ts` (contrato §9).
   **Feito quando**: passam com as chaves de teste, e o caso da chave que sempre reprova mostra
   `captcha_failed` nas quatro telas.

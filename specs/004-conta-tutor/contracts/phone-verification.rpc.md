@@ -4,7 +4,9 @@ Todas `SECURITY DEFINER`, `SET search_path = public, pg_temp`, sem SQL dinâmico
 `data-model.md` §1 e §2. As funções marcadas "só `service_role`" são chamadas apenas pelas Edge
 Functions `phone-verify-start` e `phone-verify-confirm`.
 
-Erros são lançados com `RAISE EXCEPTION '<código>'` (o código vai em `MESSAGE`), como na `003`.
+Erros são lançados com `RAISE EXCEPTION '<código>'` (o código vai em `MESSAGE`). **Os caminhos que
+contam tentativa não lançam**: devolvem `status` em `jsonb`, porque uma exceção desfaria a
+contagem. A `003` segue a mesma regra em todas as RPCs do tutor.
 
 ---
 
