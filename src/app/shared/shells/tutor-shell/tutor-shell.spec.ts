@@ -4,6 +4,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 
 import { ThemeService } from '@/core/theme/theme.service';
+import { LOGO } from '@/shared/components/faro/logo/brand-assets';
 
 import { TutorShell } from './tutor-shell';
 
@@ -162,7 +163,7 @@ describe('TutorShell · tema', () => {
     theme.setPreference('dark');
     fixture.detectChanges();
     expect(logo().getAttribute('src')).not.toBe(claro);
-    expect(logo().getAttribute('src')).toBe('/logos/logo-full-dark.svg');
+    expect(logo().getAttribute('src')).toBe(LOGO.onDark);
   });
 
   it('o contêiner de overlays ganha dark no escuro, perde ao voltar ao claro e ao destruir a casca', () => {
