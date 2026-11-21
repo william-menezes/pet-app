@@ -5,6 +5,7 @@
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build",
+    "build:stats": "ng build --stats-json",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "serve:ssr:faro": "node dist/faro/server/server.mjs",
@@ -12,6 +13,7 @@
     "e2e": "playwright test",
     "check:tokens": "node scripts/ui-checks/tokens.mjs",
     "check:stack": "node scripts/ui-checks/removed-stack.mjs",
+    "check:bundle": "node scripts/ui-checks/public-bundle.mjs",
     "check:boundary": "node scripts/ui-checks/boundary.mjs",
     "check:ui": "npm run check:tokens && npm run check:stack && npm run check:boundary"
   },

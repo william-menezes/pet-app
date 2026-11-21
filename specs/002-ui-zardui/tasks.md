@@ -815,7 +815,7 @@ vestígio de PrimeNG.
        foco para `#conteudo`.
   - **Feito quando**: `npx playwright test e2e/ui-shells.spec.ts` passa.
 
-- [ ] T050 [US3] Fronteira no pacote: `scripts/ui-checks/public-bundle.mjs` e os scripts `build:stats` e `check:bundle` em `package.json`
+- [x] T050 [US3] Fronteira no pacote: `scripts/ui-checks/public-bundle.mjs` e os scripts `build:stats` e `check:bundle` em `package.json`
   - **Referência**: `contracts/shells.contract.md` §10; `research.md` §R15.
   - **Faça**: em `package.json`: `"build:stats": "ng build --stats-json"` e
     `"check:bundle": "node scripts/ui-checks/public-bundle.mjs"`. O script lê
