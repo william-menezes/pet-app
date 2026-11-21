@@ -12,3 +12,4 @@
 - [Ambiente Windows na spec 002](gotcha-zardui-ambiente-windows.md) — ng test só pelo PowerShell; importar Boxicons por subcaminho
 - [CSS e testes da spec 002](gotcha-zardui-css-e-testes.md) — camadas, ng-icon, toque de 44px, e2e em dev
 - [Fase 4 da spec 002](gotcha-zardui-fase4-testes-e-capturas.md) — matchMedia no jsdom, Playwright apaga test-results, heredoc e regex
+- [Host display vs hidden](gotcha-host-display-vs-hidden.md) — esconder por largura em div de embrulho; e2e de atalho espera hidratação
