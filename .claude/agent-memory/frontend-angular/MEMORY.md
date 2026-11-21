@@ -11,3 +11,4 @@
 - [Pivô: ZardUI no lugar de PrimeNG](project-pivo-ui-zardui.md) — desde 2026-11-21; memórias de PrimeNG ficam obsoletas após a spec 002
 - [Ambiente Windows na spec 002](gotcha-zardui-ambiente-windows.md) — ng test só pelo PowerShell; importar Boxicons por subcaminho
 - [CSS e testes da spec 002](gotcha-zardui-css-e-testes.md) — camadas, ng-icon, toque de 44px, e2e em dev
+- [Fase 4 da spec 002](gotcha-zardui-fase4-testes-e-capturas.md) — matchMedia no jsdom, Playwright apaga test-results, heredoc e regex
