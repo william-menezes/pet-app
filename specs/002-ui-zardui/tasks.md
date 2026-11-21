@@ -925,7 +925,7 @@ vestígio de PrimeNG.
 **Independent Test**: `npx playwright test e2e/legacy-sw.spec.ts` e conferir os arquivos de
 `public/icons/`.
 
-- [ ] T057 [US5] Remover o service worker e deixar o arquivo de desligamento: `public/ngsw-worker.js`, `src/app/app.config.ts`, `angular.json`, `package.json`; apagar `ngsw-config.json`
+- [x] T057 [US5] Remover o service worker e deixar o arquivo de desligamento: `public/ngsw-worker.js`, `src/app/app.config.ts`, `angular.json`, `package.json`; apagar `ngsw-config.json`
   - **Referência**: `research.md` §R12. **A ordem importa.**
   - **Faça**:
     1. **Primeiro**, copie o arquivo de desligamento (antes de desinstalar o pacote):

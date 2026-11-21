@@ -1,7 +1,6 @@
 import {
   ApplicationConfig,
   ErrorHandler,
-  isDevMode,
   provideBrowserGlobalErrorListeners,
   provideZonelessChangeDetection,
 } from '@angular/core';
@@ -11,7 +10,6 @@ import {
   withEventReplay,
   withIncrementalHydration,
 } from '@angular/platform-browser';
-import { provideServiceWorker } from '@angular/service-worker';
 
 import { routes } from './app.routes';
 import { GlobalErrorHandler } from './core/error/global-error-handler';
@@ -33,11 +31,6 @@ export const appConfig: ApplicationConfig = {
     // event replay (não perde o clique no CTA de resgate antes da hidratação).
     provideClientHydration(withIncrementalHydration(), withEventReplay()),
 
-    // PWA: service worker só fora de dev.
-    provideServiceWorker('ngsw-worker.js', {
-      enabled: !isDevMode(),
-      registrationStrategy: 'registerWhenStable:30000',
-    }),
     provideZard(),
 
     // Ícones do Faro (Boxicons sob nomes do Faro). Ver shared/icons/faro-icons.ts.
