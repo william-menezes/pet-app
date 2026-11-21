@@ -12,7 +12,8 @@
     "e2e": "playwright test",
     "check:tokens": "node scripts/ui-checks/tokens.mjs",
     "check:stack": "node scripts/ui-checks/removed-stack.mjs",
-    "check:ui": "npm run check:tokens && npm run check:stack"
+    "check:boundary": "node scripts/ui-checks/boundary.mjs",
+    "check:ui": "npm run check:tokens && npm run check:stack && npm run check:boundary"
   },
   "private": true,
   "packageManager": "npm@10.9.4",

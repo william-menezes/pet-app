@@ -768,7 +768,7 @@ vestígio de PrimeNG.
   - **Feito quando**: `npx playwright test e2e/smoke.spec.ts` e `npm run build` passam (a página
     é pré-renderizada: o build falha se algo usar `window` no servidor).
 
-- [ ] T047 [US3] Fronteira da página pública no lint: `eslint.config.js`, `scripts/ui-checks/boundary.mjs`, scripts `check:boundary` e `check:ui` em `package.json`
+- [x] T047 [US3] Fronteira da página pública no lint: `eslint.config.js`, `scripts/ui-checks/boundary.mjs`, scripts `check:boundary` e `check:ui` em `package.json`
   - **Referência**: `contracts/shells.contract.md` §9.
   - **Faça**: troque o `group` e a `message` da regra `no-restricted-imports` do bloco
     `src/app/features/public/**/*.ts` pelos do contrato. Crie `boundary.mjs`: usa
