@@ -654,12 +654,12 @@ os dados pessoais sumiram e que a trilha de auditoria ficou sem identificação.
   de teste: `confirm` errado ⇒ `confirmation_required`; senha errada ⇒ `invalid_password` e o
   usuário continua existindo; senha certa ⇒ `{ "ok": true }`, o usuário some de `auth.users` e de
   `perfis`, e existe um evento `conta_excluida` com `ator IS NULL`.
-- [ ] T078 [P] [US5] [FE] Criar `src/app/core/account/privacy.service.ts` (`exportData`,
+- [x] T078 [P] [US5] [FE] Criar `src/app/core/account/privacy.service.ts` (`exportData`,
   `deleteAccount`) e o `.spec.ts` conforme `contracts/frontend-services.contract.md` §3 e
   `contracts/account-export.rpc.md` ("Frontend"). **Feito quando**: o teste cobre o nome do
   arquivo `faro-meus-dados-AAAA-MM-DD.json`, `rate_limited` com `retryAfterSeconds`, o envio de
   `{ confirm: 'EXCLUIR', password }`, cada código de erro e a limpeza local depois do sucesso.
-- [ ] T079 [US5] [FE] Preencher `src/app/features/account/account.routes.ts` com a rota índice
+- [x] T079 [US5] [FE] Preencher `src/app/features/account/account.routes.ts` com a rota índice
   (`data: { hub: true }`) e criar `src/app/features/account/account-home/` (3 arquivos): cabeçalho
   com nome e e-mail, as cinco linhas e o botão "Sair" (§4 do contrato, "Conta (lista)"). Ligar em
   `src/app/app.routes.ts` como filho de `app`: `{ path: 'conta', loadChildren: … }` **antes** do
@@ -667,12 +667,12 @@ os dados pessoais sumiram e que a trilha de auditoria ficou sem identificação.
   **Feito quando**: o teste confere os `data-testid` `account-*`, o selo do celular nos dois
   estados e que "Sair" chama `AccountService.logout()`; no navegador, `/app/conta` abre com o item
   "Conta" ativo na navegação.
-- [ ] T080 [US5] [FE] Criar `src/app/features/account/privacy/privacy.ts`, `privacy.html` e
+- [x] T080 [US5] [FE] Criar `src/app/features/account/privacy/privacy.ts`, `privacy.html` e
   `privacy.spec.ts`, registrar `/app/conta/privacidade`, e implementar o bloco **Exportar meus
   dados** (texto, botão `account-privacy-export`, erro `rate_limited` com o tempo). Cabeçalho
   `app-screen-header` com voltar para `/app/conta`. **Feito quando**: o teste cobre o download
   disparado e a mensagem de limite.
-- [ ] T081 [US5] [FE] Criar `src/app/features/account/privacy/delete-account-dialog.ts` (+ spec) e
+- [x] T081 [US5] [FE] Criar `src/app/features/account/privacy/delete-account-dialog.ts` (+ spec) e
   ligar ao botão de texto vermelho `account-privacy-delete`: diálogo `z-alert-dialog` com o texto
   das consequências, campo "Digite EXCLUIR", campo "Senha atual" (`hasPassword()`) ou aviso e
   botão "Entrar de novo com o Google" (`isGoogleOnly()`; antes, `ReturnUrlService.capture('/app/conta/privacidade')`),
