@@ -1,0 +1,18 @@
+{
+  "_": "Gerado por supabase/scripts/make-seed.ts; nao edite a mao. Codigos de TESTE do seed (nenhum e do lote-001). Sem PIN: o seed nao tem PIN conhecido.",
+  "batch": "lote-900",
+  "assigned": "7K3MQ9XAC",
+  "available": "5P8NMRXYW",
+  "available2": "N473QHBHE",
+  "available3": "7C6G5NHR8",
+  "blocked": "5QQWQ2MM4",
+  "void": "NKCBJV2HM",
+  "display": {
+    "assigned": "7K3M-Q9XA-C",
+    "available": "5P8N-MRXY-W",
+    "available2": "N473-QHBH-E",
+    "available3": "7C6G-5NHR-8",
+    "blocked": "5QQW-Q2MM-4",
+    "void": "NKCB-JV2H-M"
+  }
+}

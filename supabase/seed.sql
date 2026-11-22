@@ -126,3 +126,63 @@ UPDATE public.perfis
 -- Nota: Em produção, o admin inicial é criado via operação manual controlada
 -- (ex.: script seguro ou painel do Supabase), nunca via seed commutado.
 -- Retenção deste seed: apenas para ambiente dev/staging (CLAUDE.md §8.2).
+
+-- >>> 003-tag-qr (gerado; não edite à mão)
+-- Spec 003-tag-qr (T020). Gerado por supabase/scripts/make-seed.ts: nao edite a mao; rode o script.
+-- Nao cria usuario nem mexe em perfis: a Ana e o tutor A (...0001), que a 001 e a 004 ja deixam pronto
+-- (termos aceitos e celular confirmado). O tutor B (...0002) nao ganha pet nem tag.
+-- Nenhum PIN esta escrito aqui: cada codigo recebe um PIN novo ao carregar o banco, guarda so o hash bcrypt de custo 12
+-- e descarta o PIN. Para ativar um codigo available em teste, o admin reemite o PIN (admin_reissue_pin).
+-- Os codigos sao de TESTE (vetores/derivados do modulo de codigo); nenhum e do lote-001. Seed nunca roda em producao.
+
+INSERT INTO public.pets (id, tutor_id, name, species, breed, sex, size, neutered, temperament, care_notes)
+VALUES
+  ('00000000-0000-0000-0000-0000000a0001', '00000000-0000-0000-0000-000000000001', 'Paçoca', 'dog', 'Vira-lata caramelo', 'male', 'medium', true,
+   ARRAY['Dócil com pessoas', 'Medo de barulho'], 'Toma remédio para alergia de manhã. Não dar petisco sem perguntar.'),
+  ('00000000-0000-0000-0000-0000000a0002', '00000000-0000-0000-0000-000000000001', 'Mel', 'cat', 'Sem raça definida', 'female', 'small', true,
+   ARRAY['Arisca com estranhos'], NULL);
+
+-- Paçoca mostra o primeiro nome da Ana e o WhatsApp (ela tem celular confirmado); o resto vem dos padroes.
+UPDATE public.rescue_profiles
+   SET show_tutor_first_name = true, show_whatsapp = true
+ WHERE pet_id = '00000000-0000-0000-0000-0000000a0001';
+
+INSERT INTO public.tag_batches (id, quantity, notes)
+VALUES ('lote-900', 6, 'Lote de teste do seed (so desenvolvimento)');
+
+DO $seed$
+DECLARE
+  r record;
+  v_pin text;
+BEGIN
+  FOR r IN SELECT * FROM (VALUES
+    ('7K3MQ9XAC', 'assigned', 0),
+    ('5P8NMRXYW', 'available', 1),
+    ('N473QHBHE', 'available', 2),
+    ('7C6G5NHR8', 'available', 3),
+    ('5QQWQ2MM4', 'blocked', 4),
+    ('NKCBJV2HM', 'void', 5)
+  ) AS t (code, status, qr_mask)
+  LOOP
+    v_pin := public.new_activation_pin();
+    INSERT INTO public.tag_codes (code, batch_id, status, activation_pin_hash, qr_mask)
+    VALUES (r.code, 'lote-900', r.status,
+            extensions.crypt(v_pin, extensions.gen_salt('bf', 12)), r.qr_mask);
+  END LOOP;
+END;
+$seed$;
+
+-- Paçoca com a tag ativa desde 02 nov, e tres scans: um com GPS, um aproximado por IP e um sem localizacao.
+INSERT INTO public.tag_assignments (id, tag_code, pet_id, tutor_id, started_at)
+VALUES ('00000000-0000-0000-0000-0000000b0001', '7K3MQ9XAC', '00000000-0000-0000-0000-0000000a0001', '00000000-0000-0000-0000-000000000001', '2026-11-02 14:00:00-03');
+
+INSERT INTO public.scan_events (tag_code, assignment_id, status_at_scan, occurred_at, last_seen_at, ip_hash, geo_method,
+                                lat, lng, accuracy_m, city, region, notified_at)
+VALUES
+  ('7K3MQ9XAC', '00000000-0000-0000-0000-0000000b0001', 'assigned', now() - interval '2 days', now() - interval '2 days',
+   'seed-ip-hash-1', 'gps', -23.5614, -46.6559, 12, NULL, NULL, now() - interval '2 days'),
+  ('7K3MQ9XAC', '00000000-0000-0000-0000-0000000b0001', 'assigned', now() - interval '9 days', now() - interval '9 days',
+   'seed-ip-hash-2', 'ip', -23.5505, -46.6333, 3000, 'São Paulo', 'SP', now() - interval '9 days'),
+  ('7K3MQ9XAC', '00000000-0000-0000-0000-0000000b0001', 'assigned', now() - interval '20 days', now() - interval '20 days',
+   'seed-ip-hash-3', 'none', NULL, NULL, NULL, NULL, NULL, now() - interval '20 days');
+-- <<< 003-tag-qr
