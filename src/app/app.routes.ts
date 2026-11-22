@@ -33,6 +33,10 @@ export const routes: Routes = [
         title: 'Meus pets — Faro',
       },
       {
+        path: 'conta',
+        loadChildren: () => import('./features/account/account.routes').then((m) => m.ACCOUNT_ROUTES),
+      },
+      {
         path: '**',
         loadComponent: () =>
           import('./shared/shells/shell-fallback/shell-fallback').then((m) => m.ShellFallback),

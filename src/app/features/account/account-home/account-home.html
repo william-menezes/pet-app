@@ -1,0 +1,125 @@
+<!-- Conta (lista). Referência: design/telas-v2/V2-conta*.dc.html (claro e escuro); contrato §4. -->
+<div class="flex w-full flex-col gap-3 md:max-w-[640px] md:gap-4" data-testid="account-home">
+  <h1
+    class="font-display text-[30px] leading-[1.1] font-bold tracking-[-0.03em] text-foreground md:text-[28px] xl:text-4xl"
+    i18n>
+    Conta
+  </h1>
+
+  @if (account(); as current) {
+    <!-- Cabeçalho: inicial, nome e e-mail -->
+    <div class="flex items-center gap-3.5 rounded-xl bg-card p-4">
+      <span
+        class="flex size-14 shrink-0 items-center justify-center rounded-full bg-foreground font-display text-[22px] font-semibold text-background"
+        aria-hidden="true">
+        {{ initial() }}
+      </span>
+      <span class="flex min-w-0 flex-col gap-0.5">
+        <span class="truncate font-display text-[19px] font-semibold text-foreground" data-testid="account-name">{{ current.nome }}</span>
+        <span class="truncate text-sm text-muted-foreground" data-testid="account-email">{{ current.email }}</span>
+      </span>
+    </div>
+
+    <div z-item-group>
+      <a z-item routerLink="/app/conta/dados" data-testid="account-row-personal">
+        <z-item-media><app-account-icon-tile icon="user" /></z-item-media>
+        <z-item-content>
+          <span z-item-title i18n>Dados pessoais</span>
+          <p z-item-description i18n>Nome e e-mail</p>
+        </z-item-content>
+        <ng-icon name="chev" size="20" class="shrink-0 text-muted-foreground" aria-hidden="true" />
+      </a>
+      <z-item-separator />
+      <a z-item routerLink="/app/conta/celular" data-testid="account-row-phone">
+        <z-item-media><app-account-icon-tile icon="phone" /></z-item-media>
+        <z-item-content>
+          <span z-item-title i18n>Celular</span>
+          @if (phoneText(); as number) {
+            <p z-item-description>{{ number }}</p>
+          } @else {
+            <p z-item-description i18n>Nenhum número cadastrado</p>
+          }
+        </z-item-content>
+        <span class="flex shrink-0 items-center gap-2">
+          @if (phoneConfirmed()) {
+            <z-badge zType="success" data-testid="account-phone-badge" i18n>Confirmado</z-badge>
+          } @else {
+            <z-badge zType="neutral" data-testid="account-phone-badge" i18n>Não confirmado</z-badge>
+          }
+          <ng-icon name="chev" size="20" class="text-muted-foreground" aria-hidden="true" />
+        </span>
+      </a>
+      <z-item-separator />
+      <a z-item routerLink="/app/conta/senha" data-testid="account-row-password">
+        <z-item-media><app-account-icon-tile icon="lock" /></z-item-media>
+        <z-item-content>
+          <span z-item-title i18n>Senha</span>
+          <p z-item-description i18n>Trocar a senha de entrada</p>
+        </z-item-content>
+        <ng-icon name="chev" size="20" class="shrink-0 text-muted-foreground" aria-hidden="true" />
+      </a>
+      <z-item-separator />
+      <a z-item routerLink="/app/conta/aparencia" data-testid="account-row-appearance">
+        <z-item-media><app-account-icon-tile icon="palette" /></z-item-media>
+        <z-item-content>
+          <span z-item-title i18n>Aparência</span>
+          <p z-item-description>{{ appearanceText() }}</p>
+        </z-item-content>
+        <ng-icon name="chev" size="20" class="shrink-0 text-muted-foreground" aria-hidden="true" />
+      </a>
+      <z-item-separator />
+      <a z-item routerLink="/app/conta/privacidade" data-testid="account-row-privacy">
+        <z-item-media><app-account-icon-tile icon="shield" /></z-item-media>
+        <z-item-content>
+          <span z-item-title i18n>Privacidade</span>
+          <p z-item-description i18n>Baixar ou excluir seus dados</p>
+        </z-item-content>
+        <ng-icon name="chev" size="20" class="shrink-0 text-muted-foreground" aria-hidden="true" />
+      </a>
+    </div>
+  } @else if (loading()) {
+    <!-- Carregando -->
+    <div class="flex items-center gap-3.5 rounded-xl bg-card p-4" aria-busy="true" data-testid="account-loading">
+      <z-skeleton [class]="'size-14 shrink-0 rounded-full'" />
+      <span class="flex flex-1 flex-col gap-2">
+        <z-skeleton [class]="'h-5 w-40'" />
+        <z-skeleton [class]="'h-4 w-52'" />
+      </span>
+    </div>
+    <z-skeleton [class]="'h-[236px] rounded-xl'" />
+  } @else {
+    <!-- Não carregou: próximo passo claro -->
+    <z-alert
+      zType="danger"
+      [zRole]="'status'"
+      zDescription="Não conseguimos carregar sua conta. Verifique sua conexão e tente de novo."
+      i18n-zDescription
+      data-testid="account-load-error" />
+    <div>
+      <button type="button" z-button zType="outline" (click)="load()" data-testid="account-retry" i18n>
+        Tentar de novo
+      </button>
+    </div>
+  }
+
+  <div>
+    <button
+      type="button"
+      z-button
+      zType="ghost"
+      zSize="lg"
+      [zLoading]="loggingOut()"
+      [zDisabled]="loggingOut()"
+      (click)="logout()"
+      data-testid="account-logout">
+      <ng-icon name="exit" size="20" aria-hidden="true" />
+      <span i18n>Sair</span>
+    </button>
+  </div>
+
+  <p class="px-1 text-[13px] text-muted-foreground">
+    <a routerLink="/legal/termos" class="font-semibold text-link underline underline-offset-[3px] hover:text-foreground" data-testid="account-terms-link" i18n>Termos de uso</a>
+    ·
+    <a routerLink="/legal/privacidade" class="font-semibold text-link underline underline-offset-[3px] hover:text-foreground" data-testid="account-privacy-policy-link" i18n>Política de privacidade</a>
+  </p>
+</div>
