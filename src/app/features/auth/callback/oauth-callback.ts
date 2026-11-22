@@ -5,7 +5,7 @@
  * Aparece brevemente enquanto a sessão é processada.
  *
  * US2 cenários:
- *   1. Sucesso → roteia por papel (tutor=/app, admin=/admin).
+ *   1. Sucesso → PostAuthNavigator (termos, celular, destino guardado ou casa do papel).
  *   2. Cancelamento pelo usuário → volta ao login com mensagem neutra.
  *   3. Provedor indisponível → volta ao login com banner warn.
  *
@@ -18,7 +18,7 @@ import { Router } from '@angular/router';
 import { Logo } from '@/shared/components/faro/logo/logo';
 import { ZardSpinnerComponent } from '@/shared/components/spinner';
 import { AuthService } from '../../../core/auth/auth.service';
-import { roleRedirect } from '../../../core/auth/role-redirect';
+import { PostAuthNavigator } from '../../../core/auth/post-auth-navigation';
 
 @Component({
   selector: 'app-oauth-callback',
@@ -66,6 +66,7 @@ import { roleRedirect } from '../../../core/auth/role-redirect';
 export class OAuthCallback implements OnInit, AfterViewInit {
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly postAuth = inject(PostAuthNavigator);
 
   readonly hasError = signal(false);
   readonly errorMessage = signal('');
@@ -119,9 +120,8 @@ export class OAuthCallback implements OnInit, AfterViewInit {
         return;
       }
 
-      // Sucesso → roteia por papel
-      const destination = result.role ? roleRedirect(result.role) : '/app';
-      await this.router.navigate([destination]);
+      // Sucesso → aceite dos termos, celular, destino guardado ou casa do papel
+      await this.postAuth.go();
     } catch {
       if (this.fallbackTimer) {
         clearTimeout(this.fallbackTimer);

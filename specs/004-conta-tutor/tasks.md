@@ -301,7 +301,7 @@ navegação do frontend.
   Não reordenar nem editar rotas de outras specs; as rotas da tag continuam por último.
   **Feito quando**: `npm run build` passa; com sessão do tutor B (sem aceite no seed), abrir `/app`
   redireciona para `/auth/termos`; sem sessão, `/auth/login` abre normalmente.
-- [ ] T029 [FE] Em `src/app/features/auth/login/login.ts` e
+- [x] T029 [FE] Em `src/app/features/auth/login/login.ts` e
   `src/app/features/auth/callback/oauth-callback.ts`, trocar a navegação pós-sucesso
   (`roleRedirect` + `router.navigate`) por `PostAuthNavigator.go()`; na `init` da tela de login,
   chamar `ReturnUrlService.capture(query.returnUrl)`. Em `src/app/core/auth/auth.service.ts`,

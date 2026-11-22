@@ -11,6 +11,7 @@ import { provideZonelessChangeDetection } from '@angular/core';
 import { Login } from './login';
 import { AuthService } from '../../../core/auth/auth.service';
 import { AuthStore } from '../../../core/auth/auth.store';
+import { PostAuthNavigator } from '../../../core/auth/post-auth-navigation';
 
 function makeAuthServiceMock() {
   return {
@@ -27,9 +28,11 @@ describe('Login', () => {
   let component: Login;
   let fixture: ComponentFixture<Login>;
   let authServiceMock: ReturnType<typeof makeAuthServiceMock>;
+  let postAuthMock: { go: ReturnType<typeof vi.fn> };
 
   beforeEach(async () => {
     authServiceMock = makeAuthServiceMock();
+    postAuthMock = { go: vi.fn().mockResolvedValue(true) };
 
     await TestBed.configureTestingModule({
       imports: [Login, ReactiveFormsModule],
@@ -38,6 +41,7 @@ describe('Login', () => {
         provideRouter([]),
         AuthStore,
         { provide: AuthService, useValue: authServiceMock },
+        { provide: PostAuthNavigator, useValue: postAuthMock },
       ],
     }).compileComponents();
 
@@ -196,5 +200,20 @@ describe('Login', () => {
     const svg = fixture.nativeElement.querySelector('[data-testid="login-google"] svg');
     expect(svg).toBeTruthy();
     expect(svg.querySelector('path[fill="#4285F4"]')).toBeTruthy();
+  });
+
+  // ── Spec 004 (T029): navegação pós-login pelo PostAuthNavigator ──
+
+  it('login com sucesso chama PostAuthNavigator.go()', async () => {
+    authServiceMock.signInPassword.mockResolvedValue({ ok: true, role: 'tutor' });
+    component.form.setValue({ email: 'a@x.com', password: 'Senha12345', rememberMe: false });
+    await component.onSubmit();
+    expect(postAuthMock.go).toHaveBeenCalledTimes(1);
+  });
+
+  it('login com falha não chama PostAuthNavigator.go()', async () => {
+    component.form.setValue({ email: 'a@x.com', password: 'errada123', rememberMe: false });
+    await component.onSubmit();
+    expect(postAuthMock.go).not.toHaveBeenCalled();
   });
 });

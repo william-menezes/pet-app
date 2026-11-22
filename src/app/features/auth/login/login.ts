@@ -34,7 +34,8 @@ import { Logo } from '@/shared/components/faro/logo/logo';
 
 // Core (token nunca lido fora de core/)
 import { AuthService } from '../../../core/auth/auth.service';
-import { roleRedirect } from '../../../core/auth/role-redirect';
+import { PostAuthNavigator } from '../../../core/auth/post-auth-navigation';
+import { ReturnUrlService } from '../../../core/auth/return-url';
 
 type FormError = 'invalid' | 'rate_limited' | 'unconfirmed' | 'provider_unavailable' | 'network' | null;
 
@@ -63,6 +64,8 @@ export class Login implements OnInit {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly sonner = inject(ZardSonnerService);
+  private readonly postAuth = inject(PostAuthNavigator);
+  private readonly returnUrlService = inject(ReturnUrlService);
 
   // ── Formulário (Reactive Forms tipado) ──
   readonly form: FormGroup = this.fb.group({
@@ -109,13 +112,11 @@ export class Login implements OnInit {
     return null;
   }
 
-  // ── Destino pós-login (returnUrl) ──
-  private returnUrl = '/app';
-
   ngOnInit(): void {
     // Lê queryParams para session-expired e returnUrl (FR-012)
     this.route.queryParams.subscribe((params) => {
-      this.returnUrl = params['returnUrl'] ?? '/app';
+      // Guarda o destino já sanitizado; quem decide para onde ir é o PostAuthNavigator.
+      this.returnUrlService.capture(params['returnUrl']);
 
       if (params['reason'] === 'session_expired') {
         this.showSessionExpired.set(true);
@@ -177,9 +178,8 @@ export class Login implements OnInit {
         return;
       }
 
-      // Sucesso: roteia ao destino do papel ou returnUrl (FR-005/006/012)
-      const destination = result.role ? roleRedirect(result.role) : this.returnUrl;
-      await this.router.navigate([destination]);
+      // Sucesso: aceite dos termos, celular, destino guardado ou casa do papel (FR-005/006/012)
+      await this.postAuth.go();
     } finally {
       this.isLoading.set(false);
     }
