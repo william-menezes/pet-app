@@ -28,8 +28,8 @@ que depende de conta, painel ou decisão. **A produção não abre com item obri
 ### Vercel
 - [ ] Variáveis de ambiente marcadas como sensíveis; a `service_role` **não** existe na Vercel
       (só as Edge Functions a usam).
-- [ ] **Proteção dos previews** ligada (Vercel Authentication): hoje os endereços de preview de
-      `develop` e `homolog` são públicos.
+- [x] **Proteção dos previews** (Vercel Authentication): já está ligada. Conferido em 2026-11-22: o
+      preview de um PR pede login na Vercel. O endereço de produção (`faropet.vercel.app`) é público.
 - [ ] Firewall: regra de limite por IP em `/api/*`. **Não** ligar modo de desafio nem bloqueio de
       robôs na rota da tag (`/<código>`): quem achou um pet não pode cair num desafio.
 - [ ] `tagfaro.com.br` com renovação automática, trava de transferência no registrador e um
