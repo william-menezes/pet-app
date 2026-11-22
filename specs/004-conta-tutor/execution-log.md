@@ -568,3 +568,45 @@ quatro funções da 001 tinham `search_path = public` (sem `pg_temp`; o portão 
 - `max_rows` em 1000 com a geração de lote de 540 códigos (nenhuma função da 003 existe ainda).
 - Painel do Supabase/hospedado: valores de `contracts/auth-config.contract.md` e proteção contra senha vazada (plano Pro) ficam no checklist.
 - O `statement_timeout` por papel está provado no catálogo (`pg_db_role_setting`), não por uma consulta lenta real.
+
+---
+
+## Frontend — Phases 6 e 7 (T068 a T071, T078 a T081)
+
+Execução de 2026-11-22 pelo subagente `frontend-angular`. Commits: T068 `b24ebdf`; T069 e T070 `50bb763`; T071 `93e2e6f`; T078 `5c75378`; T079 `3d9d1cd`;
+T081 `3c5746c`; T080 `52c7c94`; e2e `recovery-account-ui.spec.ts`. As `[QA]` T072 e T082 não são do frontend.
+
+### Desvios, decisões e textos que o contrato não traz
+
+- **`PasswordService.resetPassword`**: erro de rede em `verifyOtp`/`updateUser` vira `network` (o contrato só cita `invalid_link` para erro do `verifyOtp`); 401/403 no
+  `updateUser` vira `invalid_link`. Não passa por `AuthService.signOut()` (navega para o login com aviso): chama `signOut({ scope: 'global' })` e zera `AuthStore` e
+  `AccountStore`, senão o `anonGuard` desvia `?senha=alterada`. `changePassword` rejeita com "Não implementado" (T087).
+- **Tela "link enviado"**: a referência só tem a contagem e "Voltar para entrar". Acrescentei, quando a contagem zera, o botão de texto "Pedir outro link"
+  (`forgot-password-again`), que reenvia para o mesmo e-mail e reinicia os 60 s. Contrato e referência não dizem como pedir outro link.
+- **Nova senha**: senha com menos de 8 ou mais de 72 caracteres não chama o servidor (textos "Use uma senha com pelo menos 8 caracteres." do contrato e "Use no máximo 72
+  caracteres." do cadastro). Sem `token_hash` ou com `type` diferente de `recovery` abre direto "Este link não vale mais". Texto do corpo do estado inválido, da referência:
+  "Peça um novo. Ele chega no seu e-mail em instantes."
+- **Login**: `?senha=alterada` mostra o aviso e o parâmetro continua na URL (o `loggedOut` é apagado; este não). `onProvisionalLink` saiu.
+- **Rota `conta`** ligada em `app.routes.ts` com `loadChildren: ACCOUNT_ROUTES`. As linhas da Phase 8 (dados, celular, senha, aparência) apontam para rotas que ainda não existem e
+  caem no `**` do `ShellFallback` ("Esta parte ainda está em construção."; provado no e2e).
+- **Conta (lista)**: estados sem contrato, escritos por mim: carregando (esqueleto), "Não conseguimos carregar sua conta. Verifique sua conexão e tente de novo." com "Tentar de
+  novo" (o "Sair" continua), e "Nenhum número cadastrado" (sem número algum). Com só o número pendente do cadastro mostra esse número com o selo "Não confirmado". Ícones de celular,
+  aparência, privacidade, sair e baixar não existem em `faro-icons.ts` (compartilhado): `features/account/shared/account-icons.ts`, com provedor local.
+- **Privacidade**: o título do bloco é "Exportar meus dados" (contrato; a tela diz "Baixar meus dados", que ficou só no botão). **O texto da tela promete pets, tags e scans no arquivo,
+  mas `tags_e_pets` é `null` hoje**: escrevi "Um arquivo com os dados da sua conta, os termos que você aceitou e o histórico de acessos. Os dados dos seus pets, das suas tags e dos scans
+  entram no arquivo quando essas áreas estiverem no app." **A spec 003 precisa trocar essa segunda frase.** Textos novos: "Pronto. O arquivo foi baixado para o seu aparelho." e
+  "Não conseguimos gerar o arquivo agora. Verifique sua conexão e tente de novo.". `not_authenticated` e outros erros da RPC viram `network` (o tipo do contrato só tem
+  `rate_limited` e `network`). O endereço do `Blob` é revogado 1 s depois do clique (não "em seguida" imediato, por causa do Safari); o JSON só vive numa variável local.
+- **Diálogo de exclusão**: `z-alert-dialog` declarativo (o `confirm()` do serviço só aceita texto). A folha ancorada embaixo da referência no celular não foi imitada (o componente
+  compartilhado é um cartão centralizado; não editei). Conta só com Google: o aviso "Sua conta usa o login do Google. Se pedirmos, você entra de novo com o Google para confirmar que é
+  você." aparece sempre e o botão "Entrar de novo com o Google" só aparece depois de `reauth_required` com `method: google` (leitura da T081, que não diz se o botão é permanente).
+  O diálogo não fecha durante a exclusão, a senha é limpa depois de qualquer resposta e ao fechar. O campo EXCLUIR é exato (maiúsculas, após `trim`).
+- Importei `formatWait` de `features/auth/shared/wait-time.ts` (outra feature) em vez de duplicar.
+
+### Verificação
+
+- `npm run lint`: passa. `npm test -- --watch=false`: **74 arquivos, 599 testes** (antes: 67 e 502). `npm run build:stats`: **pacote inicial 413,03 kB** (111,86 kB transferidos; antes 409,06;
+  orçamento 500). `npm run check:ui` e `npm run check:bundle`: ok.
+- E2E, backend 100% simulado (`blocked` vazio nos testes de fluxo): `e2e/recovery-account-ui.spec.ts`, 24 testes. Conjunto completo: 152 passam e 1 falhou em `ui-shells.spec.ts` ("casca
+  dos fluxos: desktop, painel de marca"), que passa sozinho (42 de 42) e não toca nada desta entrega: parece instabilidade de carga com 153 testes em paralelo.
+- **Não verificado**: e-mail e banco reais (T072, T082); o ramo de exclusão com `deletion_unavailable` e `deletion_incomplete` só em testes unitários; Google real; leitor de tela.

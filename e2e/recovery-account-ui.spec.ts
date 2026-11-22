@@ -406,6 +406,9 @@ test.describe('Conta, sair, exportar e excluir (backend simulado)', () => {
       await page.goto('/app/conta/privacidade');
       await page.locator(tid('account-privacy-delete')).click();
       await expect(page.locator(tid('account-delete-submit'))).toBeVisible();
+      await page.locator(tid('account-delete-confirm-text')).fill('EXCLUIR');
+      await page.locator(tid('account-delete-password')).fill('SenhaSegura1');
+      await expect(page.locator(tid('account-delete-submit'))).toBeEnabled();
       const dark = await page.evaluate(() => ({
         shell: document.querySelector('[data-testid="tutor-shell"]')?.classList.contains('dark') ?? false,
         overlay: document.querySelector('.cdk-overlay-container')?.classList.contains('dark') ?? false,
