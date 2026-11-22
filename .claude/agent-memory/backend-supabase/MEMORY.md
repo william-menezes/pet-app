@@ -1,3 +1,5 @@
 - [Feature 001-login: backend implementado](project-001-login-backend.md) — migrations 0001–0007, Edge login-guard, testes pgTAP (T019/T020/T024/T023)
 - [RLS matriz feature 001](rls-matrix-feature-001.md) — tabela de acesso anon/tutor/admin/service_role para perfis, auth_audit_log, auth_login_attempts + helpers is_admin()/current_user_role()
 - [Armadilhas da spec 004](project-004-conta-armadilhas.md) — seed sem instance_id, conflito rls_perfis da 001, Kong/CORS, signup 422, flake do CI
+- [Armadilhas da Phase 4 (SMS)](project-004-sms-armadilhas.md) — deno test no CI, Kong/CORS no POST, driver log, now() e claims em pgTAP
+- [Armadilhas das Phases 6 e 7](project-004-privacidade-armadilhas.md) — pgTAP com SAVEPOINT sem finish(), recuperacao, exclusao, script de CI
