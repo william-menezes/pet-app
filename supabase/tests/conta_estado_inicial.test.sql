@@ -4,7 +4,7 @@
 
 BEGIN;
 
-SELECT plan(14);
+SELECT plan(15);
 
 -- T007: 4 valores da 001 + 12 da 004.
 SELECT is(
@@ -73,11 +73,19 @@ SELECT is(
       AND has_function_privilege('anon', p.oid, 'EXECUTE')),
   0, 'nenhuma funcao de conta ou de auth e executavel por anon');
 
--- Resgate primeiro: nenhuma migration desta spec mexe em objeto de tags.
+-- Resgate primeiro: nenhuma migration desta spec mexe em objeto de tags. Desde a spec 003 as tabelas de tags
+-- existem (migrations 0020 em diante), entao a prova passou a ser sobre o TEXTO das migrations da 001 e da 004
+-- (0001 a 0017), lido do registro do Supabase CLI: nenhuma delas cria essas tabelas. A primeira conferencia
+-- impede que a segunda passe vazia (se o registro nao guardar os comandos, o teste acusa).
+SELECT ok(
+  (SELECT count(*) >= 10 FROM supabase_migrations.schema_migrations m
+    WHERE m.version >= '0008' AND m.version <= '0017' AND m.statements IS NOT NULL AND cardinality(m.statements) > 0),
+  'o registro de migrations guarda os comandos das migrations 0008 a 0017');
 SELECT is(
-  (SELECT count(*)::integer FROM pg_tables WHERE schemaname = 'public'
-     AND tablename IN ('tag_codes', 'tag_batches', 'tag_assignments', 'scan_events', 'pets')),
-  0, 'nenhuma tabela de tags, pets ou scans foi criada por esta spec');
+  (SELECT count(*)::integer FROM supabase_migrations.schema_migrations m
+    WHERE m.version < '0020'
+      AND array_to_string(m.statements, E'\n') ~* 'create\s+table\s+(if\s+not\s+exists\s+)?(public\.)?(tag_codes|tag_batches|tag_assignments|scan_events|pets)\M'),
+  0, 'nenhuma migration da 001 ou da 004 (0001 a 0017) cria tabela de tags, pets ou scans');
 
 SELECT * FROM finish();
 ROLLBACK;
