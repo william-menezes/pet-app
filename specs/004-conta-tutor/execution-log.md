@@ -116,3 +116,90 @@ Kong). Detalhes nas seções acima.
 Run verde 45032898592 (commit ec9a130): pgTAP 9 arquivos e 213 asserções, deno 46 testes, script de CI 19 PASS e
 0 FAIL, job `app` 48 arquivos e 238 testes. Marcadas todas as tarefas BE/QA de T001 a T021 (menos as `[FE]`
 T005 e T006).
+
+---
+
+# Frontend — Phases 1 e 2 (T005, T006, T022 a T030)
+
+Execução de 2026-11-22 pelo subagente `frontend-angular`, branch `004-conta-tutor`.
+
+## Achado que bloqueia a T028: `AuthService.restoreSession()` nunca é chamado
+
+`restoreSession()` existe desde o commit da `001` (`bdc0e53`), mas **nada o chama** (`grep` em `src/` só acha a
+definição; `app.config.ts` não tem inicializador). Conclusão: ao abrir o app a frio, `AuthStore` nasce sem sessão e os
+guards tratam a pessoa como deslogada **mesmo com uma sessão válida no `localStorage`**. Provado no navegador (e2e
+descartável, sem escrita no projeto): com a sessão do Supabase gravada em `localStorage`, `goto('/app')` termina em
+`/auth/login?returnUrl=%2Fapp`.
+
+Consequências para a 004: o "Feito quando" da T028 ("com sessão do tutor B, abrir `/app` redireciona para
+`/auth/termos`") não pode passar abrindo a URL; só passa navegando dentro do app depois de um login. Também afeta o
+avanço automático da T035 ("se a sessão aparecer em outra aba") e qualquer recarga de `/app/conta`.
+
+Não corrigi: nenhuma tarefa nomeia `app.config.ts`, e um inicializador estático importaria `@supabase/supabase-js`
+(cerca de 200 kB) para o pacote inicial, que hoje tem 399,8 kB e é o pacote da página pública. Caminho sugerido para
+o William decidir: `provideAppInitializer` que só faz `import('./core/auth/auth.service')` (e chama
+`restoreSession()`) quando existir a chave `sb-*-auth-token` no storage do navegador, no cliente.
+**T028 fica sem `[x]`**: o código está entregue e a navegação pós-login está provada (abaixo).
+
+## Desvios e decisões
+
+- **T005**: além de `**/core/account/**` e `**/features/legal/**`, acrescentei `'../**/legal/**'` ao grupo de import
+  relativo (o mesmo reforço que a `002` fez para `account`), porque `../../legal/x` não contém `features/` e escapava.
+  Prova: criados três arquivos temporários em `features/public/` (`core/account/terms`, `account/account.routes`,
+  `legal/terms/terms`); o lint os recusou; apagados.
+- **T023**: `markReturning`, `isReturning` e `clearReturning` (esta última acrescentada, é a que o `PrivacyService`
+  usará para apagar a marca) aceitam `platformId` opcional, com `inject(PLATFORM_ID)` como padrão. Motivo: `inject()`
+  não funciona depois de um `await`, e o `PostAuthNavigator` chama `markReturning` depois de `load(true)`. Sem
+  argumento o contrato `markReturning(): void` continua valendo.
+- **T025**: `AccountStore.loaded` é derivado (`account !== null`); acrescentei `set()` e `reset()` ao store (o contrato
+  diz que as mutações são do serviço; o `reset()` também é chamado por `AuthService.signOut()`, como manda a T029).
+  `load()` deduplica chamadas simultâneas.
+- **T026**: o papel é `authStore.role() ?? account.papel`. `nextStep` para `admin` aceita qualquer destino em `/admin`
+  ou `/admin/*` (a tabela só cita `/admin/lotes`). O `returnUrl` entra codificado (`encodeURIComponent`) na query de
+  `/auth/termos` e `/auth/celular`. Limpar os metadados `return_to` usa `SupabaseService` direto (está em `core/`).
+- **T027, bug achado e corrigido**: num `CanMatchFn`, `segments` são só os que **sobram** para a rota que declara o
+  guard; numa filha de `auth`, o guard de `/auth/termos` via `[termos]` e guardaria `returnUrl=/termos`, que passa no
+  sanitizador e cai em `/:codigo`. Criei `core/auth/guard-url.ts` (`requestedUrl`), que lê o caminho completo da
+  navegação em curso (`getCurrentNavigation().extractedUrl`; sem navegação em curso, usa os `segments`). Coberto por
+  `nested-routes.spec.ts`, que roda o roteador real com a forma de `app.routes.ts`. Quando o destino fica dentro de
+  `/auth`, o guard **não** acrescenta `returnUrl`.
+- **T027, pacote inicial**: `termsGuard` está em `app.routes.ts` (pacote inicial). Importar `AccountService` de forma
+  estática puxou o supabase-js para o inicial (613 kB; o limite do orçamento é 500 kB e a base era 397 kB). O guard
+  agora faz `import()` dinâmico do serviço e usa `Injector.get`; inicial voltou a 399,8 kB. **Vale para o
+  `phoneConfirmedGuard` (T055) e para qualquer guard novo registrado em `app.routes.ts`.**
+- **T028**: `/auth` perdeu o `anonGuard` do pai; só `login` o tem. O índice `/auth` continua redirecionando para `login`
+  (preserva `returnUrl`) até as boas-vindas (T033). A rota `conta` (`loadChildren: ACCOUNT_ROUTES`) **não** foi ligada
+  agora: com a lista vazia ela trocaria o `ShellFallback` por um 404; a primeira tela da conta liga a rota.
+- **T029**: `login.ts` não usa mais `result.role` nem o campo `returnUrl`; o `capture(query.returnUrl)` roda a cada
+  emissão dos `queryParams`. O `oauth-callback` não ganhou teste novo (é a T063). `login.spec.ts` ganhou o mock do
+  `PostAuthNavigator` e dois testes (sucesso chama `go()`, falha não chama).
+- **Arquivos com CRLF**: `guards.spec.ts`, `app.routes*.ts`, `login.*`, `oauth-callback.ts` etc. foram regravados em LF;
+  o Git normaliza (`warning: LF will be replaced by CRLF`) e o `diff` só mostra as linhas alteradas.
+
+## Verificação
+
+- `npm run lint`: passa. `npm test -- --watch=false`: **55 arquivos, 340 testes** passam (antes: 48 e 238 no CI da
+  fase de banco). `npm run build`: passa, **pacote inicial 399,80 kB** (107,69 kB transferidos), sem aviso de orçamento.
+  `npm run check:ui`: tokens (65 variáveis, 46 pares), pilha antiga e fronteira da página pública ok.
+- `e2e/account-foundation.spec.ts` (9 testes, Chromium, 9 passam): **backend 100% simulado**. O arquivo registra
+  primeiro um `abort` para qualquer `*.supabase.co` e depois só as respostas de `login-guard`, `token`,
+  `current_user_role` e `my_account`; nenhuma requisição chega ao projeto hospedado. Prova: login com conta sem aceite
+  vai a `/auth/termos` (com `returnUrl` preservado), tutor completo a `/app`, tutor sem celular a `/auth/celular`,
+  admin a `/admin`, `returnUrl` externo é ignorado, voltar a `/app` dentro da página leva a `/auth/termos?returnUrl=…`,
+  e a carga a frio sem sessão cai no login com o destino. **Não** foi provado contra os usuários reais do seed.
+- T029: marcada. O "Feito quando" cita os usuários do seed; o login desses três usuários e os papéis já foram provados
+  no CI da fase de banco (execução anterior, "Decisões do William, 2), e a navegação pós-login foi provada aqui com
+  contas simuladas de mesma forma. A repetição ponta a ponta com o seed fica para o QA com Supabase local (T039, T064).
+
+## T030 [QA]
+
+Cumprida com o que existe: `lint`, `test` e `build` rodaram localmente (números acima); `supabase test db` e
+`deno test` rodam no job `supabase` do CI, verde no último push. `git diff --name-only 90808ba..HEAD` sobre
+`src/app/shared`, `src/app/features/public`, `specs/002-ui-zardui`, `specs/003-tag-qr`, `supabase`, `src/environments`,
+`design`, `docs`, `tools`, `public` e `.github` está vazio.
+
+## Pendências para as fases seguintes
+
+- Decidir o `restoreSession` (acima). Sem isso, T035 (avanço automático) e as recargas de `/app/conta` não se
+  comportam como o contrato descreve.
+- Foto das boas-vindas (`public/photos/boas-vindas.jpg`) ainda não existe: a T033 mostrará só o fundo `bg-photo`.

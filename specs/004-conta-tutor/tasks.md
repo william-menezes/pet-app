@@ -311,7 +311,7 @@ navegação do frontend.
   de navegação); entrando com o admin do seed chega-se a `/admin`; com `tutor.a@faro.test` (aceite
   e celular no seed), a `/app`; com `tutor.b@faro.test` (sem aceite), a `/auth/termos`. O E2E de
   login da `001` (`e2e/login.spec.ts`, se existir) continua verde usando o tutor A.
-- [ ] T030 [QA] Rodar a verificação de fim de fase (regra 12). **Feito quando**: os cinco comandos
+- [x] T030 [QA] Rodar a verificação de fim de fase (regra 12). **Feito quando**: os cinco comandos
   passam e `git status` não mostra arquivo alterado em `specs/002-ui-zardui/`,
   `specs/003-tag-qr/`, `src/app/shared/` nem `src/app/features/public/`.
 
