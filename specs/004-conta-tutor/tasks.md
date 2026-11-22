@@ -334,7 +334,7 @@ verificar sessão de tutor com aceite registrado; antes de confirmar, o login é
   `return_to` e `return_to_at`; resposta de "usuário já existe" ⇒ `{ ok: true }`; o tempo mínimo de
   1.200 ms (relógio falso); `confirmEmail` usa `type: 'email'`; a senha não é gravada em nenhum
   store.
-- [ ] T032 [P] [US1] [FE] Criar as páginas `src/app/features/legal/terms/terms.ts` e
+- [x] T032 [P] [US1] [FE] Criar as páginas `src/app/features/legal/terms/terms.ts` e
   `src/app/features/legal/privacy-policy/privacy-policy.ts` (título, aviso "Rascunho. Texto final
   em preparação." e um `// TODO(LEGAL_TEXTS)`), registrar `/legal/termos` e `/legal/privacidade` em
   `src/app/app.routes.ts` (antes das rotas da tag) e em `src/app/app.routes.server.ts` como

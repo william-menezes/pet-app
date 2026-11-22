@@ -110,6 +110,19 @@ export const routes: Routes = [
     ],
   },
 
+  // ── Páginas legais (prerender; dois segmentos de propósito: não colidem com `/:codigo`) ──
+  {
+    path: 'legal/termos',
+    loadComponent: () => import('./features/legal/terms/terms').then((m) => m.Terms),
+    title: 'Termos de uso — Faro',
+  },
+  {
+    path: 'legal/privacidade',
+    loadComponent: () =>
+      import('./features/legal/privacy-policy/privacy-policy').then((m) => m.PrivacyPolicy),
+    title: 'Política de privacidade — Faro',
+  },
+
   // ── Galeria de desenvolvimento (só em dev: o CLI troca `ngDevMode` por `false` em produção,
   // e o `import()` dentro do ramo some do pacote) · antes de `:codigo/perdido` e `:codigo` ──
   ...(ngDevMode

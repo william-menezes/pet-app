@@ -18,6 +18,9 @@ export const serverRoutes: ServerRoute[] = [
   { path: 'auth/**', renderMode: RenderMode.Client },
   { path: 'auth', renderMode: RenderMode.Client },
 
+  { path: 'legal/termos', renderMode: RenderMode.Prerender },
+  { path: 'legal/privacidade', renderMode: RenderMode.Prerender },
+
   { path: ':codigo/perdido', renderMode: RenderMode.Server },
   { path: ':codigo', renderMode: RenderMode.Server },
 
