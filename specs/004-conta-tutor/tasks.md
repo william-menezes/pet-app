@@ -777,7 +777,7 @@ senha e escolher a aparência.
 2026-11-21. Leia o contrato inteiro antes da primeira tarefa. As tarefas de banco e de função desta
 fase dependem só da Phase 2; as de tela dependem das telas das histórias 1, 4, 5 e 6.
 
-- [ ] T097 [BE] Migration `0017_endurecimento_base.sql` e `supabase/tests/security_catalog.test.sql`,
+- [x] T097 [BE] Migration `0017_endurecimento_base.sql` e `supabase/tests/security_catalog.test.sql`,
   conforme o contrato §6 (privilégios padrão, `REVOKE` nas tabelas que já existem com os testes de
   leitura negada da `001` voltando a exigir erro `42501`, `search_path` das funções da `001`,
   `statement_timeout` por papel, remoção do `pg_graphql`) e os ajustes de `[api]` no
