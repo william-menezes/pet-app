@@ -650,6 +650,39 @@ GQ="$(curl -s -o /dev/null -w '%{http_code}' -X POST "$API_URL/graphql/v1" -H "a
 echo "GraphQL: HTTP $GQ"
 check "o endpoint GraphQL nao responde 200" bash -c '[ "$1" != "200" ]' _ "$GQ"
 
+echo "== Spec 003 (T012 a T020): tabelas e funcoes de tag pela API, e o seed das tags =="
+anon_code() { # anon_code <caminho REST>  -> codigo HTTP de um GET com a chave anonima
+  curl -s -o /dev/null -w '%{http_code}' "$API_URL/rest/v1/$1" -H "apikey: $ANON_KEY" -H "Authorization: Bearer $ANON_KEY"
+}
+for T in pets rescue_profiles tag_batches tag_codes tag_assignments tag_pin_attempts pending_activations rate_limits scan_events tag_replacement_requests audit_log my_scans; do
+  TC="$(anon_code "$T?select=*&limit=1")"
+  check "anon lendo $T recebe 401 ou 403 (sem privilegio) [$TC]" bash -c '[ "$1" = "401" ] || [ "$1" = "403" ]' _ "$TC"
+done
+for F in end_assignments_for_account export_tutor_tag_data; do
+  FC="$(curl -s -o /dev/null -w '%{http_code}' -X POST "$API_URL/rest/v1/rpc/$F" -H "apikey: $ANON_KEY" \
+    -H "Authorization: Bearer $ANON_KEY" -H "Content-Type: application/json" -d '{"p_tutor":"00000000-0000-0000-0000-000000000001"}')"
+  check "anon chamando $F recebe 401 ou 403 [$FC]" bash -c '[ "$1" = "401" ] || [ "$1" = "403" ]' _ "$FC"
+done
+SEED_JSON="e2e/fixtures/seed-codes.json"
+seed_code() { sed -n "s/^  \"$1\": \"\([0-9A-Z]*\)\".*/\1/p" "$SEED_JSON" | head -1; }
+seed_status_is() { # seed_status_is <chave do JSON> <status esperado>: o codigo do JSON esta no banco com esse status
+  local code; code="$(seed_code "$1")"
+  [ -n "$code" ] && curl -s "$API_URL/rest/v1/tag_codes?code=eq.$code&select=status" \
+    -H "apikey: $SERVICE_KEY" -H "Authorization: Bearer $SERVICE_KEY" | grep -q "\"status\":\"$2\""
+}
+check "seed: $SEED_JSON existe e traz os codigos" test -s "$SEED_JSON"
+check "seed: o codigo 'assigned' do JSON esta no banco como assigned" seed_status_is assigned assigned
+check "seed: o codigo 'available' do JSON esta no banco como available" seed_status_is available available
+check "seed: o codigo 'available2' do JSON esta no banco como available" seed_status_is available2 available
+check "seed: o codigo 'available3' do JSON esta no banco como available" seed_status_is available3 available
+check "seed: o codigo 'blocked' do JSON esta no banco como blocked" seed_status_is blocked blocked
+check "seed: o codigo 'void' do JSON esta no banco como void" seed_status_is void void
+SEED_COUNT="$(curl -s -o /dev/null -D - "$API_URL/rest/v1/tag_codes?select=code" -H "apikey: $SERVICE_KEY" -H "Authorization: Bearer $SERVICE_KEY" \
+  -H "Prefer: count=exact" -H "Range: 0-0" | tr -d '\r' | sed -n 's/^[Cc]ontent-[Rr]ange: .*\///p')"
+check "seed: select count(*) from tag_codes devolve 6 [$SEED_COUNT]" test "$SEED_COUNT" = "6"
+# O repositorio e publico: nenhum PIN no JSON do seed (so codigos de teste).
+check "seed: o JSON nao tem campo de PIN" bash -c '! grep -qi "\"pin\"\|activation_pin" "$1"' _ "$SEED_JSON"
+
 echo "== T099: guard:ip:m (60 chamadas por minuto por IP) =="
 FLOOD=0
 for _ in $(seq 1 80); do
