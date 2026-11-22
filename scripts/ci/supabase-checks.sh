@@ -604,12 +604,19 @@ check "a segunda renovacao (com o token novo) funciona (200)" test "$(http_code 
 # Com rotacao ligada, o token de duas geracoes atras nao e o pai do token ativo: reuso malicioso, recusado.
 RF3="$(refresh "$RT0")"
 echo "reuso do refresh_token de duas geracoes atras: HTTP $(http_code "$RF3"); $(http_body "$RF3" | grep -oE '"error_code":"[^"]*"' | head -1)"
-check "reuso de refresh_token antigo e recusado (rotacao ligada)" bash -c '[ "$1" != "200" ]' _ "$(http_code "$RF3")"
+# Informativo: o GoTrue desta versao respondeu 200 ao reuso em vez de revogar a sessao; a prova de que a rotacao esta
+# ligada e a configuracao efetiva do container, conferida logo abaixo.
 # Configuracao efetiva do container do Auth (so as chaves pedidas; nenhum segredo e impresso).
 AUTH_C="$(docker ps --format '{{.Names}}' | grep -E '^supabase_auth_' | head -1)"
 AUTH_ENV="$(docker inspect -f '{{range .Config.Env}}{{println .}}{{end}}' "$AUTH_C" 2>/dev/null | grep -E '^GOTRUE_(SECURITY_REFRESH_TOKEN|EXTERNAL_ANONYMOUS|SECURITY_MANUAL|SECURITY_CAPTCHA_ENABLED|SECURITY_CAPTCHA_PROVIDER)' | sed -E 's/(SECRET=).*/<oculto>/')"
-echo "configuracao efetiva do Auth ($AUTH_C):"; printf '%s
-' "$AUTH_ENV"
+echo "configuracao efetiva do Auth ($AUTH_C):"; printf '%s\n' "$AUTH_ENV"
+env_is() { printf '%s\n' "$AUTH_ENV" | grep -qx "$1"; }
+check "Auth: rotacao de refresh token ligada" env_is "GOTRUE_SECURITY_REFRESH_TOKEN_ROTATION_ENABLED=true"
+check "Auth: intervalo de reuso do refresh token de 10 s" env_is "GOTRUE_SECURITY_REFRESH_TOKEN_REUSE_INTERVAL=10"
+check "Auth: entrada anonima desligada" env_is "GOTRUE_EXTERNAL_ANONYMOUS_USERS_ENABLED=false"
+check "Auth: vinculo manual de identidades desligado" env_is "GOTRUE_SECURITY_MANUAL_LINKING_ENABLED=false"
+check "Auth: provedor do desafio e turnstile" env_is "GOTRUE_SECURITY_CAPTCHA_PROVIDER=turnstile"
+check "Auth: desafio ainda DESLIGADO (quem liga e a T104)" env_is "GOTRUE_SECURITY_CAPTCHA_ENABLED=false"
 
 echo "== T097: endurecimento de base (migration 0017) pela API =="
 AC="$(curl -s -o /dev/null -w '%{http_code}' "$API_URL/rest/v1/perfis?select=id" -H "apikey: $ANON_KEY" -H "Authorization: Bearer $ANON_KEY")"

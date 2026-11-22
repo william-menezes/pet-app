@@ -3,3 +3,4 @@
 - [Armadilhas da spec 004](project-004-conta-armadilhas.md) — seed sem instance_id, conflito rls_perfis da 001, Kong/CORS, signup 422, flake do CI
 - [Armadilhas da Phase 4 (SMS)](project-004-sms-armadilhas.md) — deno test no CI, Kong/CORS no POST, driver log, now() e claims em pgTAP
 - [Armadilhas das Phases 6 e 7](project-004-privacidade-armadilhas.md) — pgTAP com SAVEPOINT sem finish(), recuperacao, exclusao, script de CI
+- [Armadilhas da Phase 10 (endurecimento)](project-004-endurecimento-armadilhas.md) — privilegios padrao e helpers pgTAP, handlers testaveis, deno.json/lock, auth.captcha
