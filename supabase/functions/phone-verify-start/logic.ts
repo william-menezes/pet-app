@@ -79,3 +79,6 @@ export function mapBeginError(message: unknown): BeginError | null {
   }
   return null;
 }
+
+/** Campos aceitos no corpo (security-hardening.contract.md, secao 5): qualquer outro => 400 unknown_field. */
+export const START_ALLOWED_FIELDS = ["phone", "password", "captcha_token"] as const;

@@ -2,6 +2,12 @@
  * Logica pura da Edge Function password-recovery (contracts/password-recovery.edge.md).
  */
 
+/** Campos aceitos no corpo (security-hardening.contract.md, secao 5): qualquer outro => 400 unknown_field. */
+export const RECOVERY_ALLOWED_FIELDS = ["email", "captcha_token"] as const;
+
+/** Limite por origem de TODA chamada a esta funcao (security-hardening.contract.md, secao 2). Falha fechada. */
+export const RECOVERY_CALLS_LIMIT = { bucket: "recover:calls:ip", max: 30, window: 3600 } as const;
+
 /** Piso de tempo da resposta: nao depende de a conta existir (passo 8). */
 export const RESPONSE_FLOOR_MS = 600;
 

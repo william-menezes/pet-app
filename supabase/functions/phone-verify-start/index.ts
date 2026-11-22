@@ -10,15 +10,17 @@
  */
 import { anonClient, getCaller, serviceClient } from "../_shared/clients.ts";
 import { type FaroEnv, loadEnv, MisconfiguredError } from "../_shared/env.ts";
-import { handleOptions, json, readJsonObject } from "../_shared/http.ts";
+import { bodyErrorResponse, guardMethod, json, readJsonObject } from "../_shared/http.ts";
+import { parseCaptchaToken } from "../_shared/captcha.ts";
 import { codeHashInput, hmacSha256Hex, phoneHashInput, sha256SaltedHex } from "../_shared/hash.ts";
 import { getTrustedIp } from "../_shared/ip.ts";
 import { resolveCode } from "../_shared/otp.ts";
-import { requireRecentAuth } from "../_shared/reauth.ts";
+import { reauthFailureBody, requireRecentAuth } from "../_shared/reauth.ts";
 import { buildOtpMessage, resolveSender } from "../_shared/sms/sender.ts";
 import { logEvent } from "../_shared/audit.ts";
 import {
   buildSmsLimits,
+  START_ALLOWED_FIELDS,
   isPhoneChange,
   isSameNumber,
   mapBeginError,
@@ -42,9 +44,8 @@ interface AuthFacts {
 Deno.serve(async (req: Request) => {
   try {
     // 1. CORS, metodo, ambiente.
-    const preflight = handleOptions(req);
-    if (preflight) return preflight;
-    if (req.method !== "POST") return json(req, { ok: false, error: "method_not_allowed" }, 405);
+    const early = guardMethod(req);
+    if (early) return early;
 
     let env: FaroEnv;
     try {
@@ -61,8 +62,11 @@ Deno.serve(async (req: Request) => {
     // 2. Quem chama e o corpo.
     const caller = await getCaller(req, env);
     if (!caller) return json(req, { ok: false, error: "unauthorized" }, 401);
-    const body = await readJsonObject(req);
-    if (!body) return json(req, { ok: false, error: "bad_request" }, 400);
+    const parsedBody = await readJsonObject(req, undefined, START_ALLOWED_FIELDS);
+    if (!parsedBody.ok) return bodyErrorResponse(req, parsedBody);
+    const body = parsedBody.body;
+    const captcha = parseCaptchaToken(body.captcha_token);
+    if (!captcha.ok) return json(req, { ok: false, error: "bad_request" }, 400);
 
     const svc = serviceClient(env);
     const userId = caller.id;
@@ -100,24 +104,13 @@ Deno.serve(async (req: Request) => {
         email: facts.email ?? caller.email ?? "",
         facts: { has_password: facts.has_password, last_sign_in_at: facts.last_sign_in_at },
         password: body.password,
+        captchaToken: captcha.token,
         action: "trocar_celular",
         ipHash,
         userAgent,
         makeAnonClient: () => anonClient(env),
       });
-      if (!reauth.ok) {
-        if (reauth.error === "reauth_required") {
-          return json(req, {
-            ok: false,
-            error: "reauth_required",
-            method: facts.has_password ? "password" : "google",
-          });
-        }
-        if (reauth.error === "rate_limited") {
-          return json(req, { ok: false, error: "rate_limited", retry_after_seconds: reauth.retry_after_seconds ?? 1 });
-        }
-        return json(req, { ok: false, error: "invalid_password" });
-      }
+      if (!reauth.ok) return json(req, reauthFailureBody(reauth, facts.has_password));
     }
 
     // 9. Hashes do numero e do IP.

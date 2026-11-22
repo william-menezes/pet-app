@@ -1,5 +1,5 @@
 import { assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
-import { type ReauthPasswordClient, type ReauthService, requireRecentAuth } from "./reauth.ts";
+import { type ReauthPasswordClient, type ReauthService, reauthFailureBody, requireRecentAuth } from "./reauth.ts";
 import type { FaroEnv } from "./env.ts";
 
 const ENV = {} as FaroEnv;
@@ -149,4 +149,94 @@ Deno.test("conta sem senha e sem last_sign_in_at => reauth_required", async () =
     facts: { has_password: false, last_sign_in_at: null },
   }));
   assertEquals(r, { ok: false, error: "reauth_required" });
+});
+
+// ── Desafio anti-robo (security-hardening.contract.md, secao 1) ──
+
+function fakeAnonCaptcha(
+  result: { ok: boolean; code?: string },
+  seen: { credentials?: Record<string, unknown> },
+): () => ReauthPasswordClient {
+  return () =>
+    ({
+      auth: {
+        signInWithPassword: (c: Record<string, unknown>) => {
+          seen.credentials = c;
+          if (result.ok) {
+            return Promise.resolve({ data: { session: { access_token: "token-de-conferencia" } }, error: null });
+          }
+          return Promise.resolve({
+            data: { session: null },
+            error: { message: "x", code: result.code ?? "invalid_credentials" },
+          });
+        },
+      },
+    }) as unknown as ReauthPasswordClient;
+}
+
+Deno.test("captcha_token chega ao Auth em options.captchaToken", async () => {
+  const calls = newCalls();
+  const seen: { credentials?: Record<string, unknown> } = {};
+  const r = await requireRecentAuth(base(fakeSvc(calls, allow), {
+    captchaToken: "token-turnstile",
+    makeAnonClient: fakeAnonCaptcha({ ok: true }, seen),
+  }));
+  assertEquals(r, { ok: true });
+  assertEquals(seen.credentials?.options, { captchaToken: "token-turnstile" });
+});
+
+Deno.test("sem captcha_token, o Auth recebe so e-mail e senha (sem options)", async () => {
+  const calls = newCalls();
+  const seen: { credentials?: Record<string, unknown> } = {};
+  await requireRecentAuth(base(fakeSvc(calls, allow), { makeAnonClient: fakeAnonCaptcha({ ok: true }, seen) }));
+  assertEquals("options" in (seen.credentials ?? {}), false);
+});
+
+Deno.test("captcha_failed do Auth => captcha_failed; NAO conta como senha errada nem audita falha", async () => {
+  const calls = newCalls();
+  const seen: { credentials?: Record<string, unknown> } = {};
+  const r = await requireRecentAuth(base(fakeSvc(calls, allow), {
+    captchaToken: "token-ruim",
+    makeAnonClient: fakeAnonCaptcha({ ok: false, code: "captcha_failed" }, seen),
+  }));
+  assertEquals(r, { ok: false, error: "captcha_failed" });
+  // So a consulta do limite (p_record false). Nenhum registro de falha e nenhum evento de auditoria.
+  assertEquals(calls.rpc.map((c) => [c.fn, c.args.p_record ?? null]), [["rate_limit_check", false]]);
+  assertEquals(calls.signOut.length, 0);
+});
+
+Deno.test("senha errada (sem captcha_failed) continua contando e auditando", async () => {
+  const calls = newCalls();
+  const seen: { credentials?: Record<string, unknown> } = {};
+  const r = await requireRecentAuth(base(fakeSvc(calls, allow), {
+    captchaToken: "token-ok",
+    makeAnonClient: fakeAnonCaptcha({ ok: false }, seen),
+  }));
+  assertEquals(r, { ok: false, error: "invalid_password" });
+  assertEquals(calls.rpc.map((c) => c.fn), ["rate_limit_check", "rate_limit_check", "log_auth_event"]);
+});
+
+Deno.test("reauthFailureBody: cada falha vira o corpo certo e captcha_failed nao vira invalid_password", () => {
+  assertEquals(reauthFailureBody({ ok: false, error: "captcha_failed" }, true), { ok: false, error: "captcha_failed" });
+  assertEquals(reauthFailureBody({ ok: false, error: "invalid_password" }, true), { ok: false, error: "invalid_password" });
+  assertEquals(reauthFailureBody({ ok: false, error: "reauth_required" }, true), {
+    ok: false,
+    error: "reauth_required",
+    method: "password",
+  });
+  assertEquals(reauthFailureBody({ ok: false, error: "reauth_required" }, false), {
+    ok: false,
+    error: "reauth_required",
+    method: "google",
+  });
+  assertEquals(reauthFailureBody({ ok: false, error: "rate_limited", retry_after_seconds: 42 }, true), {
+    ok: false,
+    error: "rate_limited",
+    retry_after_seconds: 42,
+  });
+  assertEquals(reauthFailureBody({ ok: false, error: "rate_limited" }, true), {
+    ok: false,
+    error: "rate_limited",
+    retry_after_seconds: 1,
+  });
 });

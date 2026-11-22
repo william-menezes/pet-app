@@ -3,6 +3,12 @@
  * Os clientes entram por parametro (tipos estruturais: importar tipo de esm.sh quebra o `deno test` do CI).
  */
 
+/** Campos aceitos no corpo (security-hardening.contract.md, secao 5): qualquer outro => 400 unknown_field. */
+export const DELETE_ALLOWED_FIELDS = ["confirm", "password", "captcha_token"] as const;
+
+/** Limite por conta de TODA chamada a esta funcao (security-hardening.contract.md, secao 2). Falha fechada. */
+export const DELETE_CALLS_LIMIT = { bucket: "acct:delete:h", max: 10, window: 3600 } as const;
+
 /** Passo 3: a palavra de confirmacao e exatamente "EXCLUIR" (sem trim, sem minusculas). */
 export function isValidConfirm(confirm: unknown): confirm is "EXCLUIR" {
   return confirm === "EXCLUIR";

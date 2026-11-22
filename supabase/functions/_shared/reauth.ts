@@ -8,6 +8,7 @@
  */
 import type { FaroEnv } from "./env.ts";
 import { logEvent, type RpcClient } from "./audit.ts";
+import { isCaptchaFailure } from "./captcha.ts";
 
 /** Parte do cliente de servico que `reauth.ts` usa (estrutural, para testar com falsos). */
 export interface ReauthService extends RpcClient {
@@ -17,7 +18,11 @@ export interface ReauthService extends RpcClient {
 /** Parte do cliente anonimo que confere a senha. */
 export interface ReauthPasswordClient {
   auth: {
-    signInWithPassword(credentials: { email: string; password: string }): PromiseLike<{
+    signInWithPassword(credentials: {
+      email: string;
+      password: string;
+      options?: { captchaToken?: string };
+    }): PromiseLike<{
       data: { session: { access_token: string } | null } | null;
       error: unknown;
     }>;
@@ -28,7 +33,7 @@ export type ReauthResult =
   | { ok: true }
   | {
     ok: false;
-    error: "reauth_required" | "invalid_password" | "rate_limited";
+    error: "reauth_required" | "invalid_password" | "rate_limited" | "captcha_failed";
     retry_after_seconds?: number;
   };
 
@@ -47,6 +52,8 @@ export async function requireRecentAuth(args: {
   email: string;
   facts: { has_password: boolean; last_sign_in_at: string | null };
   password: unknown;
+  /** Token do desafio anti-robo (contrato de endurecimento, secao 1); repassado ao Auth, que valida. */
+  captchaToken?: string;
   action: ReauthAction;
   ipHash: string;
   userAgent: string;
@@ -70,12 +77,16 @@ export async function requireRecentAuth(args: {
       return { ok: false, error: "reauth_required" };
     }
     let accessToken: string | null = null;
+    let captchaFailed = false;
     try {
-      const { data, error } = await args.makeAnonClient().auth.signInWithPassword({
+      const credentials: { email: string; password: string; options?: { captchaToken?: string } } = {
         email: args.email,
         password,
-      });
+      };
+      if (args.captchaToken) credentials.options = { captchaToken: args.captchaToken };
+      const { data, error } = await args.makeAnonClient().auth.signInWithPassword(credentials);
       if (!error && data?.session?.access_token) accessToken = data.session.access_token;
+      else if (isCaptchaFailure(error)) captchaFailed = true;
     } catch {
       accessToken = null;
     }
@@ -89,6 +100,9 @@ export async function requireRecentAuth(args: {
       }
       return { ok: true };
     }
+
+    // Desafio recusado pelo Auth: nao e senha errada. Nao conta no limite e nao gera auditoria de falha.
+    if (captchaFailed) return { ok: false, error: "captcha_failed" };
 
     // Falha: registra no limitador e audita (sem a senha, sem o e-mail).
     await rateCheck(svc, checks, true);
@@ -121,5 +135,25 @@ async function rateCheck(
     return { allowed: true };
   } catch {
     return { allowed: false };
+  }
+}
+
+/**
+ * Corpo de resposta (HTTP 200) para uma prova de identidade que falhou, igual em `phone-verify-start` e
+ * `account-delete`. `captcha_failed` e `invalid_password` sao respostas diferentes: o desafio nao conta como senha errada.
+ */
+export function reauthFailureBody(
+  failure: Extract<ReauthResult, { ok: false }>,
+  hasPassword: boolean,
+): Record<string, unknown> {
+  switch (failure.error) {
+    case "reauth_required":
+      return { ok: false, error: "reauth_required", method: hasPassword ? "password" : "google" };
+    case "rate_limited":
+      return { ok: false, error: "rate_limited", retry_after_seconds: failure.retry_after_seconds ?? 1 };
+    case "captcha_failed":
+      return { ok: false, error: "captcha_failed" };
+    default:
+      return { ok: false, error: "invalid_password" };
   }
 }

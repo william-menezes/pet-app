@@ -561,6 +561,31 @@ C="$(curl -s -o /dev/null -w '%{http_code}' -X POST "$API_URL/functions/v1/passw
   -H "Authorization: Bearer $ANON_KEY" -H "Content-Type: application/json" -d '{"email":"x@y.zz"}')"
 check "sem PHONE_OTP_PEPPER a recuperacao de senha continua funcionando (200)" test "$C" = "200"
 
+echo "== T098 a T100: corpo, chaves, metodos e limites nas Edge Functions =="
+if restart_serve "$PEPPER" test log; then pass "functions serve reiniciado com o pepper para as conferencias de corpo"; else fail "functions serve nao subiu para as conferencias de corpo"; fi
+BIG="$(head -c 5000 /dev/zero | tr '\0' 'x')"
+post_code() { # post_code <funcao> <json> [token]  (so o codigo HTTP; chave anonima por padrao)
+  curl -s -o /dev/null -w '%{http_code}' -X POST "$API_URL/functions/v1/$1" -H "apikey: $ANON_KEY" \
+    -H "Authorization: Bearer ${3:-$ANON_KEY}" -H "Content-Type: application/json" -d "$2"
+}
+check "password-recovery: corpo de 5 KB => 413" test "$(post_code password-recovery "{\"email\":\"$BIG@x.zz\"}")" = "413"
+check "password-recovery: chave desconhecida => 400" test "$(post_code password-recovery '{"email":"x@y.zz","redirectTo":"https://evil.example"}')" = "400"
+check "login-guard: corpo de 5 KB => 413" test "$(post_code login-guard "{\"phase\":\"pre_attempt\",\"email\":\"$BIG@x.zz\"}")" = "413"
+check "login-guard: chave desconhecida => 400" test "$(post_code login-guard '{"phase":"pre_attempt","email":"x@y.zz","role":"admin"}')" = "400"
+check "login-guard: PUT => 405" test "$(curl -s -o /dev/null -w '%{http_code}' -X PUT "$API_URL/functions/v1/login-guard" -H "apikey: $ANON_KEY" -H "Authorization: Bearer $ANON_KEY")" = "405"
+check "phone-verify-confirm: chave desconhecida => 400" test "$(post_code phone-verify-confirm '{"code":"123456","x":1}' "$TOKEN_B")" = "400"
+check "phone-verify-start: chave desconhecida => 400" test "$(post_code phone-verify-start '{"phone":"(11) 98765-4421","x":1}' "$TOKEN_B")" = "400"
+check "phone-verify-start: captcha_token de 3000 caracteres => 400" \
+  test "$(post_code phone-verify-start "{\"captcha_token\":\"$(head -c 3000 /dev/zero | tr '\0' 't')\"}" "$TOKEN_B")" = "400"
+check "account-delete: chave desconhecida => 400" test "$(post_code account-delete '{"confirm":"EXCLUIR","x":1}' "$TOKEN_B")" = "400"
+GUARD_BODY="{\"phase\":\"post_result\",\"email\":\"ci-guard@faro.test\",\"success\":true,\"user_id\":\"$UID_B\",\"detail\":{\"metodo\":\"password\",\"email\":\"vazou@faro.test\"}}"
+check "login-guard: post_result com user_id e detail sujo responde 200" test "$(post_code login-guard "$GUARD_BODY")" = "200"
+GA="$(rest GET 'auth_audit_log?evento=eq.login_sucesso&select=ator,detalhe')"
+check "a leitura da auditoria funcionou" has "$GA" '"detalhe"'
+check "login-guard ignorou o user_id do corpo (nenhum ator = tutor B)" bash -c '! printf "%s" "$1" | grep -qF "$2"' _ "$GA" "$UID_B"
+check "login-guard descartou o e-mail do detail" bash -c '! printf "%s" "$1" | grep -qF "vazou@faro.test"' _ "$GA"
+check "login-guard manteve a chave metodo do detail" has "$GA" 'password'
+
 echo "== T097: endurecimento de base (migration 0017) pela API =="
 AC="$(curl -s -o /dev/null -w '%{http_code}' "$API_URL/rest/v1/perfis?select=id" -H "apikey: $ANON_KEY" -H "Authorization: Bearer $ANON_KEY")"
 echo "anon lendo perfis pela API: HTTP $AC"
@@ -572,6 +597,15 @@ GQ="$(curl -s -o /dev/null -w '%{http_code}' -X POST "$API_URL/graphql/v1" -H "a
   -H "Authorization: Bearer $ANON_KEY" -H "Content-Type: application/json" -d '{"query":"{__typename}"}')"
 echo "GraphQL: HTTP $GQ"
 check "o endpoint GraphQL nao responde 200" bash -c '[ "$1" != "200" ]' _ "$GQ"
+
+echo "== T099: guard:ip:m (60 chamadas por minuto por IP) =="
+FLOOD=0
+for _ in $(seq 1 80); do
+  FR="$(curl -s -X POST "$API_URL/functions/v1/login-guard" -H "apikey: $ANON_KEY" -H "Authorization: Bearer $ANON_KEY" \
+    -H "Content-Type: application/json" -d '{"phase":"pre_attempt","email":"ci-flood@faro.test"}')"
+  if printf '%s' "$FR" | grep -q '"decision":"backoff"'; then FLOOD=1; break; fi
+done
+check "login-guard responde backoff depois de 60 chamadas em um minuto do mesmo IP" test "$FLOOD" = "1"
 
 if [ "$FAILED" -ne 0 ]; then
   echo "--- ultimas linhas do supabase functions serve ---"

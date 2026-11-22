@@ -2,6 +2,12 @@
  * Logica pura da Edge Function phone-verify-confirm (contracts/phone-verify-confirm.edge.md).
  */
 
+/** Campos aceitos no corpo (security-hardening.contract.md, secao 5): qualquer outro => 400 unknown_field. */
+export const CONFIRM_ALLOWED_FIELDS = ["code"] as const;
+
+/** Limite por conta de TODA chamada a esta funcao (security-hardening.contract.md, secao 2). Falha fechada. */
+export const CONFIRM_CALLS_LIMIT = { bucket: "otp:confirm:h", max: 30, window: 3600 } as const;
+
 /** `code` precisa ser string com exatamente 6 digitos. Formato invalido NAO conta tentativa. */
 export function isValidCodeFormat(code: unknown): code is string {
   return typeof code === "string" && /^[0-9]{6}$/.test(code);

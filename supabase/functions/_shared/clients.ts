@@ -2,7 +2,7 @@
  * Clientes Supabase das Edge Functions (contracts/shared-edge.contract.md).
  * A chave service_role vive SOMENTE aqui, no servidor.
  */
-import { createClient, type SupabaseClient, type User } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient, type SupabaseClient, type User } from "https://esm.sh/@supabase/supabase-js@2.108.1";
 import type { FaroEnv } from "./env.ts";
 
 export type { SupabaseClient, User };
@@ -25,7 +25,7 @@ export function anonClient(env: FaroEnv): SupabaseClient {
  * Valida o JWT do cabecalho Authorization com auth.getUser().
  * Devolve null para ausencia de token, a chave anonima ou qualquer token invalido.
  */
-export async function getCaller(req: Request, env: FaroEnv): Promise<User | null> {
+export async function getCaller(req: Request, env: Pick<FaroEnv, "supabaseUrl" | "anonKey">): Promise<User | null> {
   const header = req.headers.get("authorization") ?? "";
   const match = /^Bearer\s+(\S+)$/i.exec(header);
   if (!match) return null;
