@@ -131,8 +131,10 @@ UPDATE public.perfis
 -- Spec 003-tag-qr (T020). Gerado por supabase/scripts/make-seed.ts: nao edite a mao; rode o script.
 -- Nao cria usuario nem mexe em perfis: a Ana e o tutor A (...0001), que a 001 e a 004 ja deixam pronto
 -- (termos aceitos e celular confirmado). O tutor B (...0002) nao ganha pet nem tag.
--- Nenhum PIN esta escrito aqui: cada codigo recebe um PIN novo ao carregar o banco, guarda so o hash bcrypt de custo 12
--- e descarta o PIN. Para ativar um codigo available em teste, o admin reemite o PIN (admin_reissue_pin).
+-- PINs DE DESENVOLVIMENTO: as tres tags available abaixo trazem um PIN fixo para os testes de ponta a ponta. Sao PINs de
+-- codigos SINTETICOS do lote-900; o seed so roda em banco local ou de CI e esses PINs nunca existem em producao. No banco
+-- fica so o hash bcrypt de custo 12. Os outros codigos recebem um PIN aleatorio, descartado. PIN de tag impressa de
+-- verdade nunca entra em arquivo versionado.
 -- Os codigos sao de TESTE (vetores/derivados do modulo de codigo); nenhum e do lote-001. Seed nunca roda em producao.
 
 INSERT INTO public.pets (id, tutor_id, name, species, breed, sex, size, neutered, temperament, care_notes)
@@ -156,15 +158,15 @@ DECLARE
   v_pin text;
 BEGIN
   FOR r IN SELECT * FROM (VALUES
-    ('7K3MQ9XAC', 'assigned', 0),
-    ('5P8NMRXYW', 'available', 1),
-    ('N473QHBHE', 'available', 2),
-    ('7C6G5NHR8', 'available', 3),
-    ('5QQWQ2MM4', 'blocked', 4),
-    ('NKCBJV2HM', 'void', 5)
-  ) AS t (code, status, qr_mask)
+    ('7K3MQ9XAC', 'assigned', 0, NULL::text),
+    ('5P8NMRXYW', 'available', 1, 'N6Y9GC'),
+    ('N473QHBHE', 'available', 2, 'JH6V9Y'),
+    ('7C6G5NHR8', 'available', 3, '42HD9Q'),
+    ('5QQWQ2MM4', 'blocked', 4, NULL::text),
+    ('NKCBJV2HM', 'void', 5, NULL::text)
+  ) AS t (code, status, qr_mask, dev_pin)
   LOOP
-    v_pin := public.new_activation_pin();
+    v_pin := coalesce(r.dev_pin, public.new_activation_pin());
     INSERT INTO public.tag_codes (code, batch_id, status, activation_pin_hash, qr_mask)
     VALUES (r.code, 'lote-900', r.status,
             extensions.crypt(v_pin, extensions.gen_salt('bf', 12)), r.qr_mask);

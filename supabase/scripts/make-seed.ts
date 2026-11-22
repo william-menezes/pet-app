@@ -17,15 +17,17 @@
  * O que NAO faz: nao cria usuario (o tutor A, a "Ana", e o tutor B ja existem no seed da 001/004), nao altera
  * `perfis`, nao da pet nem tag ao tutor B.
  *
- * PIN: o seed NAO tem PIN em lugar nenhum. O trecho gerado calcula, ao carregar o banco, um PIN novo por codigo
- * (`new_activation_pin()`), guarda so o hash bcrypt de custo 12 e descarta o PIN. Quem precisar ativar um codigo
- * `available` em teste de ponta a ponta pede um PIN novo ao admin (`admin_reissue_pin`); os testes pgTAP geram o
- * proprio PIN dentro da transacao. O repositorio e publico: PIN em arquivo versionado nunca.
+ * PIN (decisao do William, 2026-11-22): as tres tags `available` do seed (e so elas) recebem PINs DE
+ * DESENVOLVIMENTO fixos, derivados por SHA-256 e gravados em `e2e/fixtures/seed-codes.json` (campo `devPins`), para
+ * os testes de ponta a ponta ativarem sem pedir PIN ao admin. A regra "nenhum PIN em arquivo versionado" protege
+ * PINs REAIS de tags impressas: estes pertencem a codigos sinteticos do `lote-900`, o seed so roda em banco local ou
+ * de CI, e esses PINs nunca existem em producao. No banco continua so o hash bcrypt de custo 12. Os demais codigos
+ * (vinculado, bloqueado, anulado) recebem um PIN aleatorio descartado, como antes.
  */
 import { createHash } from 'node:crypto';
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
-import { checkDigit, format, isValid, newCode } from '../../src/app/core/tag-code/tag-code.ts';
+import { TAG_ALPHABET, checkDigit, format, isValid, newCode } from '../../src/app/core/tag-code/tag-code.ts';
 
 const ROOT = resolve(import.meta.dirname ?? '.', '../..');
 const SEED_FILE = resolve(ROOT, 'supabase/seed.sql');
@@ -60,6 +62,20 @@ function deterministicRandom(): (n: number) => Uint8Array {
   };
 }
 
+export type DevPins = Record<'available' | 'available2' | 'available3', string>;
+
+/** PIN de desenvolvimento (6 caracteres Crockford) derivado do nome do codigo. So para codigos sinteticos do seed. */
+export function devPin(key: string): string {
+  const digest = createHash('sha256').update(`faro-seed-pin-v1:${key}`).digest();
+  let pin = '';
+  for (let i = 0; i < 6; i++) pin += TAG_ALPHABET[digest[i] & 31];
+  return pin;
+}
+
+export function makeDevPins(): DevPins {
+  return { available: devPin('available'), available2: devPin('available2'), available3: devPin('available3') };
+}
+
 /** Os seis codigos do seed. Nunca repete um codigo, nem um vetor sintetico dos testes. */
 export function makeSeedCodes(vectorCodes: ReadonlySet<string>): SeedCodes {
   const assigned = '7K3MQ9XA' + checkDigit('7K3MQ9XA');
@@ -84,22 +100,26 @@ export function makeSeedCodes(vectorCodes: ReadonlySet<string>): SeedCodes {
   };
 }
 
-/** O trecho SQL entre os marcadores (sem os marcadores). Nenhum PIN: so a geracao do hash ao carregar. */
-export function seedSql(codes: SeedCodes): string {
+/** O trecho SQL entre os marcadores (sem os marcadores). So as tres tags `available` levam PIN de desenvolvimento. */
+export function seedSql(codes: SeedCodes, pins: DevPins): string {
   const rows = [
-    ['assigned', codes.assigned, 0],
-    ['available', codes.available, 1],
-    ['available', codes.available2, 2],
-    ['available', codes.available3, 3],
-    ['blocked', codes.blocked, 4],
-    ['void', codes.void, 5],
+    ['assigned', codes.assigned, 0, null],
+    ['available', codes.available, 1, pins.available],
+    ['available', codes.available2, 2, pins.available2],
+    ['available', codes.available3, 3, pins.available3],
+    ['blocked', codes.blocked, 4, null],
+    ['void', codes.void, 5, null],
   ] as const;
-  const values = rows.map(([status, code, mask]) => `    ('${code}', '${status}', ${mask})`).join(',\n');
+  const values = rows
+    .map(([status, code, mask, pin]) => `    ('${code}', '${status}', ${mask}, ${pin === null ? 'NULL::text' : `'${pin}'`})`)
+    .join(',\n');
   return `-- Spec 003-tag-qr (T020). Gerado por supabase/scripts/make-seed.ts: nao edite a mao; rode o script.
 -- Nao cria usuario nem mexe em perfis: a Ana e o tutor A (...0001), que a 001 e a 004 ja deixam pronto
 -- (termos aceitos e celular confirmado). O tutor B (...0002) nao ganha pet nem tag.
--- Nenhum PIN esta escrito aqui: cada codigo recebe um PIN novo ao carregar o banco, guarda so o hash bcrypt de custo 12
--- e descarta o PIN. Para ativar um codigo available em teste, o admin reemite o PIN (admin_reissue_pin).
+-- PINs DE DESENVOLVIMENTO: as tres tags available abaixo trazem um PIN fixo para os testes de ponta a ponta. Sao PINs de
+-- codigos SINTETICOS do lote-900; o seed so roda em banco local ou de CI e esses PINs nunca existem em producao. No banco
+-- fica so o hash bcrypt de custo 12. Os outros codigos recebem um PIN aleatorio, descartado. PIN de tag impressa de
+-- verdade nunca entra em arquivo versionado.
 -- Os codigos sao de TESTE (vetores/derivados do modulo de codigo); nenhum e do lote-001. Seed nunca roda em producao.
 
 INSERT INTO public.pets (id, tutor_id, name, species, breed, sex, size, neutered, temperament, care_notes)
@@ -124,9 +144,9 @@ DECLARE
 BEGIN
   FOR r IN SELECT * FROM (VALUES
 ${values}
-  ) AS t (code, status, qr_mask)
+  ) AS t (code, status, qr_mask, dev_pin)
   LOOP
-    v_pin := public.new_activation_pin();
+    v_pin := coalesce(r.dev_pin, public.new_activation_pin());
     INSERT INTO public.tag_codes (code, batch_id, status, activation_pin_hash, qr_mask)
     VALUES (r.code, '${SEED_BATCH_ID}', r.status,
             extensions.crypt(v_pin, extensions.gen_salt('bf', 12)), r.qr_mask);
@@ -177,17 +197,19 @@ function main(): void {
   }
 
   const seed = readFileSync(SEED_FILE, 'utf8');
-  const updated = applyToSeed(seed, seedSql(codes));
+  const pins = makeDevPins();
+  const updated = applyToSeed(seed, seedSql(codes, pins));
   if (updated !== seed) writeFileSync(SEED_FILE, updated);
 
   const display = Object.fromEntries(Object.entries(codes).map(([k, c]) => [k, format(c)]));
   const json =
     JSON.stringify(
       {
-        _: 'Gerado por supabase/scripts/make-seed.ts; nao edite a mao. Codigos de TESTE do seed (nenhum e do lote-001). Sem PIN: o seed nao tem PIN conhecido.',
+        _: 'Gerado por supabase/scripts/make-seed.ts; nao edite a mao. Codigos de TESTE do seed (nenhum e do lote-001). devPins: PINs DE DESENVOLVIMENTO das tres tags available, de codigos sinteticos do lote-900; so existem em banco local ou de CI e nunca em producao. PIN de tag real nunca entra aqui.',
         batch: SEED_BATCH_ID,
         ...codes,
         display,
+        devPins: pins,
       },
       null,
       2,

@@ -1,11 +1,12 @@
 -- pgTAP: seed_tags.test.sql
 -- Spec 003-tag-qr, T020. Confere o trecho `-- >>> 003-tag-qr` do supabase/seed.sql depois do `supabase db reset` / `supabase start`
 -- (o CI sempre carrega o seed). Nao depende dos codigos gerados: so do vetor sintetico do Paçoca (7K3M-Q9XA-C) e da
--- estrutura. Nenhum PIN: o seed descarta os PINs que gera.
+-- estrutura. PINs: as tres tags available do seed tem PINs DE DESENVOLVIMENTO fixos (decisao de 2026-11-22; codigos sinteticos
+-- do lote-900, so em banco local ou de CI, nunca em producao); as outras tres recebem um PIN aleatorio, descartado.
 
 BEGIN;
 
-SELECT plan(17);
+SELECT plan(20);
 
 SELECT is((SELECT count(*)::integer FROM public.tag_codes), 6, 'seed: select count(*) from tag_codes devolve 6');
 SELECT is((SELECT quantity FROM public.tag_batches WHERE id = 'lote-900'), 6, 'seed: o lote de teste lote-900 declara 6 codigos');
@@ -14,6 +15,10 @@ SELECT is((SELECT string_agg(status || ':' || n, ',' ORDER BY status) FROM (SELE
   'assigned:1,available:3,blocked:1,void:1', 'seed: 1 vinculado, 3 disponiveis, 1 bloqueado e 1 anulado');
 SELECT is((SELECT count(*)::integer FROM public.tag_codes WHERE NOT public.tag_is_valid(code::text)), 0, 'seed: todos os codigos passam em tag_is_valid');
 SELECT is((SELECT count(*)::integer FROM public.tag_codes WHERE activation_pin_hash !~ '^\$2[abxy]\$12\$'), 0, 'seed: todo hash de PIN e bcrypt de custo 12');
+-- PINs de desenvolvimento de e2e/fixtures/seed-codes.json (campo devPins): conferem com o hash das tres tags available.
+SELECT is((SELECT extensions.crypt('N6Y9GC', activation_pin_hash) = activation_pin_hash FROM public.tag_codes WHERE code = '5P8NMRXYW'), true, 'seed: o PIN de desenvolvimento de available confere com o hash');
+SELECT is((SELECT extensions.crypt('JH6V9Y', activation_pin_hash) = activation_pin_hash FROM public.tag_codes WHERE code = 'N473QHBHE'), true, 'seed: o PIN de desenvolvimento de available2 confere com o hash');
+SELECT is((SELECT extensions.crypt('42HD9Q', activation_pin_hash) = activation_pin_hash FROM public.tag_codes WHERE code = '7C6G5NHR8'), true, 'seed: o PIN de desenvolvimento de available3 confere com o hash');
 
 SELECT is((SELECT status FROM public.tag_codes WHERE code = '7K3MQ9XAC'), 'assigned', 'seed: 7K3M-Q9XA-C (vetor sintetico) e o codigo do Paçoca e esta assigned');
 SELECT is((SELECT p.name || '/' || a.tutor_id::text FROM public.tag_assignments a JOIN public.pets p ON p.id = a.pet_id

@@ -1,5 +1,5 @@
 {
-  "_": "Gerado por supabase/scripts/make-seed.ts; nao edite a mao. Codigos de TESTE do seed (nenhum e do lote-001). Sem PIN: o seed nao tem PIN conhecido.",
+  "_": "Gerado por supabase/scripts/make-seed.ts; nao edite a mao. Codigos de TESTE do seed (nenhum e do lote-001). devPins: PINs DE DESENVOLVIMENTO das tres tags available, de codigos sinteticos do lote-900; so existem em banco local ou de CI e nunca em producao. PIN de tag real nunca entra aqui.",
   "batch": "lote-900",
   "assigned": "7K3MQ9XAC",
   "available": "5P8NMRXYW",
@@ -14,5 +14,10 @@
     "available3": "7C6G-5NHR-8",
     "blocked": "5QQW-Q2MM-4",
     "void": "NKCB-JV2H-M"
+  },
+  "devPins": {
+    "available": "N6Y9GC",
+    "available2": "JH6V9Y",
+    "available3": "42HD9Q"
   }
 }
