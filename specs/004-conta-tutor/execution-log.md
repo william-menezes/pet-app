@@ -350,6 +350,73 @@ T033 a T036 `a4981a0`. As `[QA]` T038 a T040 ficam para a execução com Supabas
 
 ---
 
+## Frontend — Phases 4 e 5 (T054 a T059, T061 a T063)
+
+Execução de 2026-11-22 pelo subagente `frontend-angular`. Commits: correção do login `e2821e5`; T054 e T055 `765515b`; T056
+`6b386d3`; T057 a T059 `6b69eb2` (mais `c0df0b8`, só espaçamento); T061 a T063 `07e4ef3`; e2e `efcb6de`. As `[QA]` T060, T064 e T065
+não são do frontend (precisam de Supabase local com navegador, e do Google real).
+
+### Correção fora das tarefas: `[disabled]` no login
+
+`login.html` passou de `[disabled]` para `[zDisabled]` nos botões Entrar e Google. A premissa "o host sobrescreve o atributo" só
+se mostra em uma sequência: com `zLoading` ligado e depois desligado, o host (`[attr.disabled]`) remove o atributo e o botão
+volta a ficar habilitado **mesmo com `[disabled]` ainda verdadeiro** (caso real: o envio termina com `rate_limited`). O teste novo
+`o botão Entrar continua desabilitado em rate_limited depois que o envio termina` falha no código antigo e passa no novo (conferido
+trocando o HTML de volta). Os outros dois testes novos (desabilitado em `rate_limited`; Google desabilitado com provedor
+indisponível) passam nos dois, porque na primeira renderização o `[disabled]` ainda vale.
+
+### Desvios, decisões e interpretações
+
+- **T054**: `StartResult`/`ConfirmResult` exatamente como o contrato. Resposta que não tem forma reconhecível (código de erro
+  desconhecido, `ok:true` sem os campos) também vira `network`. Em sucesso de `confirm`, `AccountService.load(true)`.
+- **T055**: `phoneConfirmedGuard` com `import()` dinâmico do `AccountService` (mesma regra do `termsGuard`). O contrato não diz o que
+  fazer se a conta não carregar; segui o `termsGuard` (`true`, a regra de verdade é `phone_is_confirmed`). Ainda não está registrado
+  em nenhuma rota (é da `003`).
+- **T056**: o modo troca (celular já confirmado) é a T085, não entrou. Por isso **não há captura de "trocar celular"**. `reauth_required`
+  e `invalid_password` caem em textos do contrato, mas sem o campo de senha e sem o botão do Google (T085). A tela envia o número em
+  E.164 (normalizado no cliente; o servidor normaliza de novo). Celular que não é celular brasileiro não chama o servidor e mostra o texto
+  de `invalid_phone`. `terms_required` leva a `/auth/termos`.
+- **T057/T058**: o contrato não define o que mostrar quando `phone_verification_status()` falha. Criei o estado `load_error`
+  (texto de rede, "Tentar de novo" e "Número errado? Corrigir"). Sem verificação ativa mostra "Peça um código para continuar" (o
+  contrato só dá o nome do estado e o botão). Os `data-testid` das células (`confirm-phone-cell-1` a `-6`) são colocados pelo
+  componente nas `<input>` do `z-input-otp` (o ZardUI não os expõe). `invalid_code` usa o singular quando falta 1 tentativa
+  (o contrato diz "tentativa(s)"). O "Reenviar código" do estado normal só aparece quando a contagem zera; nos estados `vencido` e
+  `indisponível` é o botão principal. Back da casca aponta para `/auth/celular` sem `returnUrl` na query (o `routerLink` string não
+  carrega query); o destino guardado continua no `ReturnUrlService`, e o link "Corrigir" leva o `returnUrl`.
+- **T058, tela de bloqueado**: usei a mesma tela de `V2-confirmar-celular-vencido*` para `locked`, `expired` e `no_active`, com o texto de
+  cada um no aviso (como a própria referência anota).
+- **T059**: depois de `confirmEmail`, `AccountService.load(true)`; com `celularPendente` pede o SMS (`start()`); `ok` leva a
+  `/auth/confirmar-celular`, qualquer falha a `/auth/celular`, sempre com `replaceUrl`. O `returnUrl` vem do `ReturnUrlService.peek()`
+  ou da query. Se a conta não carregar, segue por `PostAuthNavigator.go()`. O e2e `signup-ui` (link) agora simula a função de SMS.
+- **T061**: a falha do OAuth não lança (o `AuthService.signInWithGoogle` registra o erro no `AuthStore`). A tela confere o `status` do
+  store depois da chamada e mostra um aviso novo, escrito por mim: "Não conseguimos abrir o Google agora. Tente de novo ou crie a
+  conta com e-mail e senha." Os dois botões ficam desabilitados enquanto o redirecionamento acontece.
+- **T062**: a referência mostra "Você entrou com o Google" e o e-mail. Para conta sem Google escrevi "Você entrou com seu e-mail" (sem o
+  ícone). O aviso de rede do aceite reutiliza o texto do login. O aceite não redireciona quem já aceitou e abre `/auth/termos` à mão.
+- **T063**: o `oauth-callback` já cumpria o contrato (T029); só ganhou `oauth-callback.spec.ts` (6 testes: sucesso, cancelamento,
+  rede, exceção, sem sessão no store, região de status).
+- **Auxiliares novos** em `features/auth/shared/`: `countdown.ts` (contagem com `DestroyRef`) e `wait-time.ts` ("1 hora", "2 horas",
+  "alguns minutos" para o `{tempo}` de `rate_limited`).
+- **Lint**: `zMode`/`zRole` viram `[zMode]="'numeric'"` e `[zRole]="'status'"` (o lint de i18n pede `i18n-<atributo>` nos atributos
+  estáticos). Alertas dos fluxos usam `zRole="status"` dentro de uma região `aria-live="polite"` que existe sempre.
+- **Projeção da casca**: elementos `footer` dentro de `@if`/`@switch` precisam estar em blocos de raiz única; por isso `confirm-phone.html`
+  tem um `@if` por elemento.
+
+### Verificação
+
+- `npm run lint`: passa. `npm test -- --watch=false`: 502 testes em 67 arquivos (antes da fase: 407 em 61).
+- `npm run build:stats`: passa, **pacote inicial 409,06 kB** (110,39 kB transferidos; antes 408,81; orçamento 500). `npm run check:ui`
+  e `npm run check:bundle`: ok.
+- E2E, backend 100% simulado (nada chega a `*.supabase.co`): `e2e/phone-terms-ui.spec.ts` (15 testes) mais os de `signup-ui`,
+  `account-foundation` e `login-ui`: 55 passam. Cobrem informar celular (E.164, `returnUrl`, "Agora não", `rate_limited`), digitar o
+  código (teclado), código incorreto (células limpas, foco na primeira), vencido, SMS indisponível, sem número pendente, aceite dos
+  termos (de `/app` ao celular), o botão do Google (o pedido de `authorize` com `provider=google` e retorno em `/auth/callback` é
+  capturado e barrado) e rolagem horizontal em 320, 390, 768 e 1440 px.
+- **Não verificado**: SMS real, Google real, a prova contra os usuários do seed e o preflight CORS das funções (T060, T064, T065), o
+  modo troca (T085) e o desafio anti-robô (Phase 10).
+
+---
+
 # Backend e QA — Phases 6 e 7 (T066, T067, T073 a T077)
 
 Execução de 2026-11-22 pelo subagente `backend-supabase`, branch `004-conta-tutor`. Run verde do job `supabase`: 45041533742
