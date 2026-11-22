@@ -93,6 +93,26 @@ seed_login tutor.a@faro.test tutor
 seed_login tutor.b@faro.test tutor
 seed_login admin@faro.test admin
 
+echo "== Aquecimento: o Auth do stack recem-subido pode responder com o modelo padrao de e-mail =="
+# Em alguns runs (2 de 9 na Phase 10) o primeiro e-mail saiu com o link padrao do Supabase (/auth/v1/verify) e nao com o
+# modelo do repositorio, e o run seguinte, com o mesmo codigo, passou. Antes da conferencia T004, espera ate o Auth
+# entregar o modelo do repositorio (ate 6 tentativas, 10 s entre elas) e IMPRIME quantas foram necessarias.
+WARM_OK=0
+for attempt in 1 2 3 4 5 6; do
+  WARM_EMAIL="ci-warm-$RANDOM$RANDOM@faro.test"
+  signup "$WARM_EMAIL" SenhaDeTeste12345 '{"name":"CI Aquecimento","terms_version":"2026-11"}' > /dev/null
+  WARM_HTML=""
+  for _ in $(seq 1 10); do
+    WID="$(curl -s "http://127.0.0.1:54324/api/v1/search?query=to:$WARM_EMAIL" | grep -oE '"ID":"[^"]+"' | head -1 | cut -d'"' -f4)"
+    if [ -n "$WID" ]; then WARM_HTML="$(curl -s "http://127.0.0.1:54324/api/v1/message/$WID")"; break; fi
+    sleep 1
+  done
+  if printf '%s' "$WARM_HTML" | grep -q "/auth/confirmar-email?token_hash="; then WARM_OK=1; break; fi
+  echo "aquecimento: tentativa $attempt sem o modelo do repositorio; aguardando"
+  sleep 10
+done
+echo "aquecimento: modelo do repositorio visto na tentativa $attempt (WARM_OK=$WARM_OK)"
+
 echo "== T004: e-mail de confirmacao no coletor local =="
 EMAIL="ci-$RANDOM$RANDOM@faro.test"
 OUT="$(signup "$EMAIL" SenhaDeTeste12345 '{"name":"CI Teste","phone":"+5511987654421","terms_version":"2026-11"}')"
