@@ -262,14 +262,14 @@ navegação do frontend.
 
 ### Frontend: núcleo
 
-- [ ] T022 [P] [FE] Criar `src/app/core/auth/return-url.ts` (`sanitizeReturnUrl` e
+- [x] T022 [P] [FE] Criar `src/app/core/auth/return-url.ts` (`sanitizeReturnUrl` e
   `ReturnUrlService`) e `return-url.spec.ts` com a tabela de casos de
   `contracts/frontend-services.contract.md` §3. **Feito quando**: `npm test -- --watch=false`
   passa com os 13 casos da tabela.
-- [ ] T023 [P] [FE] Criar `src/app/core/auth/returning-visitor.ts` (`markReturning`, `isReturning`,
+- [x] T023 [P] [FE] Criar `src/app/core/auth/returning-visitor.ts` (`markReturning`, `isReturning`,
   com `isPlatformBrowser` e `try/catch`) e `returning-visitor.spec.ts`. **Feito quando**: o teste
   cobre "sem marca ⇒ false", "depois de marcar ⇒ true" e "storage lançando erro ⇒ false".
-- [ ] T024 [P] [FE] Criar `src/app/core/account/phone.ts` (`normalizeBrPhone`, `formatBrPhone`,
+- [x] T024 [P] [FE] Criar `src/app/core/account/phone.ts` (`normalizeBrPhone`, `formatBrPhone`,
   `maskBrPhoneInput`) e `phone.spec.ts` com a tabela de casos de
   `contracts/shared-edge.contract.md` (seção `phone.ts`). **Feito quando**: os 9 casos da tabela
   passam e `formatBrPhone('+5511987654421') === '(11) 98765-4421'`.
