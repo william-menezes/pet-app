@@ -72,15 +72,26 @@ check "login devolve sessao (200 com access_token)" \
   bash -c '[ "$1" = "200" ] && printf "%s" "$2" | grep -q "access_token"' _ "$LCODE" "$LBODY"
 if [ "$LCODE" != "200" ]; then echo "corpo do login: $(printf '%s' "$LBODY" | cut -c1-200)"; fi
 
-echo "== Diagnostico (nao reprova): os usuarios do seed.sql entram pelo GoTrue? =="
-SEEDLOGIN="$(curl -s -o /dev/null -w '%{http_code}' -X POST "$API_URL/auth/v1/token?grant_type=password" \
-  -H "apikey: $ANON_KEY" -H "Content-Type: application/json" \
-  -d '{"email":"tutor.a@faro.test","password":"TesteSenha123!"}')"
-echo "login do tutor.a do seed: HTTP $SEEDLOGIN"
-DBC="$(docker ps --filter name=supabase_db_ --format '{{.Names}}' | head -1)"
-if [ -n "$DBC" ]; then
-  docker exec "$DBC" psql -U postgres -At -c "select email, instance_id, confirmation_token is null as conf_null, recovery_token is null as rec_null, email_change is null as chg_null, aud from auth.users where email = 'tutor.a@faro.test' or email = '$LOGIN_EMAIL' order by email" || true
-fi
+echo "== Seed: os tres usuarios entram por senha e current_user_role devolve o papel certo =="
+seed_login() { # seed_login <email> <papel esperado>
+  local out code body token role
+  out="$(curl -s -w '\n%{http_code}' -X POST "$API_URL/auth/v1/token?grant_type=password" \
+    -H "apikey: $ANON_KEY" -H "Content-Type: application/json" \
+    -d "{\"email\":\"$1\",\"password\":\"TesteSenha123!\"}")"
+  code="$(http_code "$out")"; body="$(http_body "$out")"
+  token="$(printf '%s' "$body" | grep -oE '"access_token":"[^"]+"' | head -1 | cut -d'"' -f4)"
+  role=""
+  if [ -n "$token" ]; then
+    role="$(curl -s -X POST "$API_URL/rest/v1/rpc/current_user_role" -H "apikey: $ANON_KEY" \
+      -H "Authorization: Bearer $token" -H "Content-Type: application/json" -d '{}' | tr -d '"')"
+  fi
+  echo "$1: login HTTP $code; papel: $role"
+  check "login por senha de $1 devolve 200" test "$code" = "200"
+  check "current_user_role de $1 devolve $2" test "$role" = "$2"
+}
+seed_login tutor.a@faro.test tutor
+seed_login tutor.b@faro.test tutor
+seed_login admin@faro.test admin
 
 echo "== T004: e-mail de confirmacao no coletor local =="
 EMAIL="ci-$RANDOM$RANDOM@faro.test"
@@ -112,6 +123,15 @@ check "o link contem type=email" \
   bash -c 'printf "%s" "$1" | grep -Eq "type=email"' _ "$MAIL_HTML"
 check "o e-mail nao contem /auth/v1/verify (ConfirmationURL)" \
   bash -c '! printf "%s" "$1" | grep -q "/auth/v1/verify"' _ "$MAIL_HTML"
+# Investigacao T003: o 422 muda se o usuario confirmou pelo fluxo normal (link do e-mail)?
+TH="$(printf '%s' "$MAIL_HTML" | grep -oE 'token_hash=[A-Za-z0-9_-]+' | head -1 | cut -d= -f2)"
+if [ -n "$TH" ]; then
+  VC="$(curl -s -o /dev/null -w '%{http_code}' -X POST "$API_URL/auth/v1/verify" -H "apikey: $ANON_KEY" \
+    -H "Content-Type: application/json" -d "{\"type\":\"email\",\"token_hash\":\"$TH\"}")"
+  echo "confirmacao pelo link (verify): HTTP $VC"
+  REP2="$(signup "$EMAIL" OutraSenha12345)"
+  echo "cadastro repetido de e-mail confirmado pelo fluxo normal: HTTP $(http_code "$REP2"); $(http_body "$REP2" | grep -oE '"error_code":"[^"]*"' | head -1)"
+fi
 
 echo "== T021: CORS do login-guard =="
 # No stack local, o Kong responde o preflight (OPTIONS) com 'Access-Control-Allow-Origin: *' ANTES de
