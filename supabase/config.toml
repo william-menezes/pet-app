@@ -89,3 +89,11 @@ verify_jwt = true
 
 [functions.phone-verify-confirm]
 verify_jwt = true
+
+# Spec 004: recuperacao de senha. Aceita a chave anonima (qualquer visitante); a funcao nao exige usuario.
+[functions.password-recovery]
+verify_jwt = true
+
+# Spec 004: exclusao da propria conta. Exige usuario autenticado (a funcao valida o JWT com getUser).
+[functions.account-delete]
+verify_jwt = true

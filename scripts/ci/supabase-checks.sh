@@ -394,6 +394,169 @@ if restart_serve "$PEPPER" test stub; then
   check "stub: o codigo fixo 424242 confirma" has "$R" '"phone":"+5521988887777"'
 else fail "functions serve nao subiu com o driver stub"; fi
 
+echo "== T066 e T067: password-recovery =="
+admin_create_user() { # admin_create_user <email> <senha>   (imprime o corpo; so no stack local do CI)
+  curl -s -X POST "$API_URL/auth/v1/admin/users" -H "apikey: $SERVICE_KEY" -H "Authorization: Bearer $SERVICE_KEY" \
+    -H "Content-Type: application/json" \
+    -d "{\"email\":\"$1\",\"password\":\"$2\",\"email_confirm\":true,\"user_metadata\":{\"name\":\"CI Conta\",\"terms_version\":\"2026-11\"}}"
+}
+mail_count() { # mail_count <email>: mensagens no coletor local para o destinatario
+  curl -s "http://127.0.0.1:54324/api/v1/search?query=to:$1" | grep -oE '"ID":"[^"]+"' | wc -l | tr -d ' '
+}
+rec_call() { # rec_call <email>  => "<corpo>|<tempo total em segundos>"
+  curl -s -w '|%{time_total}' -X POST "$API_URL/functions/v1/password-recovery" -H "apikey: $ANON_KEY" \
+    -H "Authorization: Bearer $ANON_KEY" -H "Origin: http://localhost:4200" -H "Content-Type: application/json" \
+    -d "{\"email\":\"$1\",\"captcha_token\":null}"
+}
+ge() { awk -v a="$1" -v b="$2" 'BEGIN{exit !(a>=b)}'; }
+near() { awk -v a="$1" -v b="$2" -v d="$3" 'BEGIN{x=a-b; if(x<0)x=-x; exit !(x<d)}'; }
+
+if restart_serve "$PEPPER" test log; then pass "functions serve reiniciado para a recuperacao de senha"; else fail "functions serve nao subiu para a recuperacao de senha"; fi
+REC_EXIST="ci-rec-$RANDOM$RANDOM@faro.test"
+REC_MISSING="ci-rec-sem-conta-$RANDOM$RANDOM@faro.test"
+admin_create_user "$REC_EXIST" "SenhaDeTeste12345" > /dev/null
+rec_call "aquecimento-invalido" > /dev/null   # esquenta a funcao (partida a frio) sem gastar limite
+
+R1="$(rec_call "$REC_EXIST")"; B1="${R1%|*}"; T1="${R1##*|}"
+R2="$(rec_call "$REC_MISSING")"; B2="${R2%|*}"; T2="${R2##*|}"
+echo "recuperacao, e-mail com conta: corpo $B1 em ${T1}s; sem conta: corpo $B2 em ${T2}s"
+check "e-mail existente: corpo { ok: true }" test "$B1" = '{"ok":true}'
+check "e-mail inexistente: o MESMO corpo" test "$B1" = "$B2"
+check "e-mail existente: resposta so depois do piso de 0,6 s" ge "$T1" 0.6
+check "e-mail inexistente: resposta so depois do piso de 0,6 s" ge "$T2" 0.6
+check "os dois tempos ficam na mesma faixa (diferenca < 0,5 s)" near "$T1" "$T2" 0.5
+RI="$(rec_call "isto-nao-e-um-email")"
+check "e-mail invalido: o mesmo corpo, sem erro" test "${RI%|*}" = '{"ok":true}'
+check "corpo que nao e objeto: 400 bad_request" test "$(curl -s -o /dev/null -w '%{http_code}' -X POST "$API_URL/functions/v1/password-recovery" \
+  -H "apikey: $ANON_KEY" -H "Authorization: Bearer $ANON_KEY" -H "Content-Type: application/json" -d '[]')" = "400"
+check "GET devolve 405" test "$(curl -s -o /dev/null -w '%{http_code}' -X GET "$API_URL/functions/v1/password-recovery" \
+  -H "apikey: $ANON_KEY" -H "Authorization: Bearer $ANON_KEY")" = "405"
+
+REC_MAIL=""
+for _ in $(seq 1 20); do
+  if [ "$(mail_count "$REC_EXIST")" -ge 1 ]; then break; fi
+  sleep 1
+done
+check "o e-mail de recuperacao chegou ao coletor para a conta existente" test "$(mail_count "$REC_EXIST")" -ge 1
+RID="$(curl -s "http://127.0.0.1:54324/api/v1/search?query=to:$REC_EXIST" | grep -oE '"ID":"[^"]+"' | head -1 | cut -d'"' -f4)"
+if [ -n "$RID" ]; then REC_MAIL="$(curl -s "http://127.0.0.1:54324/api/v1/message/$RID")"; fi
+check "o link de recuperacao contem /auth/nova-senha?token_hash=" \
+  bash -c 'printf "%s" "$1" | grep -q "/auth/nova-senha?token_hash="' _ "$REC_MAIL"
+check "o link de recuperacao contem type=recovery" bash -c 'printf "%s" "$1" | grep -q "type=recovery"' _ "$REC_MAIL"
+check "nenhum e-mail para a conta inexistente" test "$(mail_count "$REC_MISSING")" = "0"
+
+# Limite de 3 por hora por e-mail: os pedidos 2 e 3 passam; o 4o e negado em silencio.
+rec_call "$REC_EXIST" > /dev/null
+rec_call "$REC_EXIST" > /dev/null
+sleep 6
+N_ANTES="$(mail_count "$REC_EXIST")"
+R4="$(rec_call "$REC_EXIST")"
+echo "4o pedido para o mesmo e-mail: corpo ${R4%|*} em ${R4##*|}s"
+check "4o pedido na hora: a mesma resposta { ok: true }" test "${R4%|*}" = '{"ok":true}'
+sleep 6
+check "4o pedido na hora: NENHUM e-mail novo no coletor" test "$(mail_count "$REC_EXIST")" = "$N_ANTES"
+A="$(rest GET "auth_audit_log?evento=eq.senha_recuperacao_solicitada&detalhe-%3E%3Epermitido=eq.false&select=detalhe")"
+echo "pedidos negados na auditoria: $(printf '%s' "$A" | grep -o 'permitido' | wc -l | tr -d ' ')"
+check "o 4o pedido foi auditado com permitido = false (origem pedido)" bash -c 'printf "%s" "$1" | grep -q "pedido" && printf "%s" "$1" | grep -q "permitido"' _ "$A"
+A="$(rest GET "auth_audit_log?evento=eq.senha_recuperacao_solicitada&detalhe-%3E%3Epermitido=eq.true&select=detalhe")"
+check "os pedidos permitidos tambem foram auditados" bash -c 'printf "%s" "$1" | grep -q "permitido"' _ "$A"
+DUMP="$(rest GET 'auth_audit_log?select=*')"
+check "a leitura da auditoria funcionou (traz a coluna ip_hash)" has "$DUMP" '"ip_hash"'
+check "nenhum e-mail dos pedidos na auditoria" bash -c '! printf "%s" "$1" | grep -qF -e "$2" -e "$3"' _ "$DUMP" "$REC_EXIST" "$REC_MISSING"
+check "nenhum e-mail dos pedidos no log da funcao" bash -c '! grep -qF -e "$1" -e "$2" "$3"' _ "$REC_EXIST" "$REC_MISSING" "$LOG_FILE"
+
+echo "== T076 e T077: account-delete =="
+DEL_PASS="SenhaDeTeste12345"
+mk_del_user() { # mk_del_user <var-email> <var-id> <var-token>  (cria, entra e le o id e o token)
+  local email="ci-del-$RANDOM$RANDOM@faro.test" body tok id
+  body="$(admin_create_user "$email" "$DEL_PASS")"
+  id="$(printf '%s' "$body" | grep -oE '"id":"[^"]+"' | head -1 | cut -d'"' -f4)"
+  tok="$(curl -s -X POST "$API_URL/auth/v1/token?grant_type=password" -H "apikey: $ANON_KEY" -H "Content-Type: application/json" \
+    -d "{\"email\":\"$email\",\"password\":\"$DEL_PASS\"}" | grep -oE '"access_token":"[^"]+"' | head -1 | cut -d'"' -f4)"
+  printf -v "$1" '%s' "$email"; printf -v "$2" '%s' "$id"; printf -v "$3" '%s' "$tok"
+}
+admin_user_status() { curl -s -o /dev/null -w '%{http_code}' "$API_URL/auth/v1/admin/users/$1" -H "apikey: $SERVICE_KEY" -H "Authorization: Bearer $SERVICE_KEY"; }
+
+mk_del_user D1_EMAIL D1_ID D1_TOKEN
+check "usuario de exclusao 1 criado e autenticado" test -n "$D1_ID" -a -n "$D1_TOKEN"
+check "sem usuario valido (chave anonima): 401" test "$(fn_code account-delete '{"confirm":"EXCLUIR"}' "$ANON_KEY")" = "401"
+check "GET devolve 405" test "$(curl -s -o /dev/null -w '%{http_code}' -X GET "$API_URL/functions/v1/account-delete" -H "apikey: $ANON_KEY" -H "Authorization: Bearer $D1_TOKEN")" = "405"
+check "corpo que nao e objeto: 400" test "$(fn_code account-delete '[]' "$D1_TOKEN")" = "400"
+R="$(fn account-delete '{"confirm":"excluir","password":"SenhaDeTeste12345"}' "$D1_TOKEN")"
+check "confirm diferente de EXCLUIR: confirmation_required" has "$R" '{"ok":false,"error":"confirmation_required"}'
+R="$(fn account-delete '{"confirm":"EXCLUIR"}' "$D1_TOKEN")"
+check "sem senha (conta com senha): reauth_required com method password" bash -c 'printf "%s" "$1" | grep -q "\"error\":\"reauth_required\"" && printf "%s" "$1" | grep -qF "\"method\":\"password\""' _ "$R"
+R="$(fn account-delete '{"confirm":"EXCLUIR","password":"SenhaErrada123"}' "$D1_TOKEN")"
+check "senha errada: invalid_password" has "$R" '{"ok":false,"error":"invalid_password"}'
+check "senha errada: o usuario continua existindo" test "$(admin_user_status "$D1_ID")" = "200"
+check "senha errada: o perfil continua existindo" has "$(rest GET "perfis?id=eq.$D1_ID&select=id")" "$D1_ID"
+check "a falha de reautenticacao foi auditada (excluir_conta)" has "$(rest GET "auth_audit_log?ator=eq.$D1_ID&evento=eq.reautenticacao_falha&select=detalhe")" 'excluir_conta'
+# Limite: 5 provas falhas em 15 min => rate_limited (as 5 sao gravadas direto, sem gastar o limite de login do Auth).
+rest POST "rate_limit_events" "[{\"bucket\":\"reauth:account\",\"key\":\"$D1_ID\"},{\"bucket\":\"reauth:account\",\"key\":\"$D1_ID\"},{\"bucket\":\"reauth:account\",\"key\":\"$D1_ID\"},{\"bucket\":\"reauth:account\",\"key\":\"$D1_ID\"},{\"bucket\":\"reauth:account\",\"key\":\"$D1_ID\"}]" > /dev/null
+R="$(fn account-delete '{"confirm":"EXCLUIR","password":"SenhaDeTeste12345"}' "$D1_TOKEN")"
+check "5 erros em 15 min: rate_limited com retry_after_seconds (mesmo com a senha certa)" bash -c 'printf "%s" "$1" | grep -q "\"error\":\"rate_limited\"" && printf "%s" "$1" | grep -qE "\"retry_after_seconds\":[0-9]+"' _ "$R"
+check "rate_limited: o usuario continua existindo" test "$(admin_user_status "$D1_ID")" = "200"
+rest DELETE "rate_limit_events?key=eq.$D1_ID" > /dev/null
+
+# Senha certa, sem o bucket de fotos (ou com ele vazio): exclui.
+R="$(fn account-delete '{"confirm":"EXCLUIR","password":"SenhaDeTeste12345"}' "$D1_TOKEN")"
+echo "exclusao 1: $R"
+check "senha certa: { ok: true }" has "$R" '{"ok":true}'
+check "o usuario sumiu de auth.users" test "$(admin_user_status "$D1_ID")" = "404"
+check "o perfil sumiu" test "$(rest GET "perfis?id=eq.$D1_ID&select=id")" = "[]"
+A="$(rest GET "auth_audit_log?evento=eq.conta_excluida&ator=is.null&select=detalhe,ip_hash")"
+check "existe um evento conta_excluida com ator nulo e vinculos_encerrados 0" bash -c 'printf "%s" "$1" | grep -q "vinculos_encerrados" && printf "%s" "$1" | grep -qE "\"vinculos_encerrados\": ?0"' _ "$A"
+check "os eventos da conta continuam, sem identificacao (ator nulo)" has "$(rest GET "auth_audit_log?ator=is.null&evento=eq.reautenticacao_falha&select=detalhe")" 'excluir_conta'
+check "o token antigo deixa de valer (401)" test "$(fn_code account-delete '{"confirm":"EXCLUIR","password":"SenhaDeTeste12345"}' "$D1_TOKEN")" = "401"
+SU="$(signup "$D1_EMAIL" "$DEL_PASS")"
+check "o mesmo e-mail consegue se cadastrar de novo (200)" test "$(http_code "$SU")" = "200"
+
+# Segunda conta: com fotos no bucket pet-photos sob <uid>/. O CLI do CI nao traz a spec 003, entao o bucket e criado aqui.
+curl -s -o /dev/null -X POST "$API_URL/storage/v1/bucket" -H "apikey: $SERVICE_KEY" -H "Authorization: Bearer $SERVICE_KEY" \
+  -H "Content-Type: application/json" -d '{"id":"pet-photos","name":"pet-photos","public":false}' || true
+mk_del_user D2_EMAIL D2_ID D2_TOKEN
+check "usuario de exclusao 2 criado e autenticado" test -n "$D2_ID" -a -n "$D2_TOKEN"
+for f in foto-1.txt foto-2.txt; do
+  curl -s -o /dev/null -X POST "$API_URL/storage/v1/object/pet-photos/$D2_ID/$f" -H "apikey: $SERVICE_KEY" \
+    -H "Authorization: Bearer $SERVICE_KEY" -H "Content-Type: text/plain" --data-binary 'x'
+done
+curl -s -o /dev/null -X POST "$API_URL/storage/v1/object/pet-photos/$D2_ID/pasta/foto-3.txt" -H "apikey: $SERVICE_KEY" \
+  -H "Authorization: Bearer $SERVICE_KEY" -H "Content-Type: text/plain" --data-binary 'x'
+OTHER_ID="00000000-0000-0000-0000-00000000aaaa"
+curl -s -o /dev/null -X POST "$API_URL/storage/v1/object/pet-photos/$OTHER_ID/de-outro.txt" -H "apikey: $SERVICE_KEY" \
+  -H "Authorization: Bearer $SERVICE_KEY" -H "Content-Type: text/plain" --data-binary 'x'
+storage_list() { # storage_list <prefixo>
+  curl -s -X POST "$API_URL/storage/v1/object/list/pet-photos" -H "apikey: $SERVICE_KEY" -H "Authorization: Bearer $SERVICE_KEY" \
+    -H "Content-Type: application/json" -d "{\"prefix\":\"$1\",\"limit\":100,\"offset\":0}"
+}
+check "as fotos da conta 2 existem antes da exclusao" has "$(storage_list "$D2_ID")" 'foto-1.txt'
+R="$(fn account-delete '{"confirm":"EXCLUIR","password":"SenhaDeTeste12345"}' "$D2_TOKEN")"
+echo "exclusao 2: $R"
+check "conta com fotos: { ok: true }" has "$R" '{"ok":true}'
+check "as fotos da conta (e da subpasta) foram removidas" bash -c '! printf "%s" "$1" | grep -q "foto-"' _ "$(storage_list "$D2_ID")"
+check "a foto da subpasta tambem sumiu" bash -c '! printf "%s" "$1" | grep -q "foto-3"' _ "$(storage_list "$D2_ID/pasta")"
+check "a foto de OUTRA conta nao foi tocada" has "$(storage_list "$OTHER_ID")" 'de-outro.txt'
+check "o usuario 2 sumiu de auth.users" test "$(admin_user_status "$D2_ID")" = "404"
+
+for f in password-recovery account-delete; do
+  OC="$(curl -s -o /dev/null -w '%{http_code}' -X OPTIONS "$API_URL/functions/v1/$f" -H "Origin: http://localhost:4200" \
+    -H "Access-Control-Request-Method: POST" -H "Access-Control-Request-Headers: authorization,content-type,apikey")"
+  check "OPTIONS em $f devolve 204 ou 200 ($OC)" bash -c '[ "$1" = "204" ] || [ "$1" = "200" ]' _ "$OC"
+  H="$(curl -s -i -X POST "$API_URL/functions/v1/$f" -H "Origin: http://localhost:4200" -H "apikey: $ANON_KEY" \
+    -H "Authorization: Bearer $ANON_KEY" -H "Content-Type: application/json" -d '[]' | tr -d '\r')"
+  check "POST em $f traz o Allow-Headers da funcao" \
+    bash -c 'printf "%s" "$1" | grep -qi "^access-control-allow-headers: authorization, x-client-info, apikey, content-type$"' _ "$H"
+  check "POST em $f traz o Allow-Methods da funcao" \
+    bash -c 'printf "%s" "$1" | grep -qi "^access-control-allow-methods: POST, OPTIONS$"' _ "$H"
+done
+if restart_serve - test log; then
+  C="$(fn_code account-delete '{"confirm":"EXCLUIR"}' "$ANON_KEY")"
+  check "sem o pepper a exclusao de conta nao depende dele (a chave anonima segue 401)" test "$C" = "401"
+else fail "functions serve nao subiu sem pepper (exclusao e recuperacao)"; fi
+C="$(curl -s -o /dev/null -w '%{http_code}' -X POST "$API_URL/functions/v1/password-recovery" -H "apikey: $ANON_KEY" \
+  -H "Authorization: Bearer $ANON_KEY" -H "Content-Type: application/json" -d '{"email":"x@y.zz"}')"
+check "sem PHONE_OTP_PEPPER a recuperacao de senha continua funcionando (200)" test "$C" = "200"
+
 if [ "$FAILED" -ne 0 ]; then
   echo "--- ultimas linhas do supabase functions serve ---"
   tail -n 30 /tmp/functions-serve.log || true
