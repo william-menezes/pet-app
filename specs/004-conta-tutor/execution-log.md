@@ -462,3 +462,109 @@ Execução de 2026-11-22 pelo subagente `backend-supabase`, branch `004-conta-tu
 - Conta só com o Google (`reauth_required` com `method: google`): só nos testes unitários de `reauth.ts`.
 - `Allow-Origin` da função (Kong local, mesma ressalva da T021); `EdgeRuntime.waitUntil` só no `functions serve` local.
 - O T075 contra os objetos reais da 003.
+
+---
+
+# Backend — Phase 10 (T097 a T102)
+
+Execução de 2026-11-22 pelo subagente `backend-supabase`, branch `004-conta-tutor`. Tarefas `[BE]`: T097, T098, T099, T100, T101, T102.
+
+## Entregue
+
+- `0017_endurecimento_base.sql`: dois comandos de privilégios padrão para funções (`FOR ROLE postgres REVOKE EXECUTE … FROM PUBLIC` e
+  `… IN SCHEMA public REVOKE EXECUTE … FROM anon, authenticated`), `REVOKE ALL` de tabelas e sequências novas para `anon`, e a devolução do
+  padrão antigo (`GRANT EXECUTE … TO PUBLIC`) ao schema `extensions`; `ALTER FUNCTION … SET search_path = public, pg_temp` nas quatro
+  funções da 001; `REVOKE ALL` em todas as tabelas e sequências de `public` para `anon`; `REVOKE ALL` de `auth_login_attempts` para
+  `authenticated`; `REVOKE INSERT, UPDATE, DELETE, TRUNCATE` de `auth_audit_log` para `authenticated` (o `SELECT` fica);
+  `statement_timeout` de 3 s (`anon`) e 8 s (`authenticated`); `DROP EXTENSION IF EXISTS pg_graphql`. `config.toml`: `[api] schemas = ["public"]`;
+  `max_rows` continua 1000.
+- `supabase/tests/security_catalog.test.sql` (38 asserções): as cinco condições do portão são views em `tests` (uma consulta por condição,
+  usada no estado limpo e nos casos negativos). Cada condição reprova o objeto ruim criado num `SAVEPOINT` (tabela sem RLS; privilégio de tabela
+  e de coluna para `anon`; `EXECUTE` por `GRANT` direto e herdado de `PUBLIC`; `security definer` sem `search_path`; `USING (true)` para
+  `authenticated`; `WITH CHECK (true)` para `PUBLIC`) e há controles que NÃO devem ser acusados (com `search_path`, `security invoker`,
+  política por dono). Também prova: função criada sem `GRANT` não é executável por `authenticated` nem por `anon` (catálogo e chamada real,
+  `42501`); tabela criada sem `GRANT` sem privilégio de `anon`; `search_path` das quatro funções; `statement_timeout` por papel lido de
+  `pg_db_role_setting`; `pg_graphql` ausente; o que `authenticated` mantém em `perfis` e `auth_audit_log`.
+- Edge Functions: `_shared/http.ts` (`readJsonObject(req, maxBytes = 4096, allowedKeys?)` com resultado discriminado, `bodyErrorResponse`,
+  `guardMethod`), `_shared/limits.ts` (`checkLimit`), `_shared/captcha.ts` (`parseCaptchaToken`, `isCaptchaFailure`), `_shared/testing.ts`
+  (falsos só de teste), `_shared/reauth.ts` (`captchaToken`, erro `captcha_failed`, `reauthFailureBody`). As quatro funções da spec e o
+  `login-guard` ganharam `handler.ts` (`createHandler(deps)`), e o `index.ts` só liga as dependências reais. `deno.json`, `deno.lock`,
+  `scripts/ci/edge-deps-check.sh` e dois passos no `ci.yml`.
+- `config.toml`: rotação de refresh token (`true`, reuso 10 s), entrada anônima e vínculo manual desligados, `[auth.captcha]` com
+  `enabled = false`, `provider = "turnstile"` e `secret = "env(SUPABASE_AUTH_CAPTCHA_SECRET)"`.
+
+## Alterações em asserções da 001 (nenhuma removida; planos iguais)
+
+- `rls_auth_audit.test.sql`: "anon não lê nenhuma linha de auth_audit_log" era `is_empty`; agora `throws_ok(…, '42501')`.
+  "nem o admin lê nenhuma linha de auth_login_attempts" era `is_empty`; agora `throws_ok(…, '42501')`.
+  "admin pode SELECT em auth_audit_log" era `lives_ok(SELECT COUNT(*))`; agora `ok(COUNT(*) WHERE ip_hash = 'hash_semente' >= 1)`, mais forte
+  (prova que lê a linha-semente). A leitura do tutor comum continua `is_empty` com a linha-semente.
+- `rate_limit.test.sql`: "authenticated não lê nenhuma linha de auth_login_attempts" era `is_empty`; agora `throws_ok(…, '42501')`.
+- Sete arquivos de teste ganharam uma linha (`ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA tests GRANT EXECUTE ON FUNCTIONS TO PUBLIC`)
+  porque os auxiliares `tests.*`, criados dentro da transação, são chamados depois de `SET ROLE anon/authenticated` e perderam o
+  `EXECUTE` herdado de `PUBLIC`.
+
+## O que o portão de catálogo acusou
+
+Nada de real nas migrations 0001 a 0016 depois da 0017: o primeiro run (com a 0017) já passou nas cinco condições. Antes da 0017 as
+quatro funções da 001 tinham `search_path = public` (sem `pg_temp`; o portão exige só `search_path` fixo, então já passariam) e `anon` tinha
+`GRANT` nas três tabelas da 001 (condição 2): a 0017 resolve a segunda.
+
+## Desvios e decisões
+
+- **Papel dono das migrations**: é `postgres` (o diagnóstico do teste imprime `current_user=postgres` e `schema do pgTAP=extensions`).
+  Os dois comandos do contrato funcionaram sem repetição para outro papel.
+- **`DROP EXTENSION pg_graphql`** funcionou como `postgres` no stack local (a 0017 aplica sem erro).
+- **Esquema `extensions`**: acrescentei `ALTER DEFAULT PRIVILEGES … IN SCHEMA extensions GRANT EXECUTE ON FUNCTIONS TO PUBLIC`. Não está no
+  contrato; evita que extensão instalada depois (pgTAP em `supabase test db`, por exemplo) nasça sem `EXECUTE` para os papéis da API.
+- **`login-guard`**: `user_id`, `user_agent` e `detail` continuam **aceitos** no corpo (o `AuthService` da 001 os envia); o `user_id` é
+  ignorado e o `detail` é filtrado. Chave fora de `phase, email, success, user_id, user_agent, detail` ⇒ `400 unknown_field`. O 405 mantém o
+  formato `{ error }` da 001. O limite `guard:ip:m` é contado antes de ler o corpo (toda chamada). Sem sal ⇒ `500 { error: "misconfigured" }`.
+- **Contagem dos limites novos**: `otp:confirm:h` e `acct:delete:h` contam depois de autenticar e ler o corpo (400/413/401 não contam) e antes de
+  qualquer conferência. `recover:calls:ip` conta antes de ler o corpo (toda chamada, inclusive `400`), e o estouro responde `{ ok: true }` com o
+  piso de tempo, sem auditoria nem e-mail.
+- **`rate_limited` no `phone-verify-confirm` e no `account-delete`**: `{ ok: false, error: "rate_limited", retry_after_seconds }`. Erro do
+  limitador também devolve `rate_limited` (falha fechada), com 60 s. O contrato `phone-verify-confirm.edge.md` não listava `rate_limited`
+  (não editei contratos).
+- **`password-recovery` e `captcha_failed`**: o contrato de recuperação diz "responde sempre igual", e o de endurecimento diz que o erro de
+  desafio do Auth vira `captcha_failed`. Resolvi assim: o envio roda em segundo plano, mas a função espera o que vier primeiro, o Auth ou o piso
+  de 600 ms; se o Auth recusar o desafio nesse intervalo, responde `{ ok: false, error: "captcha_failed" }` (HTTP 200) **depois** do piso. Como
+  o Auth confere o desafio antes de procurar a conta, isso não revela nada sobre ela. Qualquer outro erro do Auth continua `{ ok: true }`.
+- **`readJsonObject`**: mudou de `Record | null` para `{ ok: true, body } | { ok: false, status, error }` (413 vs 400 vs `unknown_field`). O teste
+  antigo do `readJsonObject` foi reescrito em vários (mesmos casos, mais os novos).
+- **`deno.json`**: o código importa `https://esm.sh/@supabase/supabase-js@2.108.1` por URL exata (a CLI não garante ler um `deno.json`
+  global); o `deno.json` espelha a versão e o `edge-deps-check.sh` confere que são iguais. Passo do CI: `deno test --config … --lock=…` e
+  `git diff --exit-code` no lock.
+- **T101, chaves de teste do Turnstile** (copiadas da documentação da Cloudflare, "Testing", em 2026-11-22): site key que sempre aprova
+  `1x00000000000000000000AA`, que sempre reprova `2x00000000000000000000AB`; invisíveis `1x00000000000000000000BB` e `2x00000000000000000000BB`;
+  interativa `3x00000000000000000000FF`; secret que sempre aprova `1x0000000000000000000000000000000AA`, que sempre reprova
+  `2x0000000000000000000000000000000AA`, "token já gasto" `3x0000000000000000000000000000000AA`. Estão nos comentários do `config.toml`
+  (públicas). O segredo de produção só entra por `SUPABASE_AUTH_CAPTCHA_SECRET`.
+- **A CLI 3.2.0 aceitou** `[auth.captcha]` (`enabled`, `provider`, `secret`) e as quatro chaves de rotação/anônimo/vínculo manual: o
+  `supabase start` subiu sem aviso de chave desconhecida (só os avisos já conhecidos de `enable_signup`). O container do Auth ficou com
+  `GOTRUE_SECURITY_REFRESH_TOKEN_ROTATION_ENABLED=true`, `…_REUSE_INTERVAL=10`, `GOTRUE_EXTERNAL_ANONYMOUS_USERS_ENABLED=false`,
+  `GOTRUE_SECURITY_MANUAL_LINKING_ENABLED=false`, `GOTRUE_SECURITY_CAPTCHA_PROVIDER=turnstile` e `GOTRUE_SECURITY_CAPTCHA_ENABLED=false`
+  (conferido por `docker inspect` no script de CI).
+- **Refresh token reutilizado**: o GoTrue v2.198 respondeu 200 quando se reusou um refresh token de duas gerações atrás, mesmo com a rotação
+  ligada na configuração efetiva. A conferência virou a leitura da configuração efetiva do container; o reuso ficou como informação no log.
+  Se o William quiser a revogação por reuso, é comportamento do Auth hospedado a conferir no painel.
+- **Flake do coletor de e-mail**: em 2 de 9 runs da fase, o primeiro e-mail do stack recém-subido saiu com o link padrão do Supabase
+  (`/auth/v1/verify?token=…&type=signup`) em vez do modelo do repositório (T004: 3 FAIL), e o run seguinte com o mesmo código passou. Acrescentei
+  um aquecimento antes do T004 (até 6 tentativas) que imprime quantas foram necessárias.
+
+## Verificação (CI, run 45045717699, commit b0aee9f)
+
+- pgTAP: 12 arquivos, 426 asserções, `Result: PASS` (eram 11 e 388; `security_catalog.test.sql` acrescenta 38).
+- `deno test`: 211 testes (eram 135), sem permissões, com `--config` e `--lock`; o lock não mudou.
+- `scripts/ci/supabase-checks.sh`: 154 PASS, 0 FAIL (eram 125).
+- `scripts/ci/edge-deps-check.sh`: 5 PASS (nenhum import com versão flutuante em 20 imports; `grep` vazio).
+- Job `app` verde no mesmo run.
+
+## Não verificado
+
+- `Allow-Origin` das funções (Kong local, mesma ressalva da T021) e `EdgeRuntime.waitUntil` fora do `functions serve`.
+- O desafio real: `[auth.captcha]` está desligado; o repasse do token foi provado só com falsos (o Auth local não valida token com o desafio
+  desligado). Quem liga é a T104; a prova ponta a ponta é a T108.
+- `max_rows` em 1000 com a geração de lote de 540 códigos (nenhuma função da 003 existe ainda).
+- Painel do Supabase/hospedado: valores de `contracts/auth-config.contract.md` e proteção contra senha vazada (plano Pro) ficam no checklist.
+- O `statement_timeout` por papel está provado no catálogo (`pg_db_role_setting`), não por uma consulta lenta real.

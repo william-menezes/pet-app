@@ -783,25 +783,25 @@ fase dependem só da Phase 2; as de tela dependem das telas das histórias 1, 4,
   `statement_timeout` por papel, remoção do `pg_graphql`) e os ajustes de `[api]` no
   `config.toml`. **Feito quando**: o portão de catálogo passa; uma função criada sem `GRANT`
   dentro do teste não é executável por `authenticated`; os testes da `001` continuam verdes.
-- [ ] T098 [BE] Limites novos do contrato §2 em `phone-verify-confirm`, `account-delete` e
+- [x] T098 [BE] Limites novos do contrato §2 em `phone-verify-confirm`, `account-delete` e
   `password-recovery` (escopos `otp:confirm:h`, `acct:delete:h`, `recover:calls:ip`).
   **Feito quando**: `deno test` cobre cada linha da tabela, inclusive o que **não** pode ser
   gravado no estouro.
-- [ ] T099 [BE] Endurecer `login-guard` conforme o contrato §2: escopo `guard:ip:m`, `detail`
+- [x] T099 [BE] Endurecer `login-guard` conforme o contrato §2: escopo `guard:ip:m`, `detail`
   filtrado, `user_id` do corpo ignorado, corpo até 2 KB, recusa sem `HASH_SALT`.
   **Feito quando**: `deno test` cobre os cinco pontos e os testes existentes da `001` passam.
-- [ ] T100 [P] [BE] Regras comuns das Edge Functions (contrato §5): `readJsonObject` com limite,
+- [x] T100 [P] [BE] Regras comuns das Edge Functions (contrato §5): `readJsonObject` com limite,
   `unknown_field`, só `POST`/`OPTIONS`, `verify_jwt` por função, `deno.json` com versões exatas e
   `deno.lock` versionado. **Feito quando**: `deno test` cobre `413`, `400` e `405`; nenhum
   import com versão flutuante em `supabase/functions/` (`grep` vazio).
-- [ ] T101 [BE] Configuração do Auth (contrato §4 e §1): rotação de refresh token, entrada anônima
+- [x] T101 [BE] Configuração do Auth (contrato §4 e §1): rotação de refresh token, entrada anônima
   e vínculo manual desligados, e a seção `[auth.captcha]` com Turnstile e o segredo por variável de
   ambiente, **ainda com `enabled = false`** (ligar agora quebraria todo login até as telas
   enviarem o token; quem liga é a T104). Use as chaves de teste do Turnstile no ambiente local,
   copiadas da documentação da Cloudflare. **Se a CLI recusar alguma chave, PARE e relate.**
   **Feito quando**: `supabase start` sobe sem aviso de chave desconhecida e os testes existentes
   continuam verdes.
-- [ ] T102 [BE] Repassar o token do desafio ao Auth: `password-recovery` (passo 7) e
+- [x] T102 [BE] Repassar o token do desafio ao Auth: `password-recovery` (passo 7) e
   `_shared/reauth.ts`; corpo `captcha_token` em `phone-verify-start` (troca) e `account-delete`;
   código de erro `captcha_failed`. **Feito quando**: `deno test` prova que o token chega ao Auth
   e que `captcha_failed` não conta como falha de senha.
