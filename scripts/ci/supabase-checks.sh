@@ -232,8 +232,13 @@ last_code() { # imprime o codigo mais recente da linha [sms:log] do terminal da 
   return 1
 }
 code_only_in_sms_log() { # o codigo so aparece no registro [sms:log] (duas linhas: o texto e a linha "@dominio #codigo")
-  grep "$1" "$LOG_FILE" | grep -qF '[sms:log]' &&
-    [ "$(grep "$1" "$LOG_FILE" | grep -vcE '\[sms:log\]|^@tagfaro\.com\.br #')" = "0" ]
+  if grep "$1" "$LOG_FILE" | grep -qF '[sms:log]' &&
+    [ "$(grep "$1" "$LOG_FILE" | grep -vcE '\[sms:log\]|@tagfaro\.com\.br #')" = "0" ]; then
+    return 0
+  fi
+  echo "linhas do log com o codigo (codigo ocultado):"
+  grep "$1" "$LOG_FILE" | sed "s/$1/<codigo>/g" | cut -c1-200
+  return 1
 }
 code_absent_from_tables() { # o codigo nao aparece como valor isolado nas tabelas (hashes hex tem 64 caracteres)
   local dump
