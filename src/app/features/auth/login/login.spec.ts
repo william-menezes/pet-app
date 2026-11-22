@@ -8,6 +8,8 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { ReactiveFormsModule } from '@angular/forms';
 import { provideZonelessChangeDetection } from '@angular/core';
+import { TURNSTILE_SITE_KEY } from '@/shared/components/faro/turnstile/turnstile-script';
+import { FakeTurnstile, TEST_TURNSTILE_SITE_KEY } from '@/shared/components/faro/turnstile/turnstile-testing';
 import { Login } from './login';
 import { AuthService } from '../../../core/auth/auth.service';
 import { AuthStore } from '../../../core/auth/auth.store';
@@ -17,7 +19,7 @@ function makeAuthServiceMock() {
   return {
     signInPassword: vi.fn().mockResolvedValue({ ok: false, reason: 'invalid' }),
     signInWithGoogle: vi.fn().mockResolvedValue(undefined),
-    resendConfirmation: vi.fn().mockResolvedValue(undefined),
+    resendConfirmation: vi.fn().mockResolvedValue({ ok: true }),
     setRememberMe: vi.fn(),
     isUnconfirmed: Object.assign(() => false, { asReadonly: () => () => false }),
     getErrorMessage: vi.fn().mockReturnValue('E-mail ou senha inválidos. Verifique e tente de novo.'),
@@ -296,5 +298,77 @@ describe('Login', () => {
     fixture.detectChanges();
     await fixture.whenStable();
     expect(notice()).toBeNull();
+  });
+});
+
+describe('Login — desafio anti-robô', () => {
+  let fake: FakeTurnstile;
+  let authServiceMock: ReturnType<typeof makeAuthServiceMock>;
+  let fixture: ComponentFixture<Login>;
+
+  const byId = (id: string) => fixture.nativeElement.querySelector(`[data-testid="${id}"]`) as HTMLElement | null;
+
+  async function settle() {
+    await fixture.whenStable();
+    fixture.detectChanges();
+  }
+
+  beforeEach(async () => {
+    fake = new FakeTurnstile().install();
+    authServiceMock = makeAuthServiceMock();
+    TestBed.overrideProvider(TURNSTILE_SITE_KEY, { useValue: TEST_TURNSTILE_SITE_KEY });
+    await TestBed.configureTestingModule({
+      imports: [Login],
+      providers: [
+        provideZonelessChangeDetection(),
+        provideRouter([]),
+        AuthStore,
+        { provide: AuthService, useValue: authServiceMock },
+        { provide: PostAuthNavigator, useValue: { go: vi.fn().mockResolvedValue(true) } },
+      ],
+    }).compileComponents();
+    fixture = TestBed.createComponent(Login);
+    fixture.detectChanges();
+    await vi.waitFor(() => expect(fake.renders).toHaveLength(1));
+    fixture.componentInstance.form.setValue({ email: 'ana@email.com', password: 'senha123', rememberMe: false });
+    await settle();
+  });
+
+  afterEach(() => fake.uninstall());
+
+  it('o botão Entrar espera o token; o envio leva o token e o desafio é renovado', async () => {
+    expect((byId('login-submit') as HTMLButtonElement).disabled).toBe(true);
+    fake.solve('tok-1');
+    await settle();
+    expect((byId('login-submit') as HTMLButtonElement).disabled).toBe(false);
+
+    await fixture.componentInstance.onSubmit();
+
+    expect(authServiceMock.signInPassword).toHaveBeenCalledWith('ana@email.com', 'senha123', 'tok-1');
+    expect(fake.resets).toBe(1);
+  });
+
+  it('captcha_failed mostra o texto do contrato no aviso do formulário', async () => {
+    fake.solve('tok-1');
+    authServiceMock.signInPassword.mockResolvedValue({ ok: false, reason: 'captcha_failed' });
+    authServiceMock.getErrorMessage.mockReturnValue(
+      'Não foi possível confirmar que você não é um robô. Tente de novo.',
+    );
+
+    await fixture.componentInstance.onSubmit();
+    await settle();
+
+    expect(byId('login-error')?.textContent).toContain('não é um robô');
+    expect(fake.resets).toBe(1);
+  });
+
+  it('o reenvio da confirmação leva o token e mostra captcha_failed sem dizer que reenviou', async () => {
+    fake.solve('tok-1');
+    authServiceMock.resendConfirmation.mockResolvedValue({ ok: false, reason: 'captcha_failed' });
+
+    await fixture.componentInstance.onResendConfirmation();
+
+    expect(authServiceMock.resendConfirmation).toHaveBeenCalledWith('ana@email.com', 'tok-1');
+    expect(fake.resets).toBe(1);
   });
 });

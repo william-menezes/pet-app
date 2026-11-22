@@ -2,6 +2,9 @@ import { provideZonelessChangeDetection } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 
+import { TURNSTILE_SITE_KEY } from '@/shared/components/faro/turnstile/turnstile-script';
+import { FakeTurnstile, TEST_TURNSTILE_SITE_KEY } from '@/shared/components/faro/turnstile/turnstile-testing';
+
 import { AccountService } from '../../../core/account/account.service';
 import { Account, AccountStore } from '../../../core/account/account.store';
 import { PasswordService } from '../../../core/auth/password.service';
@@ -70,6 +73,43 @@ describe('AccountPassword', () => {
     await settle();
   }
 
+  describe('desafio anti-robô', () => {
+    let fake: FakeTurnstile;
+    beforeEach(() => {
+      fake = new FakeTurnstile().install();
+      TestBed.overrideProvider(TURNSTILE_SITE_KEY, { useValue: TEST_TURNSTILE_SITE_KEY });
+    });
+    afterEach(() => fake.uninstall());
+
+    it('o envio espera o token, leva o captchaToken e renova o desafio', async () => {
+      await create(WITH_PASSWORD);
+      await vi.waitFor(() => expect(fake.renders).toHaveLength(1));
+      await type('atual123', 'NovaSenha123');
+      expect(submit().disabled).toBe(true);
+      fake.solve('tok-1');
+      await settle();
+      expect(submit().disabled).toBe(false);
+      await send();
+      expect(changePassword).toHaveBeenCalledWith('atual123', 'NovaSenha123', 'tok-1');
+      expect(fake.resets).toBe(1);
+    });
+
+    it('captcha_failed mostra o texto do contrato e não diz que trocou a senha', async () => {
+      await create(WITH_PASSWORD);
+      await vi.waitFor(() => expect(fake.renders).toHaveLength(1));
+      await type('atual123', 'NovaSenha123');
+      fake.solve('tok-1');
+      await settle();
+      changePassword.mockResolvedValue({ ok: false, reason: 'captcha_failed' });
+      await send();
+      expect(byId('account-password-error')?.textContent).toContain(
+        'Não foi possível confirmar que você não é um robô. Tente de novo.',
+      );
+      expect(byId('account-password-success')).toBeNull();
+      expect(fake.resets).toBe(1);
+    });
+  });
+
   it('conta com senha: mostra os dois campos e o botão, e não mostra a nota do Google', async () => {
     await create(WITH_PASSWORD);
     for (const id of ['account-password-current', 'account-password-new', 'account-password-submit']) {
@@ -119,10 +159,10 @@ describe('AccountPassword', () => {
     await create(WITH_PASSWORD);
     await type('atual123', '12345678');
     await send();
-    expect(changePassword).toHaveBeenLastCalledWith('atual123', '12345678');
+    expect(changePassword).toHaveBeenLastCalledWith('atual123', '12345678', undefined);
     await type('atual123', 'a'.repeat(72));
     await send();
-    expect(changePassword).toHaveBeenLastCalledWith('atual123', 'a'.repeat(72));
+    expect(changePassword).toHaveBeenLastCalledWith('atual123', 'a'.repeat(72), undefined);
   });
 
   it('sucesso: mostra o aviso e limpa os dois campos', async () => {

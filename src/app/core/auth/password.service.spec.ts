@@ -65,7 +65,7 @@ describe('PasswordService', () => {
 
   describe('requestRecovery', () => {
     it('chama a função password-recovery só com o e-mail', async () => {
-      await expect(service.requestRecovery('ana@email.com')).resolves.toBeUndefined();
+      await expect(service.requestRecovery('ana@email.com')).resolves.toEqual({ ok: true });
       expect(invoke).toHaveBeenCalledWith('password-recovery', { body: { email: 'ana@email.com' } });
     });
 
@@ -75,9 +75,19 @@ describe('PasswordService', () => {
       invoke.mockRejectedValueOnce(new Error('Failed to fetch'));
       const comRede = await service.requestRecovery('ana@email.com');
       const sucesso = await service.requestRecovery('ana@email.com');
-      expect(comErro).toBeUndefined();
-      expect(comRede).toBeUndefined();
-      expect(sucesso).toBeUndefined();
+      expect(comErro).toEqual({ ok: true });
+      expect(comRede).toEqual({ ok: true });
+      expect(sucesso).toEqual({ ok: true });
+    });
+
+    it('captcha_failed da função vira { ok: false } e só ele', async () => {
+      invoke.mockResolvedValueOnce({ data: { ok: false, error: 'captcha_failed' }, error: null });
+      expect(await service.requestRecovery('ana@email.com', 'token-x')).toEqual({
+        ok: false,
+        reason: 'captcha_failed',
+      });
+      invoke.mockResolvedValueOnce({ data: { ok: false, error: 'outro' }, error: null });
+      expect(await service.requestRecovery('ana@email.com')).toEqual({ ok: true });
     });
 
     it('repassa o desafio anti-robô quando existir', async () => {
@@ -183,10 +193,19 @@ describe('PasswordService', () => {
       expect(updateUser).not.toHaveBeenCalled();
     });
 
+    it('repassa o desafio ao signInPassword e devolve captcha_failed sem contar como senha errada', async () => {
+      signInPassword.mockResolvedValueOnce({ ok: false, reason: 'captcha_failed' });
+      expect(await service.changePassword('atual', 'NovaSenha123', 'token-x')).toEqual({
+        ok: false,
+        reason: 'captcha_failed',
+      });
+      expect(signInPassword).toHaveBeenCalledWith('ana@email.com', 'atual', 'token-x');
+    });
+
     it('senha atual errada: invalid_current e a senha nova nunca é enviada', async () => {
       signInPassword.mockResolvedValueOnce({ ok: false, reason: 'invalid' });
       expect(await service.changePassword('errada', 'NovaSenha123')).toEqual({ ok: false, reason: 'invalid_current' });
-      expect(signInPassword).toHaveBeenCalledWith('ana@email.com', 'errada');
+      expect(signInPassword).toHaveBeenCalledWith('ana@email.com', 'errada', undefined);
       expect(updateUser).not.toHaveBeenCalled();
       expect(signOut).not.toHaveBeenCalled();
     });

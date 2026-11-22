@@ -52,7 +52,12 @@
           </button>
         </div>
       </div>
-    } @else if (isGoogleOnly()) {
+    }
+    @if (visible() && needsPassword()) {
+      <!-- O conteúdo do diálogo existe mesmo fechado: o desafio só é criado (e o script pedido) com ele aberto. -->
+      <app-turnstile [theme]="theme()" />
+    }
+    @if (!needsPassword() && isGoogleOnly()) {
       <p class="text-sm leading-[1.45] text-text" data-testid="account-delete-google-note" i18n>
         Sua conta usa o login do Google. Se pedirmos, você entra de novo com o Google para confirmar que é você.
       </p>

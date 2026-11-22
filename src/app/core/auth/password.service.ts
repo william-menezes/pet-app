@@ -23,17 +23,27 @@ export type ResetPasswordResult =
   | { ok: true }
   | { ok: false; reason: 'invalid_link' | 'weak_password' | 'network' };
 
+/** Pedido do e-mail de recuperação: sempre `ok`, exceto o desafio anti-robô recusado (Auth confere antes de olhar a conta). */
+export type RecoveryResult = { ok: true } | { ok: false; reason: 'captcha_failed' };
+
 export type ChangePasswordResult =
   | { ok: true }
   | {
       ok: false;
-      reason: 'no_password' | 'invalid_current' | 'weak_password' | 'rate_limited' | 'network';
+      reason:
+        | 'no_password'
+        | 'invalid_current'
+        | 'weak_password'
+        | 'rate_limited'
+        | 'network'
+        | 'captcha_failed';
     };
 
 interface AuthErrorLike {
   status?: number;
   code?: string;
   name?: string;
+  message?: string;
 }
 
 function isNetworkError(error: AuthErrorLike): boolean {
@@ -50,15 +60,23 @@ export class PasswordService {
   /** `token_hash` que já passou no `verifyOtp` (a sessão de recuperação está ativa). Só na memória. */
   private verifiedToken: string | null = null;
 
-  /** Pede o e-mail de recuperação. Resolve igual em sucesso e em falha (inclusive de rede). */
-  async requestRecovery(email: string, captchaToken?: string): Promise<void> {
+  /**
+   * Pede o e-mail de recuperação. Resolve igual em sucesso e em falha (inclusive de rede), menos o desafio
+   * anti-robô recusado (`captcha_failed`, HTTP 200 da função).
+   */
+  async requestRecovery(email: string, captchaToken?: string): Promise<RecoveryResult> {
     try {
-      await this.supabase.client.functions.invoke('password-recovery', {
+      const { data } = await this.supabase.client.functions.invoke('password-recovery', {
         body: captchaToken ? { email, captcha_token: captchaToken } : { email },
       });
+      const payload = data as { ok?: unknown; error?: unknown } | null;
+      if (payload?.ok === false && payload.error === 'captcha_failed') {
+        return { ok: false, reason: 'captcha_failed' };
+      }
     } catch {
       // resposta uniforme por design (anti-enumeração): a tela mostra sempre a mesma confirmação
     }
+    return { ok: true };
   }
 
   /** Troca a senha pelo link: `verifyOtp` → `updateUser` → `signOut` global. */
@@ -112,14 +130,19 @@ export class PasswordService {
    * `AuthService.signInPassword` (passa pelo `login-guard` e renova a sessão), troca, e encerra as outras
    * sessões. A senha atual e a nova vivem só nos argumentos.
    */
-  async changePassword(current: string, next: string): Promise<ChangePasswordResult> {
+  async changePassword(
+    current: string,
+    next: string,
+    captchaToken?: string,
+  ): Promise<ChangePasswordResult> {
     if (!this.accountStore.hasPassword()) return { ok: false, reason: 'no_password' };
 
     const email = this.accountStore.account()?.email;
     if (!email) return { ok: false, reason: 'network' };
 
-    const check = await this.authService.signInPassword(email, current);
+    const check = await this.authService.signInPassword(email, current, captchaToken);
     if (!check.ok) {
+      if (check.reason === 'captcha_failed') return { ok: false, reason: 'captcha_failed' };
       if (check.reason === 'rate_limited') return { ok: false, reason: 'rate_limited' };
       // Falha de conexão não é senha errada (o contrato só cita "outra falha", mas a tela mentiria).
       if (check.reason === 'network') return { ok: false, reason: 'network' };

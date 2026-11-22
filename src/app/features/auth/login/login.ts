@@ -14,7 +14,7 @@
  * A11y: WCAG 2.1 AA, aria-live em erros, aria-describedby nos campos,
  *        foco visível, navegação por teclado, targets ≥ 44px.
  */
-import { Component, OnInit, signal, computed, inject } from '@angular/core';
+import { Component, OnInit, signal, computed, inject, viewChild } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router, ActivatedRoute, RouterLink } from '@angular/router';
 
@@ -31,13 +31,22 @@ import { BrandPanel } from '@/shared/components/faro/brand-panel/brand-panel';
 import { Focinho } from '@/shared/components/faro/focinho/focinho';
 import { GoogleGlyph } from '@/shared/components/faro/google-glyph/google-glyph';
 import { Logo } from '@/shared/components/faro/logo/logo';
+import { CAPTCHA_FAILED_MESSAGE } from '@/shared/components/faro/turnstile/captcha-messages';
+import { Turnstile } from '@/shared/components/faro/turnstile/turnstile';
 
 // Core (token nunca lido fora de core/)
 import { AuthService } from '../../../core/auth/auth.service';
 import { PostAuthNavigator } from '../../../core/auth/post-auth-navigation';
 import { ReturnUrlService, sanitizeReturnUrl } from '../../../core/auth/return-url';
 
-type FormError = 'invalid' | 'rate_limited' | 'unconfirmed' | 'provider_unavailable' | 'network' | null;
+type FormError =
+  | 'invalid'
+  | 'rate_limited'
+  | 'unconfirmed'
+  | 'provider_unavailable'
+  | 'network'
+  | 'captcha_failed'
+  | null;
 
 @Component({
   selector: 'app-login',
@@ -56,6 +65,7 @@ type FormError = 'invalid' | 'rate_limited' | 'unconfirmed' | 'provider_unavaila
     Focinho,
     GoogleGlyph,
     Logo,
+    Turnstile,
   ],
   templateUrl: './login.html',
 })
@@ -76,6 +86,8 @@ export class Login implements OnInit {
   });
 
   // ── Estado local (signals) ──
+  /** Desafio anti-robô (Turnstile). O token vale uma vez: `reset()` depois de cada envio. */
+  private readonly captcha = viewChild(Turnstile);
   readonly isLoading = signal(false);
   readonly formError = signal<FormError>(null);
   readonly isUnconfirmed = signal(false);
@@ -162,6 +174,7 @@ export class Login implements OnInit {
 
     if (this.form.invalid || this.isLoading()) return;
 
+    const captchaToken = this.captcha()?.token() ?? undefined;
     const { email, password, rememberMe } = this.form.value as {
       email: string;
       password: string;
@@ -177,7 +190,7 @@ export class Login implements OnInit {
     this.authService.setRememberMe(rememberMe);
 
     try {
-      const result = await this.authService.signInPassword(email, password);
+      const result = await this.authService.signInPassword(email, password, captchaToken);
 
       if (!result.ok) {
         this.formError.set(result.reason ?? 'invalid');
@@ -191,6 +204,7 @@ export class Login implements OnInit {
       await this.postAuth.go();
     } finally {
       this.isLoading.set(false);
+      this.captcha()?.reset();
     }
   }
 
@@ -214,7 +228,16 @@ export class Login implements OnInit {
     const email = this.form.get('email')?.value as string;
     if (!email) return;
 
-    await this.authService.resendConfirmation(email);
+    const captchaToken = this.captcha()?.token() ?? undefined;
+    const result = await this.authService.resendConfirmation(email, captchaToken);
+    this.captcha()?.reset();
+    if (!result.ok) {
+      this.sonner.error($localize`Não foi possível reenviar`, {
+        description: CAPTCHA_FAILED_MESSAGE,
+        duration: 6000,
+      });
+      return;
+    }
 
     // Toast de confirmação (resposta uniforme — não confirma existência)
     this.sonner.success($localize`E-mail reenviado`, {
@@ -244,7 +267,12 @@ export class Login implements OnInit {
     return this.formError() === 'invalid' ? 'danger' : 'neutral';
   }
 
+  /** Reenvio da confirmação: precisa do token novo do desafio, como o envio do formulário. */
+  get resendDisabled(): boolean {
+    return this.captcha()?.pending() ?? false;
+  }
+
   get submitButtonDisabled(): boolean {
-    return this.isLoading() || this.formError() === 'rate_limited';
+    return this.isLoading() || this.formError() === 'rate_limited' || (this.captcha()?.pending() ?? false);
   }
 }

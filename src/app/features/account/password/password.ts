@@ -1,10 +1,20 @@
-import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  OnInit,
+  computed,
+  inject,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 
 import { ZardAlertComponent } from '@/shared/components/alert';
 import { ZardButtonComponent } from '@/shared/components/button';
 import { Note } from '@/shared/components/faro/note/note';
+import { CAPTCHA_FAILED_MESSAGE } from '@/shared/components/faro/turnstile/captcha-messages';
+import { Turnstile } from '@/shared/components/faro/turnstile/turnstile';
 import { ZardFieldImports } from '@/shared/components/field';
 import { ZardInputComponent } from '@/shared/components/input';
 import { ScreenHeader } from '@/shared/shells/screen-header/screen-header';
@@ -12,6 +22,7 @@ import { ScreenHeader } from '@/shared/shells/screen-header/screen-header';
 import { AccountService } from '../../../core/account/account.service';
 import { AccountStore } from '../../../core/account/account.store';
 import { PasswordService } from '../../../core/auth/password.service';
+import { ThemeService } from '../../../core/theme/theme.service';
 import { ACCOUNT_ICONS } from '../shared/account-icons';
 
 const PASSWORD_MIN = 8;
@@ -23,6 +34,7 @@ type PasswordProblem =
   | 'too_long'
   | 'invalid_current'
   | 'rate_limited'
+  | 'captcha_failed'
   | 'network';
 
 /**
@@ -38,6 +50,7 @@ type PasswordProblem =
     NgIcon,
     ScreenHeader,
     Note,
+    Turnstile,
     ZardAlertComponent,
     ZardButtonComponent,
     ZardFieldImports,
@@ -51,6 +64,9 @@ export class AccountPassword implements OnInit {
   private readonly accountService = inject(AccountService);
   private readonly accountStore = inject(AccountStore);
   private readonly passwordService = inject(PasswordService);
+  /** Desafio anti-robô (Turnstile), no tema do app. O token vale uma vez: `reset()` depois de cada envio. */
+  private readonly captcha = viewChild(Turnstile);
+  protected readonly theme = inject(ThemeService).resolved;
 
   protected readonly loaded = this.accountStore.loaded;
   protected readonly hasPassword = this.accountStore.hasPassword;
@@ -71,7 +87,11 @@ export class AccountPassword implements OnInit {
   protected readonly hidePasswordLabel = $localize`Ocultar senha`;
 
   protected readonly canSubmit = computed(
-    () => this.typedCurrent() !== '' && this.typedNext() !== '' && !this.saving(),
+    () =>
+      this.typedCurrent() !== '' &&
+      this.typedNext() !== '' &&
+      !this.saving() &&
+      !(this.captcha()?.pending() ?? false),
   );
 
   protected readonly currentInvalid = computed(
@@ -83,6 +103,8 @@ export class AccountPassword implements OnInit {
     switch (this.problem()) {
       case 'rate_limited':
         return $localize`Muitas tentativas. Aguarde alguns minutos.`;
+      case 'captcha_failed':
+        return CAPTCHA_FAILED_MESSAGE;
       case 'network':
         return $localize`Não conseguimos conectar. Verifique sua conexão e tente de novo.`;
       default:
@@ -132,7 +154,8 @@ export class AccountPassword implements OnInit {
     this.success.set(false);
     this.saving.set(true);
     try {
-      const result = await this.passwordService.changePassword(current, next);
+      const captchaToken = this.captcha()?.token() ?? undefined;
+      const result = await this.passwordService.changePassword(current, next, captchaToken);
       if (result.ok) {
         this.success.set(true);
         this.clearFields();
@@ -151,11 +174,15 @@ export class AccountPassword implements OnInit {
         case 'rate_limited':
           this.problem.set('rate_limited');
           break;
+        case 'captcha_failed':
+          this.problem.set('captcha_failed');
+          break;
         default:
           this.problem.set('network');
       }
     } finally {
       this.saving.set(false);
+      this.captcha()?.reset();
     }
   }
 

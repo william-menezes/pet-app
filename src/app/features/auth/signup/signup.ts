@@ -6,6 +6,7 @@ import {
   computed,
   inject,
   signal,
+  viewChild,
 } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import {
@@ -24,6 +25,8 @@ import { ZardButtonComponent } from '@/shared/components/button';
 import { ZardCheckboxComponent } from '@/shared/components/checkbox';
 import { ZardFieldImports } from '@/shared/components/field';
 import { GoogleGlyph } from '@/shared/components/faro/google-glyph/google-glyph';
+import { CAPTCHA_FAILED_MESSAGE } from '@/shared/components/faro/turnstile/captcha-messages';
+import { Turnstile } from '@/shared/components/faro/turnstile/turnstile';
 import { ZardInputComponent } from '@/shared/components/input';
 import { FlowShell } from '@/shared/shells/flow-shell/flow-shell';
 
@@ -69,6 +72,7 @@ function brMobile(control: AbstractControl<string>): ValidationErrors | null {
     ZardFieldImports,
     ZardInputComponent,
     GoogleGlyph,
+    Turnstile,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './signup.html',
@@ -101,6 +105,11 @@ export class Signup implements OnInit {
     aceite: new FormControl(false, { nonNullable: true, validators: [Validators.requiredTrue] }),
   });
 
+  /** Desafio anti-robô (Turnstile). O token vale uma vez: `reset()` depois de cada envio. */
+  private readonly captcha = viewChild(Turnstile);
+  protected readonly submitDisabled = computed(
+    () => this.isLoading() || this.googleLoading() || (this.captcha()?.pending() ?? false),
+  );
   protected readonly isLoading = signal(false);
   protected readonly googleLoading = signal(false);
   protected readonly showPassword = signal(false);
@@ -122,6 +131,8 @@ export class Signup implements OnInit {
         return $localize`Muitas tentativas em sequência. Aguarde alguns minutos antes de tentar de novo.`;
       case 'network':
         return $localize`Não conseguimos conectar. Verifique sua conexão e tente de novo.`;
+      case 'captcha_failed':
+        return CAPTCHA_FAILED_MESSAGE;
       case 'invalid':
         return $localize`Confira os campos destacados e tente de novo.`;
       case 'google':
@@ -194,9 +205,17 @@ export class Signup implements OnInit {
     }
 
     const { nome, email, celular, senha, aceite } = this.form.getRawValue();
+    const captchaToken = this.captcha()?.token() ?? undefined;
     this.isLoading.set(true);
     try {
-      const result = await this.registration.signUp({ nome, email, celular, senha, aceite });
+      const result = await this.registration.signUp({
+        nome,
+        email,
+        celular,
+        senha,
+        aceite,
+        ...(captchaToken ? { captchaToken } : {}),
+      });
       if (result.ok) {
         // O e-mail vai pelo estado do roteador (nunca pela URL).
         await this.router.navigate(['/auth/confirmar-email'], { state: { email: email.trim() } });
@@ -205,6 +224,7 @@ export class Signup implements OnInit {
       this.failure.set(result.reason);
     } finally {
       this.isLoading.set(false);
+      this.captcha()?.reset();
     }
   }
 }

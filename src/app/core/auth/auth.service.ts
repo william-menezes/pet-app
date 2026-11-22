@@ -25,7 +25,22 @@ import { environment } from '../../../environments/environment';
 export interface AuthResult {
   ok: boolean;
   role?: Role;
-  reason?: 'invalid' | 'unconfirmed' | 'rate_limited' | 'provider_unavailable' | 'network';
+  reason?:
+    | 'invalid'
+    | 'unconfirmed'
+    | 'rate_limited'
+    | 'provider_unavailable'
+    | 'network'
+    | 'captcha_failed';
+}
+
+/** Reenvio do e-mail de confirmação: uniforme, exceto o desafio anti-robô recusado. */
+export type ResendResult = { ok: true } | { ok: false; reason: 'captcha_failed' };
+
+/** Código do Supabase Auth para o desafio anti-robô recusado (contrato de endurecimento §1). */
+export function isCaptchaFailure(error: { code?: string; message?: string } | null | undefined): boolean {
+  if (!error) return false;
+  return error.code === 'captcha_failed' || (error.message ?? '').toLowerCase().includes('captcha');
 }
 
 /** Mensagens PT-BR canônicas (anti-enumeração: nunca ramifica por código do GoTrue). */
@@ -35,6 +50,7 @@ const ERROR_MESSAGES: Record<NonNullable<AuthResult['reason']>, string> = {
   rate_limited: $localize`Muitas tentativas em sequência. Aguarde alguns minutos antes de tentar de novo.`,
   provider_unavailable: $localize`Login com Google está indisponível agora. Entre com e-mail e senha.`,
   network: $localize`Não conseguimos conectar. Verifique sua conexão e tente de novo.`,
+  captcha_failed: $localize`Não foi possível confirmar que você não é um robô. Tente de novo.`,
 };
 
 @Injectable({ providedIn: 'root' })
@@ -115,7 +131,7 @@ export class AuthService {
    * 7. Registra o resultado (sucesso/falha) via login-guard post_result —
    *    ÚNICO caminho que alimenta o rate-limit (FR-018) e a auditoria (FR-020).
    */
-  async signInPassword(email: string, password: string): Promise<AuthResult> {
+  async signInPassword(email: string, password: string, captchaToken?: string): Promise<AuthResult> {
     this.store.setStatus('loading');
     this.store.clearError();
     this.isUnconfirmed.set(false);
@@ -133,10 +149,16 @@ export class AuthService {
       const { data, error } = await this.supabase.client.auth.signInWithPassword({
         email,
         password,
+        ...(captchaToken ? { options: { captchaToken } } : {}),
       });
 
       // ── Passo 3: processar resultado (timing uniforme) ──
       if (error) {
+        // Desafio recusado não é senha errada: não conta no limite nem na auditoria de falha.
+        if (isCaptchaFailure(error as { code?: string; message?: string })) {
+          this.store.setError(ERROR_MESSAGES.captcha_failed);
+          return { ok: false, reason: 'captcha_failed' };
+        }
         const reason = this._classifyError(error.message);
 
         if (reason === 'unconfirmed') {
@@ -249,12 +271,21 @@ export class AuthService {
    * Reenvia o e-mail de confirmação.
    * Resposta uniforme: NÃO confirma nem nega existência da conta (anti-enumeração).
    */
-  async resendConfirmation(email: string): Promise<void> {
+  async resendConfirmation(email: string, captchaToken?: string): Promise<ResendResult> {
     try {
-      await this.supabase.client.auth.resend({ type: 'signup', email });
+      const { error } = await this.supabase.client.auth.resend({
+        type: 'signup',
+        email,
+        ...(captchaToken ? { options: { captchaToken } } : {}),
+      });
+      // O Auth confere o desafio antes de olhar o e-mail: dizer que ele falhou não revela a conta.
+      if (isCaptchaFailure(error as { code?: string; message?: string } | null)) {
+        return { ok: false, reason: 'captcha_failed' };
+      }
     } catch {
       // Ignora erro silenciosamente — resposta uniforme por design (anti-enumeração)
     }
+    return { ok: true };
   }
 
   // ────────────────────────────────────────────────────────────────

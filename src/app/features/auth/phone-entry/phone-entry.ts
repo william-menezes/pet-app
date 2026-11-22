@@ -5,6 +5,7 @@ import {
   computed,
   inject,
   signal,
+  viewChild,
 } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
@@ -13,6 +14,8 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { ZardAlertComponent } from '@/shared/components/alert';
 import { ZardButtonComponent } from '@/shared/components/button';
 import { Note } from '@/shared/components/faro/note/note';
+import { CAPTCHA_FAILED_MESSAGE } from '@/shared/components/faro/turnstile/captcha-messages';
+import { Turnstile } from '@/shared/components/faro/turnstile/turnstile';
 import { ZardFieldImports } from '@/shared/components/field';
 import { ZardInputComponent } from '@/shared/components/input';
 import { FlowShell } from '@/shared/shells/flow-shell/flow-shell';
@@ -56,6 +59,7 @@ type EntryProblem = StartError | 'local_invalid_phone';
     NgIcon,
     FlowShell,
     Note,
+    Turnstile,
     ZardAlertComponent,
     ZardButtonComponent,
     ZardFieldImports,
@@ -87,6 +91,8 @@ export class PhoneEntry implements OnInit {
   protected readonly showPasswordLabel = $localize`Mostrar senha`;
   protected readonly hidePasswordLabel = $localize`Ocultar senha`;
   protected readonly sending = signal(false);
+  /** Desafio anti-robô (Turnstile): só na troca de número com senha; o token vale uma vez. */
+  private readonly captcha = viewChild(Turnstile);
   protected readonly problem = signal<EntryProblem | null>(null);
   private readonly retryAfter = signal<number | undefined>(undefined);
   protected readonly cooldown = new Countdown();
@@ -136,6 +142,8 @@ export class PhoneEntry implements OnInit {
         return $localize`Não conseguimos enviar o SMS agora. Tente de novo mais tarde.`;
       case 'sms_send_failed':
         return $localize`Não conseguimos enviar o SMS agora. Tente de novo.`;
+      case 'captcha_failed':
+        return CAPTCHA_FAILED_MESSAGE;
       case 'terms_required':
       case 'network':
         return $localize`Não conseguimos conectar. Verifique sua conexão e tente de novo.`;
@@ -146,7 +154,8 @@ export class PhoneEntry implements OnInit {
     () =>
       this.sending() ||
       this.cooldown.remaining() > 0 ||
-      (this.needsPassword() && this.typedPassword() === ''),
+      (this.needsPassword() && this.typedPassword() === '') ||
+      (this.captcha()?.pending() ?? false),
   );
 
   async ngOnInit(): Promise<void> {
@@ -184,10 +193,14 @@ export class PhoneEntry implements OnInit {
     this.sending.set(true);
     try {
       const password = this.needsPassword() ? this.password.value : undefined;
-      const result = await this.verification.start(
-        password === undefined ? { phone: e164 } : { phone: e164, password },
-      );
+      const captchaToken = this.captcha()?.token() ?? undefined;
+      const result = await this.verification.start({
+        phone: e164,
+        ...(password === undefined ? {} : { password }),
+        ...(captchaToken ? { captchaToken } : {}),
+      });
       this.clearPassword();
+      this.captcha()?.reset();
       if (result.ok) {
         await this.router.navigate(['/auth/confirmar-celular'], this.queryParamsOptions());
         return;

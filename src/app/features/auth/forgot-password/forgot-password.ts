@@ -5,15 +5,19 @@ import {
   computed,
   inject,
   signal,
+  viewChild,
 } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { NgIcon } from '@ng-icons/core';
 
+import { ZardAlertComponent } from '@/shared/components/alert';
 import { ZardButtonComponent } from '@/shared/components/button';
 import { ZardFieldImports } from '@/shared/components/field';
 import { ZardInputComponent } from '@/shared/components/input';
+import { CAPTCHA_FAILED_MESSAGE } from '@/shared/components/faro/turnstile/captcha-messages';
+import { Turnstile } from '@/shared/components/faro/turnstile/turnstile';
 import { FlowShell } from '@/shared/shells/flow-shell/flow-shell';
 
 import { PasswordService } from '../../../core/auth/password.service';
@@ -42,6 +46,8 @@ const EMAIL_FORMAT = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     NgIcon,
     FlowShell,
     AuthStatusBadge,
+    Turnstile,
+    ZardAlertComponent,
     ZardButtonComponent,
     ZardFieldImports,
     ZardInputComponent,
@@ -63,6 +69,10 @@ export class ForgotPassword implements OnInit {
   protected readonly sent = signal(false);
   protected readonly emailError = signal<'required' | 'format' | null>(null);
   protected readonly countdown = new Countdown();
+  /** Desafio anti-robô (Turnstile): o widget da tela atual (formulário ou "link enviado"). */
+  private readonly captcha = viewChild(Turnstile);
+  protected readonly captchaFailed = signal(false);
+  protected readonly captchaMessage = CAPTCHA_FAILED_MESSAGE;
 
   private readonly query = toSignal(this.route.queryParamMap, {
     initialValue: this.route.snapshot.queryParamMap,
@@ -72,7 +82,9 @@ export class ForgotPassword implements OnInit {
     return returnUrl === null ? null : { returnUrl };
   });
 
-  protected readonly sendDisabled = computed(() => this.sending() || this.countdown.remaining() > 0);
+  protected readonly sendDisabled = computed(
+    () => this.sending() || this.countdown.remaining() > 0 || (this.captcha()?.pending() ?? false),
+  );
 
   ngOnInit(): void {
     this.returnUrlService.capture(this.query().get('returnUrl'));
@@ -97,13 +109,23 @@ export class ForgotPassword implements OnInit {
     this.emailError.set(null);
 
     this.sending.set(true);
+    this.captchaFailed.set(false);
+    // O token vale uma vez: lido aqui, e o widget é renovado em seguida, com qualquer resposta.
+    const captchaToken = this.captcha()?.token() ?? undefined;
     try {
-      await this.passwords.requestRecovery(value);
-    } finally {
-      this.sending.set(false);
+      // O serviço nunca lança; se lançasse, a tela seguiria igual (anti-enumeração).
+      const result = await this.passwords.requestRecovery(value, captchaToken).catch(() => ({ ok: true }));
+      if (!result.ok) {
+        // Nada foi enviado: a tela não pode dizer "confira seu e-mail" nem iniciar a espera.
+        this.captchaFailed.set(true);
+        return;
+      }
       // Sempre a mesma tela, e a espera de 60 s vale para qualquer resposta.
       this.sent.set(true);
       this.countdown.start(RECOVERY_RESEND_SECONDS);
+    } finally {
+      this.sending.set(false);
+      this.captcha()?.reset();
     }
   }
 }

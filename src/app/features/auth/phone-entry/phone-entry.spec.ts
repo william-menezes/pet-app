@@ -3,6 +3,9 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, Router, convertToParamMap, provideRouter } from '@angular/router';
 import { BehaviorSubject } from 'rxjs';
 
+import { TURNSTILE_SITE_KEY } from '@/shared/components/faro/turnstile/turnstile-script';
+import { FakeTurnstile, TEST_TURNSTILE_SITE_KEY } from '@/shared/components/faro/turnstile/turnstile-testing';
+
 import { AccountService } from '../../../core/account/account.service';
 import { AccountStore, type Account } from '../../../core/account/account.store';
 import { PhoneVerificationService } from '../../../core/account/phone-verification.service';
@@ -266,6 +269,53 @@ describe('PhoneEntry', () => {
       expect(start).toHaveBeenCalledWith({ phone: '+5511912345678', password: 'senhasegura' });
       expect((byId('phone-password') as HTMLInputElement | null)?.value ?? '').toBe('');
       expect(navigate).toHaveBeenCalledWith(['/auth/confirmar-celular'], {});
+    });
+
+    describe('desafio anti-robô', () => {
+      let fake: FakeTurnstile;
+      beforeEach(() => {
+        fake = new FakeTurnstile().install();
+        TestBed.overrideProvider(TURNSTILE_SITE_KEY, { useValue: TEST_TURNSTILE_SITE_KEY });
+      });
+      afterEach(() => fake.uninstall());
+
+      async function fill() {
+        await createChange();
+        await vi.waitFor(() => expect(fake.renders).toHaveLength(1));
+        await typePhone('(11) 91234-5678');
+        const password = byId('phone-password') as HTMLInputElement;
+        password.value = 'senhasegura';
+        password.dispatchEvent(new Event('input'));
+        await settle();
+      }
+
+      it('o envio espera o token, leva captchaToken junto da senha e renova o desafio', async () => {
+        await fill();
+        expect((byId('phone-send') as HTMLButtonElement).disabled).toBe(true);
+        fake.solve('tok-1');
+        await settle();
+        expect((byId('phone-send') as HTMLButtonElement).disabled).toBe(false);
+        await send();
+        expect(start).toHaveBeenCalledWith({
+          phone: '+5511912345678',
+          password: 'senhasegura',
+          captchaToken: 'tok-1',
+        });
+        expect(fake.resets).toBe(1);
+      });
+
+      it('captcha_failed mostra o texto do contrato e fica na tela', async () => {
+        await fill();
+        fake.solve('tok-1');
+        await settle();
+        start.mockResolvedValueOnce({ ok: false, error: 'captcha_failed' });
+        await send();
+        expect(byId('phone-error')?.textContent).toContain(
+          'Não foi possível confirmar que você não é um robô. Tente de novo.',
+        );
+        expect(navigate).not.toHaveBeenCalled();
+        expect(fake.resets).toBe(1);
+      });
     });
 
     it('reauth_required com method password mostra o campo (conta sem senha cadastrada na tela) e pede a senha', async () => {

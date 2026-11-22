@@ -84,6 +84,7 @@
             z-button
             zType="link"
             class="mt-1 text-sm"
+            [zDisabled]="resendDisabled"
             (click)="onResendConfirmation()"
             data-testid="login-resend-confirmation"
             i18n>
@@ -164,6 +165,8 @@
             <span i18n>Esqueci a senha</span>
           </a>
         </div>
+
+        <app-turnstile class="mt-3" />
 
         <button
           type="submit"

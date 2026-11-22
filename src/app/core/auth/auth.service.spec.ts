@@ -204,7 +204,63 @@ describe('AuthService', () => {
   it('deve chamar resend silenciosamente mesmo em erro (anti-enumeração)', async () => {
     supabaseMock.client.auth.resend.mockRejectedValue(new Error('fail'));
     // Não deve lançar
-    await expect(service.resendConfirmation('any@example.com')).resolves.toBeUndefined();
+    await expect(service.resendConfirmation('any@example.com')).resolves.toEqual({ ok: true });
+  });
+
+  // ────────────────────────────────────────────────────────────────
+  // Desafio anti-robô (Turnstile)
+  // ────────────────────────────────────────────────────────────────
+
+  it('signInPassword envia o token como options.captchaToken só quando existe', async () => {
+    supabaseMock.client.auth.signInWithPassword.mockResolvedValue({
+      data: { session: null, user: null },
+      error: { message: 'Invalid login credentials' },
+    });
+    await service.signInPassword('a@example.com', 'x', 'tok');
+    expect(supabaseMock.client.auth.signInWithPassword).toHaveBeenLastCalledWith({
+      email: 'a@example.com',
+      password: 'x',
+      options: { captchaToken: 'tok' },
+    });
+    await service.signInPassword('a@example.com', 'x');
+    expect(supabaseMock.client.auth.signInWithPassword).toHaveBeenLastCalledWith({
+      email: 'a@example.com',
+      password: 'x',
+    });
+  });
+
+  it('captcha_failed do Auth não conta como senha errada: sem post_result e com o texto do contrato', async () => {
+    supabaseMock.client.auth.signInWithPassword.mockResolvedValue({
+      data: { session: null, user: null },
+      error: { code: 'captcha_failed', message: 'captcha protection: request disallowed' },
+    });
+
+    const result = await service.signInPassword('a@example.com', 'x', 'tok');
+
+    expect(result).toEqual({ ok: false, reason: 'captcha_failed' });
+    expect(service.getErrorMessage('captcha_failed')).toBe(
+      'Não foi possível confirmar que você não é um robô. Tente de novo.',
+    );
+    const bodies = supabaseMock.client.functions.invoke.mock.calls.map(
+      (call: unknown[]) => (call[1] as { body: { phase: string } }).body.phase,
+    );
+    expect(bodies).toEqual(['pre_attempt']);
+  });
+
+  it('resendConfirmation envia o token e devolve captcha_failed só para o desafio recusado', async () => {
+    await service.resendConfirmation('a@example.com', 'tok');
+    expect(supabaseMock.client.auth.resend).toHaveBeenLastCalledWith({
+      type: 'signup',
+      email: 'a@example.com',
+      options: { captchaToken: 'tok' },
+    });
+    supabaseMock.client.auth.resend.mockResolvedValue({ data: {}, error: { code: 'captcha_failed' } });
+    expect(await service.resendConfirmation('a@example.com', 'tok')).toEqual({
+      ok: false,
+      reason: 'captcha_failed',
+    });
+    supabaseMock.client.auth.resend.mockResolvedValue({ data: {}, error: { code: 'over_email_send_rate_limit' } });
+    expect(await service.resendConfirmation('a@example.com', 'tok')).toEqual({ ok: true });
   });
 
   // ────────────────────────────────────────────────────────────────
