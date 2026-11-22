@@ -218,7 +218,7 @@ SELECT is((SELECT count(*)::integer FROM tests.gate_anon_privilegio_tabela
   'anon sem privilegio em perfis, auth_audit_log e auth_login_attempts');
 SELECT is((SELECT count(*)::integer FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
             WHERE n.nspname = 'public' AND c.relkind = 'S'
-              AND has_sequence_privilege('anon', c.oid, 'USAGE,SELECT,UPDATE')), 0,
+              AND CASE WHEN c.relkind = 'S' THEN has_sequence_privilege('anon', c.oid, 'USAGE,SELECT,UPDATE') ELSE false END), 0,
   'anon sem privilegio em nenhuma sequencia de public');
 
 SELECT is(has_table_privilege('authenticated', 'public.auth_login_attempts', 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER')

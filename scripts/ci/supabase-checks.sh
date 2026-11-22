@@ -115,6 +115,10 @@ if [ -z "$MAIL_HTML" ]; then
   echo
 fi
 check "o coletor recebeu o e-mail de confirmacao" test -n "$MAIL_HTML"
+if ! printf "%s" "$MAIL_HTML" | grep -q "/auth/confirmar-email?token_hash="; then
+  echo "diagnostico: trecho do e-mail recebido (tokens ocultados):"
+  printf "%s" "$MAIL_HTML" | grep -oE "(href=|https?://)[^ <>\"]{0,160}" | sed -E "s/(token|token_hash|code)=[A-Za-z0-9_.-]+/\1=<oculto>/g" | head -8
+fi
 check "o link contem /auth/confirmar-email?token_hash=" \
   bash -c 'printf "%s" "$1" | grep -q "/auth/confirmar-email?token_hash="' _ "$MAIL_HTML"
 REP="$(signup "$EMAIL" OutraSenha12345)"
