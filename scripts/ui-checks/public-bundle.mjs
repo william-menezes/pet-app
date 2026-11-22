@@ -22,6 +22,7 @@ const FORBIDDEN_IN_PUBLIC = [
   /src\/app\/core\/theme\//,
   /src\/app\/shared\/components\/(alert-dialog|sonner)\//,
   /node_modules\/ngx-sonner\//,
+  /src\/app\/shared\/components\/faro\/turnstile\//,
 ];
 const KNOWN_EXCEPTION = [/src\/app\/core\/auth\//, /src\/app\/core\/supabase\//];
 const GALLERY = /src\/app\/features\/dev-gallery\//;
@@ -155,6 +156,20 @@ function main() {
   }
 
   const { violations, warnings, publicSet, outputs } = analyze(stats);
+
+  // 5A. Nenhum host do desafio anti-robô (Turnstile) no pacote inicial nem no fecho da página pública:
+  // o script só pode ser pedido, em tempo de execução, pelas telas de /auth e /app/conta.
+  for (const name of publicSet) {
+    const file = join(BROWSER, name);
+    if (existsSync(file) && /challenges\.cloudflare\.com/.test(readFileSync(file, 'utf8'))) {
+      violations.push(`${name} (pacote inicial ou público) contém challenges.cloudflare.com`);
+    }
+  }
+  for (const file of walk(BROWSER, '.html')) {
+    if (/challenges\.cloudflare\.com/.test(readFileSync(file, 'utf8'))) {
+      violations.push(`${norm(file.slice(BROWSER.length + 1))} contém challenges.cloudflare.com`);
+    }
+  }
 
   // 6. onload= nos .html (index.csr.html e pré-renderizados)
   for (const file of walk(BROWSER, '.html')) {
