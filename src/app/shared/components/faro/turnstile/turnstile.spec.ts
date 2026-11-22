@@ -67,6 +67,10 @@ describe('Turnstile', () => {
     expect(fixture.componentInstance.turnstile().token()).toBeNull();
     expect(fixture.componentInstance.turnstile().pending()).toBe(false);
     expect(fixture.nativeElement.querySelector('[data-testid="turnstile-widget"]')).toBeNull();
+    // Sem chave não ocupa espaço na tela.
+    const host = fixture.nativeElement.querySelector('app-turnstile') as HTMLElement;
+    expect(host.classList.contains('hidden')).toBe(true);
+    expect(host.classList.contains('block')).toBe(false);
   });
 
   it('com chave: carrega o script uma vez, desenha o widget e guarda o token; reset() zera', async () => {

@@ -805,18 +805,18 @@ fase dependem só da Phase 2; as de tela dependem das telas das histórias 1, 4,
   `_shared/reauth.ts`; corpo `captcha_token` em `phone-verify-start` (troca) e `account-delete`;
   código de erro `captcha_failed`. **Feito quando**: `deno test` prova que o token chega ao Auth
   e que `captcha_failed` não conta como falha de senha.
-- [ ] T103 [FE] Componente `app-turnstile` (`src/app/shared/components/faro/turnstile/`) e a
+- [x] T103 [FE] Componente `app-turnstile` (`src/app/shared/components/faro/turnstile/`) e a
   chave `turnstileSiteKey` nos ambientes, conforme o contrato §1. **Feito quando**: teste
   unitário prova que sem chave nenhum script é carregado e que `reset()` zera o token;
   `npm run check:bundle` mostra que o pacote inicial não contém `challenges.cloudflare.com`.
-- [ ] T104 [FE] Usar o desafio em "Entrar", "Criar conta", "Confirme seu e-mail" (reenvio),
+- [x] T104 [FE] Usar o desafio em "Entrar", "Criar conta", "Confirme seu e-mail" (reenvio),
   "Esqueci a senha", "Trocar celular", "Senha" e no diálogo de exclusão; `reset()` depois de cada
   envio; texto de `captcha_failed`. **Por último**, e só depois de todas as telas enviarem o token:
   ligar `[auth.captcha] enabled = true` no `config.toml` e ajustar os apoios de E2E que entram
   pela tela. **Feito quando**: teste de componente de cada tela cobre o envio com token e o erro
   `captcha_failed`; com o desafio ligado, `signUp` sem token é recusado e toda a suíte de E2E
   existente continua verde.
-- [ ] T105 [FE] Cabeçalhos (contrato §3): `src/security-headers.ts`, uso no `src/server.ts` com
+- [x] T105 [FE] Cabeçalhos (contrato §3): `src/security-headers.ts`, uso no `src/server.ts` com
   o middleware **antes** dos arquivos estáticos, `vercel.json` com as duas políticas e
   `scripts/security/check-headers.mjs` (`npm run check:headers`). **Feito quando**:
   `check:headers` passa e falha se alguém editar só um dos dois lugares.

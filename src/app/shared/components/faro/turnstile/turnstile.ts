@@ -25,7 +25,7 @@ import type { TurnstileApi } from './turnstile-script';
 @Component({
   selector: 'app-turnstile',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { class: 'block' },
+  host: { '[class.block]': 'enabled', '[class.hidden]': '!enabled' },
   template: `
     @if (enabled) {
       <div #container class="min-h-[65px] max-w-full overflow-hidden" data-testid="turnstile-widget"></div>
