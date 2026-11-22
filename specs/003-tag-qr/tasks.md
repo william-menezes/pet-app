@@ -79,7 +79,7 @@ Igual à `004`: a máquina não tem Docker nem a CLI do Supabase. Todo "Feito qu
 
 ## Phase 1: Setup
 
-- [ ] T001 [BE] Criar a branch `003-tag-qr` a partir de `develop`. Adicionar ao `.gitignore`:
+- [x] T001 [BE] Criar a branch `003-tag-qr` a partir de `develop`. Adicionar ao `.gitignore`:
   `lote.csv`, `lote-*/`, `**/pins.csv`, `tools/tag-generator/lote-*/`.
   **Feito quando**: `git check-ignore lote.csv tools/tag-generator/lote-001/lote.csv` lista os dois.
 - [ ] T002 [P] [FE] Criar as pastas e arquivos `index.ts` vazios: `src/app/core/tag-code/`,
@@ -88,12 +88,12 @@ Igual à `004`: a máquina não tem Docker nem a CLI do Supabase. Todo "Feito qu
 - [ ] T003 [P] [FE] Criar os tipos em `src/app/models/`: `pet.ts`, `tag.ts`, `rescue-profile.ts`,
   `scan.ts`, espelhando `data-model.md` e as saídas dos contratos (ex.: `TagResolution` com os
   quatro estados de `public-page.contract.md`). **Feito quando**: `npm run lint` passa, sem `any`.
-- [ ] T004 [P] [BE] Declarar em `supabase/.env.local.example` as variáveis `FARO_SSR_KEY`,
+- [x] T004 [P] [BE] Declarar em `supabase/.env.local.example` as variáveis `FARO_SSR_KEY`,
   `IP_HASH_SECRET`, `EMAIL_API_KEY`, `EMAIL_FROM`, com comentário de uma linha cada, sem valores.
   **Feito quando**: o arquivo lista as quatro e nenhum valor real aparece em `git diff`.
 - [ ] T005 [P] [FE] Documentar em `README.md` (seção "Variáveis do servidor SSR") `FARO_SSR_KEY`,
   `IP_HASH_SECRET`, `SUPABASE_FUNCTIONS_URL`. **Feito quando**: a seção existe.
-- [ ] T006 [BE] Criar `docs/importar-lote-001.md` com o procedimento de `research.md` §12, passo a
+- [x] T006 [BE] Criar `docs/importar-lote-001.md` com o procedimento de `research.md` §12, passo a
   passo, com os comandos SQL completos e a conferência final. **Feito quando**: o documento cobre
   importar, conferir 54 linhas, apagar a tabela temporária e apagar o CSV local.
 
@@ -103,17 +103,17 @@ Igual à `004`: a máquina não tem Docker nem a CLI do Supabase. Todo "Feito qu
 
 ### Código da tag
 
-- [ ] T007 [FE] Implementar `src/app/core/tag-code/tag-code.ts` conforme
+- [x] T007 [FE] Implementar `src/app/core/tag-code/tag-code.ts` conforme
   `contracts/tag-code.contract.md` (API completa). **Feito quando**: compila sem dependências externas.
-- [ ] T008 [FE] Escrever `tag-code.spec.ts` com a tabela de casos e o teste de propriedade do
+- [x] T008 [FE] Escrever `tag-code.spec.ts` com a tabela de casos e o teste de propriedade do
   contrato. **Feito quando**: `npm test -- --watch=false tag-code` passa.
-- [ ] T009 [BE] Copiar o módulo para `supabase/functions/_shared/tag-code.ts` e criar
+- [x] T009 [BE] Copiar o módulo para `supabase/functions/_shared/tag-code.ts` e criar
   `src/app/core/tag-code/tag-code.sync.spec.ts` que falha se os dois arquivos diferirem.
   **Feito quando**: o teste passa e falha ao alterar um caractere em qualquer um dos dois.
-- [ ] T010 [P] [QA] Teste que procura no repositório (`src/`, `supabase/functions/`) qualquer
+- [x] T010 [P] [QA] Teste que procura no repositório (`src/`, `supabase/functions/`) qualquer
   domínio de tag diferente de `TAGFARO.COM.BR` (incluindo `vercel.app`) em código que monta URL.
   **Feito quando**: passa e falha se alguém trocar a constante.
-- [ ] T011 [QA] Copiar `specs/003-tag-qr/contracts/tag-code.vectors.json` para
+- [x] T011 [QA] Copiar `specs/003-tag-qr/contracts/tag-code.vectors.json` para
   `src/app/core/tag-code/fixtures/tag-code.vectors.json` (sem alterar) e escrever o teste cruzado
   em TypeScript conforme `contracts/tag-code.contract.md`: para cada `valid`, `checkDigit(body)`
   devolve `check` e `isValid(code)` é `true`; cada `invalid` é `false`; cada par de
@@ -124,28 +124,28 @@ Igual à `004`: a máquina não tem Docker nem a CLI do Supabase. Todo "Feito qu
 
 ### Banco
 
-- [ ] T012 [BE] `0020_pets_e_perfil_resgate.sql`: tabelas `pets` e `rescue_profiles`, gatilhos
+- [x] T012 [BE] `0020_pets_e_perfil_resgate.sql`: tabelas `pets` e `rescue_profiles`, gatilhos
   (`updated_at`, criação do perfil, regra do celular confirmado), RLS e políticas do tutor e do
   admin, privilégios de coluna em `rescue_profiles`. **Feito quando**: `supabase db reset` aplica.
-- [ ] T013 [BE] `0021_tag_batches_e_codes.sql`: primeiro as funções `tag_normalize`,
+- [x] T013 [BE] `0021_tag_batches_e_codes.sql`: primeiro as funções `tag_normalize`,
   `tag_is_valid` e `tag_format` (`immutable`, mesma regra do TypeScript de T007); depois as tabelas,
   `CHECK`s (incluindo `tag_is_valid(code)`), gatilhos de imutabilidade (sem `UPDATE` de
   `code`/`batch_id`/`qr_*`, sem `DELETE`, sem sair de `void`) e RLS sem política para
   `authenticated` em `tag_codes`. **Feito quando**: aplica; `delete` falha; inserir código com
   dígito errado falha; `select tag_is_valid('7K3M-Q9XA-C')` devolve o mesmo que o TypeScript.
-- [ ] T014 [BE] `0022_tag_assignments_e_pin_attempts.sql`: tabelas, índices únicos parciais,
+- [x] T014 [BE] `0022_tag_assignments_e_pin_attempts.sql`: tabelas, índices únicos parciais,
   regra `ended_at`/`end_reason`, RLS. **Feito quando**: aplica; segundo vínculo ativo falha.
-- [ ] T015 [P] [BE] `0023_pending_activations_e_rate_limits.sql`: as duas tabelas de `data-model.md` e a função interna `rate_limit_hit(scope, key, limit, window)` que incrementa e devolve se estourou. **Feito quando**: aplica com RLS e sem políticas; pgTAP mostra a 31ª chamada estourando um limite de 30.
-- [ ] T016 [P] [BE] `0024_scan_events.sql` com índices e a view `my_scans` (sem `ip_hash` nem token).
+- [x] T015 [P] [BE] `0023_pending_activations_e_rate_limits.sql`: as duas tabelas de `data-model.md` e a função interna `rate_limit_hit(scope, key, limit, window)` que incrementa e devolve se estourou. **Feito quando**: aplica com RLS e sem políticas; pgTAP mostra a 31ª chamada estourando um limite de 30.
+- [x] T016 [P] [BE] `0024_scan_events.sql` com índices e a view `my_scans` (sem `ip_hash` nem token).
   **Feito quando**: aplica; `authenticated` não seleciona `ip_hash`.
-- [ ] T017 [BE] `0027_funcoes_tag.sql`: `can_link_tag` (retorna `true`, com o comentário
+- [x] T017 [BE] `0027_funcoes_tag.sql`: `can_link_tag` (retorna `true`, com o comentário
   `TODO(BILLING_MODEL)`) e `new_activation_pin` (6 caracteres do alfabeto, com `gen_random_bytes`).
   **Feito quando**: `select length(new_activation_pin())` devolve 6 e 1.000 chamadas só produzem
   caracteres do alfabeto.
-- [ ] T018 [P] [BE] `0025_tag_replacement_requests.sql`. **Feito quando**: aplica com RLS.
-- [ ] T019 [P] [BE] `0026_audit_log.sql`: tabela e função `audit(...)`. **Feito quando**: aplica;
+- [x] T018 [P] [BE] `0025_tag_replacement_requests.sql`. **Feito quando**: aplica com RLS.
+- [x] T019 [P] [BE] `0026_audit_log.sql`: tabela e função `audit(...)`. **Feito quando**: aplica;
   `update` e `delete` falham para `authenticated`.
-- [ ] T019A [BE] Em `0027_funcoes_tag.sql`, acrescentar `end_assignments_for_account(p_tutor uuid)`
+- [x] T019A [BE] Em `0027_funcoes_tag.sql`, acrescentar `end_assignments_for_account(p_tutor uuid)`
   e `export_tutor_tag_data(p_tutor uuid)`, as duas só para `service_role`, conforme
   `contracts/integration-002-004.contract.md` §4. **Vem nesta fase de propósito**: a exclusão de
   conta da `004` recusa o pedido enquanto existir `tag_assignments` sem a primeira função.
@@ -155,7 +155,7 @@ Igual à `004`: a máquina não tem Docker nem a CLI do Supabase. Todo "Feito qu
   `available` **com o mesmo `activation_pin_hash` de antes**; exportação sem dado de outro tutor) e `supabase/tests/conta_privacidade.test.sql`,
   da `004`, continua verde com as tabelas da `003` presentes (se quebrar, ver o último parágrafo de
   §4.4).
-- [ ] T020 [BE] Seed das tags, **sem reescrever `supabase/seed.sql`**
+- [x] T020 [BE] Seed das tags, **sem reescrever `supabase/seed.sql`**
   (`contracts/integration-002-004.contract.md` §6): o script `supabase/scripts/make-seed.ts`
   escreve só o trecho entre os marcadores `-- >>> 003-tag-qr` e `-- <<< 003-tag-qr` no fim do
   arquivo, e também `e2e/fixtures/seed-codes.json`. Conteúdo: dados de exemplo de `data-model.md`
@@ -165,14 +165,14 @@ Igual à `004`: a máquina não tem Docker nem a CLI do Supabase. Todo "Feito qu
   devolve 6; o JSON tem as chaves `assigned`, `available`, `blocked`, `void`; `git diff` de
   `seed.sql` só mostra linhas entre os marcadores; rodar o script de novo não muda o arquivo; os
   testes pgTAP da `004` continuam verdes.
-- [ ] T021 [QA] `supabase/tests/tag_code.test.sql`: mesma tabela de casos do contrato, em SQL.
+- [x] T021 [QA] `supabase/tests/tag_code.test.sql`: mesma tabela de casos do contrato, em SQL.
   **Feito quando**: `supabase test db` passa.
-- [ ] T022 [QA] `supabase/tests/rls_tags_base.test.sql`: "Regras gerais" e "Testes do contrato
+- [x] T022 [QA] `supabase/tests/rls_tags_base.test.sql`: "Regras gerais" e "Testes do contrato
   físico" de `contracts/rls-expectations.md`. **Feito quando**: passa.
 
 ### Edge Functions compartilhadas e rotas
 
-- [ ] T023 [BE] `supabase/functions/_shared/`: `auth.ts` (valida `x-faro-ssr-key`; valida JWT e
+- [x] T023 [BE] `supabase/functions/_shared/`: `auth.ts` (valida `x-faro-ssr-key`; valida JWT e
   papel de admin), `supabase.ts` (cliente com role de serviço), `responses.ts`. Testes em `deno test`.
   **Feito quando**: chamada sem chave devolve `401` no teste.
 - [ ] T024 [FE] `src/app/app.routes.ts` e `app.routes.server.ts`: todas as rotas da tabela de
