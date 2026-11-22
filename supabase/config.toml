@@ -31,19 +31,41 @@ enabled = true
 site_url = "http://localhost:4200"
 additional_redirect_urls = ["http://localhost:4200/auth/callback"]
 jwt_expiry = 3600
+enable_signup = true
+# FR-003, imposto no servidor (contracts/auth-config.contract.md). Sem regra de composicao.
+minimum_password_length = 8
+password_requirements = ""
 
 # Rate-limit nativo do GoTrue — camada ampla (FR-018, defesa em duas camadas).
 # A segunda camada é a tabela auth_login_attempts + Edge login-guard.
 # Nomes válidos na CLI 3.x: email_sent (e-mails por hora), token_refresh (por 5 min, por IP).
 [auth.rate_limit]
 # Os valores abaixo são defaults conservadores para dev/staging.
-email_sent = 10
-token_refresh = 30
+email_sent = 30           # e-mails por hora (global). Producao: ajustar ao plano do provedor SMTP
+sign_in_sign_ups = 30     # por 5 min, por IP
+token_verifications = 30  # por 5 min, por IP (confirmacao e recuperacao)
+token_refresh = 150       # por 5 min, por IP
 
 [auth.email]
 enable_signup = true
 double_confirm_changes = true
-enable_confirmations = true   # GoTrue: exige link de confirmação antes de liberar sessão
+enable_confirmations = true   # FR-024 da 001; tambem ativa a resposta ofuscada para e-mail ja cadastrado
+secure_password_change = true  # trava de servidor para troca de senha em sessao antiga
+max_frequency = "60s"          # intervalo minimo entre e-mails para o mesmo usuario (FR-011)
+otp_expiry = 3600              # validade dos links: 1 hora (FR-012, FR-035)
+
+[auth.email.template.confirmation]
+subject = "Confirme seu e-mail no Faro"
+content_path = "./supabase/templates/confirmation.html"
+
+[auth.email.template.recovery]
+subject = "Crie uma nova senha no Faro"
+content_path = "./supabase/templates/recovery.html"
+
+# O celular NAO e forma de entrar (FR-028) e o SMS desta spec nao passa pelo Auth.
+[auth.sms]
+enable_signup = false
+enable_confirmations = false
 
 # Google OAuth (FR-016/Princípio III): client id/secret NUNCA commitados.
 # Configure via `supabase secrets set GOOGLE_OAUTH_CLIENT_ID=... GOOGLE_OAUTH_SECRET=...`
