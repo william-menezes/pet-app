@@ -82,3 +82,10 @@ enabled = false
 # Edge Functions: verify_jwt é configurado por função (a chave global não existe mais).
 [functions.login-guard]
 verify_jwt = true
+
+# Spec 004: confirmacao de celular. Exigem usuario autenticado (a propria funcao valida o JWT com getUser).
+[functions.phone-verify-start]
+verify_jwt = true
+
+[functions.phone-verify-confirm]
+verify_jwt = true

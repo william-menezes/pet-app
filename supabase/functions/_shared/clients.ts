@@ -14,6 +14,13 @@ export function serviceClient(env: FaroEnv): SupabaseClient {
   });
 }
 
+/** Cliente novo com a chave anonima e sem sessao persistida (confere senha em `reauth.ts`). */
+export function anonClient(env: FaroEnv): SupabaseClient {
+  return createClient(env.supabaseUrl, env.anonKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+}
+
 /**
  * Valida o JWT do cabecalho Authorization com auth.getUser().
  * Devolve null para ausencia de token, a chave anonima ou qualquer token invalido.
