@@ -155,12 +155,12 @@ função que não precisam de banco podem rodar localmente.
   um cadastro por `curl` gera no coletor local (`http://localhost:54324`) um e-mail cujo link
   contém `/auth/confirmar-email?token_hash=` e `type=email`; `grep -c "ConfirmationURL\|\.Token }}" supabase/templates/*.html`
   devolve `0` para os dois arquivos.
-- [ ] T005 [P] [FE] Em `eslint.config.js`, no bloco `files: ['src/app/features/public/**/*.ts']`
+- [x] T005 [P] [FE] Em `eslint.config.js`, no bloco `files: ['src/app/features/public/**/*.ts']`
   criado pela `002`, acrescentar ao `group` de `no-restricted-imports` os padrões
   `'**/core/account/**'` e `'**/features/legal/**'`. Não alterar outras regras. **Feito quando**:
   `npm run lint` passa e, criando temporariamente em `src/app/features/public/` um arquivo que
   importa `../../core/account/terms`, o lint falha (apague o arquivo depois).
-- [ ] T006 [P] [FE] Criar `src/app/core/account/terms.ts` com `export const TERMS_VERSION = '2026-11';`
+- [x] T006 [P] [FE] Criar `src/app/core/account/terms.ts` com `export const TERMS_VERSION = '2026-11';`
   e `src/app/features/account/account.routes.ts` com `export const ACCOUNT_ROUTES: Routes = [];`.
   **Feito quando**: `npm run build` passa.
 
