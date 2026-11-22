@@ -16,6 +16,7 @@
 import { Injectable, inject } from '@angular/core';
 import { AccountStore } from '../account/account.store';
 import { SupabaseService } from '../supabase/supabase.service';
+import { AuthService } from './auth.service';
 import { AuthStore } from './auth.store';
 
 export type ResetPasswordResult =
@@ -44,6 +45,7 @@ export class PasswordService {
   private readonly supabase = inject(SupabaseService);
   private readonly authStore = inject(AuthStore);
   private readonly accountStore = inject(AccountStore);
+  private readonly authService = inject(AuthService);
 
   /** `token_hash` que já passou no `verifyOtp` (a sessão de recuperação está ativa). Só na memória. */
   private verifiedToken: string | null = null;
@@ -105,10 +107,42 @@ export class PasswordService {
     return { ok: true };
   }
 
-  /** Entra na T087 (Phase 8). */
-  changePassword(current: string, next: string): Promise<ChangePasswordResult> {
-    void current;
-    void next;
-    return Promise.reject(new Error('Não implementado: troca de senha em Conta entra na T087.'));
+  /**
+   * Troca a senha em "Conta" (5 passos de `password-recovery.edge.md`): confere a senha atual por
+   * `AuthService.signInPassword` (passa pelo `login-guard` e renova a sessão), troca, e encerra as outras
+   * sessões. A senha atual e a nova vivem só nos argumentos.
+   */
+  async changePassword(current: string, next: string): Promise<ChangePasswordResult> {
+    if (!this.accountStore.hasPassword()) return { ok: false, reason: 'no_password' };
+
+    const email = this.accountStore.account()?.email;
+    if (!email) return { ok: false, reason: 'network' };
+
+    const check = await this.authService.signInPassword(email, current);
+    if (!check.ok) {
+      if (check.reason === 'rate_limited') return { ok: false, reason: 'rate_limited' };
+      // Falha de conexão não é senha errada (o contrato só cita "outra falha", mas a tela mentiria).
+      if (check.reason === 'network') return { ok: false, reason: 'network' };
+      return { ok: false, reason: 'invalid_current' };
+    }
+
+    const auth = this.supabase.client.auth;
+    try {
+      const { error } = await auth.updateUser({ password: next });
+      if (error) {
+        const failure = error as AuthErrorLike;
+        if (failure.code === 'weak_password') return { ok: false, reason: 'weak_password' };
+        return { ok: false, reason: 'network' };
+      }
+    } catch {
+      return { ok: false, reason: 'network' };
+    }
+
+    try {
+      await auth.signOut({ scope: 'others' });
+    } catch {
+      // a senha já mudou; as outras sessões expiram sozinhas
+    }
+    return { ok: true };
   }
 }
