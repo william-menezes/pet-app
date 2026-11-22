@@ -201,10 +201,14 @@ check "OPTIONS devolve 200 ou 204" bash -c 'printf "%s" "$1" | head -1 | grep -q
 echo "== T051 a T053: phone-verify-start e phone-verify-confirm (SMS_DRIVER=log, FARO_ENV=test) =="
 # Valores de teste descartaveis do stack local do CI. O pepper tem 32+ caracteres (exigencia de loadEnv).
 PEPPER="ci-test-pepper-0123456789-0123456789-abcdef"
+# Chave do servidor SSR do app (resolve-tag e register-scan, spec 003): 32+ caracteres, descartavel, so do stack local do CI.
+SSR_KEY="ci-ssr-key-0123456789-0123456789-abcdef"
 LOG_FILE=/tmp/functions-serve.log
 write_env() { # write_env <pepper|-> <FARO_ENV|-> <SMS_DRIVER|->   ("-" omite a variavel)
   {
     echo "HASH_SALT=ci-test-salt-0123456789"
+    echo "FARO_SSR_KEY=$SSR_KEY"
+    echo "EMAIL_DRIVER=log"
     echo "ALLOWED_ORIGINS=http://localhost:4200"
     echo "SITE_URL=http://localhost:4200"
     if [ "$1" != "-" ]; then echo "PHONE_OTP_PEPPER=$1"; fi
@@ -680,8 +684,214 @@ check "seed: o codigo 'void' do JSON esta no banco como void" seed_status_is voi
 SEED_COUNT="$(curl -s -o /dev/null -D - "$API_URL/rest/v1/tag_codes?select=code" -H "apikey: $SERVICE_KEY" -H "Authorization: Bearer $SERVICE_KEY" \
   -H "Prefer: count=exact" -H "Range: 0-0" | tr -d '\r' | sed -n 's/^[Cc]ontent-[Rr]ange: .*\///p')"
 check "seed: select count(*) from tag_codes devolve 6 [$SEED_COUNT]" test "$SEED_COUNT" = "6"
-# O repositorio e publico: nenhum PIN no JSON do seed (so codigos de teste).
-check "seed: o JSON nao tem campo de PIN" bash -c '! grep -qi "\"pin\"\|activation_pin" "$1"' _ "$SEED_JSON"
+# PINs DE DESENVOLVIMENTO (decisao de 2026-11-22): as tres tags available do seed (codigos sinteticos do lote-900, so em banco
+# local ou de CI) tem PIN fixo em `devPins`. Nenhum PIN de tag real entra aqui, e nenhuma outra tag do seed tem PIN no JSON.
+seed_pin() { sed -n "s/^    \"$1\": \"\([0-9A-Z]\{6\}\)\".*/\1/p" "$SEED_JSON" | head -1; }
+seed_display() { sed -n "s/^    \"$1\": \"\([0-9A-Z]\{4\}-[0-9A-Z]\{4\}-[0-9A-Z]\)\".*/\1/p" "$SEED_JSON" | head -1; }
+for K in available available2 available3; do
+  check "seed: devPins.$K e um PIN de 6 caracteres do alfabeto Crockford" test -n "$(seed_pin "$K")"
+done
+check "seed: so as tres tags available tem PIN no JSON (nenhum para assigned, blocked ou void)" \
+  bash -c '[ "$(grep -c "\"[0-9A-Z]\{6\}\"" "$1")" = "3" ]' _ "$SEED_JSON"
+check "seed: o JSON nao tem campo activation_pin" bash -c '! grep -qi "activation_pin" "$1"' _ "$SEED_JSON"
+# Os codigos do lote-900 e os PINs de desenvolvimento so podem aparecer em seed.sql, e2e/fixtures/ e nos testes. O codigo
+# 7K3M-Q9XA-C (vetor sintetico do contrato) e documentado em todo lugar e fica de fora desta verificacao.
+LEAK_PAT="$(mktemp)"
+for K in available available2 available3 blocked void; do
+  seed_code "$K"; seed_display "$K"
+done | grep . > "$LEAK_PAT"
+for K in available available2 available3; do seed_pin "$K"; done >> "$LEAK_PAT"
+check "seed: a lista de padroes do lote-900 tem 13 entradas (5 codigos, 5 formas de exibicao e 3 PINs)" test "$(wc -l < "$LEAK_PAT")" = "13"
+LEAK_HITS="$(git grep -n -i -F -f "$LEAK_PAT" -- . ':(exclude)supabase/seed.sql' ':(exclude)e2e' ':(exclude)supabase/tests' ':(exclude)*.test.ts' ':(exclude)*.spec.ts' | cut -d: -f1,2 || true)"
+echo "arquivos com codigo do lote-900 ou PIN de desenvolvimento fora do permitido: ${LEAK_HITS:-nenhum}"
+check "seed: nenhum codigo do lote-900 nem PIN de desenvolvimento fora de supabase/seed.sql, e2e/ e dos testes" test -z "$LEAK_HITS"
+rm -f "$LEAK_PAT"
+
+echo "== Spec 003 (T026, T027, T038, T050, T051): resolve-tag, register-scan e ativacao pela API =="
+# O servidor SSR NAO tem chave do Supabase: so a chave `x-faro-ssr-key`. As chamadas abaixo mandam tambem apikey/Authorization
+# (o gateway local aceita), mas a autorizacao de verdade e a chave do servidor.
+check "config.toml declara verify_jwt = false para resolve-tag" bash -c 'grep -A1 "^\[functions.resolve-tag\]" supabase/config.toml | grep -q "verify_jwt = false"'
+check "config.toml declara verify_jwt = false para register-scan" bash -c 'grep -A1 "^\[functions.register-scan\]" supabase/config.toml | grep -q "verify_jwt = false"'
+ssr_call() { # ssr_call <funcao> <json>   (corpo da resposta, com a chave do servidor)
+  curl -s -X POST "$API_URL/functions/v1/$1" -H "apikey: $ANON_KEY" -H "Authorization: Bearer $ANON_KEY" \
+    -H "Content-Type: application/json" -H "x-faro-ssr-key: $SSR_KEY" -d "$2"
+}
+ssr_head() { # ssr_head <funcao> <json>   (so os cabecalhos que precisam ser identicos)
+  curl -s -D - -o /dev/null -X POST "$API_URL/functions/v1/$1" -H "apikey: $ANON_KEY" -H "Authorization: Bearer $ANON_KEY" \
+    -H "Content-Type: application/json" -H "x-faro-ssr-key: $SSR_KEY" -d "$2" | tr -d '\r' \
+    | grep -iE '^(content-type|cache-control|content-length):' | tr 'A-Z' 'a-z' | sort
+}
+CODE_AS="$(seed_code assigned)"; CODE_AV="$(seed_code available)"; CODE_AV2="$(seed_code available2)"; CODE_AV3="$(seed_code available3)"
+CODE_BL="$(seed_code blocked)"; CODE_VD="$(seed_code void)"
+PIN_AV2="$(seed_pin available2)"; PIN_AV3="$(seed_pin available3)"
+NONEXISTENT="H8ZWE5XGH" # vetor sintetico valido (digito correto) que nao esta no seed
+
+RESOLVE_UP=0
+for _ in $(seq 1 40); do
+  R="$(ssr_call resolve-tag "{\"code\":\"$CODE_AV\",\"ip_hash\":\"ci-warm\"}" || true)"
+  if has "$R" '"state"'; then RESOLVE_UP=1; break; fi
+  sleep 2
+done
+check "resolve-tag responde com a chave do servidor" test "$RESOLVE_UP" = "1"
+if [ "$RESOLVE_UP" != "1" ]; then echo "ultima resposta do resolve-tag: $(printf '%s' "$R" | cut -c1-200)"; fi
+
+C="$(curl -s -o /tmp/resolve-nokey.out -w '%{http_code}' -X POST "$API_URL/functions/v1/resolve-tag" -H "apikey: $ANON_KEY" -H "Authorization: Bearer $ANON_KEY" \
+  -H "Content-Type: application/json" -d "{\"code\":\"$CODE_AS\",\"ip_hash\":\"x\"}")"
+check "resolve-tag sem a chave do servidor: 401 com corpo vazio ($C)" bash -c '[ "$1" = "401" ] && [ ! -s /tmp/resolve-nokey.out ]' _ "$C"
+C="$(curl -s -o /tmp/resolve-badkey.out -w '%{http_code}' -X POST "$API_URL/functions/v1/resolve-tag" -H "apikey: $ANON_KEY" -H "Authorization: Bearer $ANON_KEY" \
+  -H "Content-Type: application/json" -H "x-faro-ssr-key: chave-errada-0123456789-0123456789-abcdef" -d "{\"code\":\"$CODE_AS\",\"ip_hash\":\"x\"}")"
+check "resolve-tag com chave errada: 401 com corpo vazio ($C)" bash -c '[ "$1" = "401" ] && [ ! -s /tmp/resolve-badkey.out ]' _ "$C"
+# Diagnostico (nao reprova): o servidor SSR real chama SEM apikey/Authorization; confere se o gateway local deixa passar.
+C="$(curl -s -o /dev/null -w '%{http_code}' -X POST "$API_URL/functions/v1/resolve-tag" -H "Content-Type: application/json" -H "x-faro-ssr-key: $SSR_KEY" -d "{\"code\":\"$CODE_AV\",\"ip_hash\":\"ci-sem-apikey\"}")"
+echo "diagnostico: resolve-tag so com x-faro-ssr-key (sem apikey nem Authorization): HTTP $C"
+
+RA="$(ssr_call resolve-tag "{\"code\":\"$CODE_AS\",\"ip_hash\":\"ci-resolve-1\"}")"
+check "resolve-tag (tag vinculada do seed): state assigned com o nome do pet" bash -c 'printf "%s" "$1" | grep -q "\"state\":\"assigned\"" && printf "%s" "$1" | grep -qF "Paçoca"' _ "$RA"
+check "resolve-tag: devolve o primeiro nome e o link do WhatsApp liberados pela Ana" bash -c 'printf "%s" "$1" | grep -qF "\"tutor_first_name\":\"Ana\"" && printf "%s" "$1" | grep -q "\"whatsapp_url\":\"https://wa.me/55"' _ "$RA"
+check "resolve-tag: o codigo sai no formato XXXX-XXXX-X" has "$RA" "\"code\":\"$(seed_display assigned)\""
+check "resolve-tag: nenhum identificador interno, ip_hash, hash de PIN nem photo_path" \
+  bash -c '! printf "%s" "$1" | grep -qiE "tutor_id|pet_id|assignment|ip_hash|activation_pin|photo_path|00000000-0000"' _ "$RA"
+check "resolve-tag: o telefone nao liberado (show_phone desligado) nao aparece" bash -c '! printf "%s" "$1" | grep -q "phone_display"' _ "$RA"
+RV="$(ssr_call resolve-tag "{\"code\":\"$CODE_AV\",\"ip_hash\":\"ci-resolve-2\"}")"
+check "resolve-tag (tag disponivel do seed): state available com o codigo formatado" test "$RV" = "{\"state\":\"available\",\"code\":\"$(seed_display available)\"}"
+B_BL="$(ssr_call resolve-tag "{\"code\":\"$CODE_BL\",\"ip_hash\":\"ci-resolve-3\"}")"
+B_VD="$(ssr_call resolve-tag "{\"code\":\"$CODE_VD\",\"ip_hash\":\"ci-resolve-4\"}")"
+B_NX="$(ssr_call resolve-tag "{\"code\":\"$NONEXISTENT\",\"ip_hash\":\"ci-resolve-5\"}")"
+B_BAD="$(ssr_call resolve-tag "{\"code\":\"7K3MQ9XAD\",\"ip_hash\":\"ci-inv-ip\"}")"
+check "anti-enumeracao: bloqueado, anulado, inexistente e digito invalido dao o mesmo corpo (not_found)" \
+  test "$B_BL" = '{"state":"not_found"}' -a "$B_VD" = '{"state":"not_found"}' -a "$B_NX" = '{"state":"not_found"}' -a "$B_BAD" = '{"state":"not_found"}'
+H_BL="$(ssr_head resolve-tag "{\"code\":\"$CODE_BL\",\"ip_hash\":\"ci-resolve-6\"}")"
+H_VD="$(ssr_head resolve-tag "{\"code\":\"$CODE_VD\",\"ip_hash\":\"ci-resolve-7\"}")"
+H_NX="$(ssr_head resolve-tag "{\"code\":\"$NONEXISTENT\",\"ip_hash\":\"ci-resolve-8\"}")"
+echo "cabecalhos do not_found: $(printf '%s' "$H_NX" | tr '\n' ' ')"
+check "anti-enumeracao: bloqueado, anulado e inexistente dao os mesmos cabecalhos" test -n "$H_BL" -a "$H_BL" = "$H_VD" -a "$H_VD" = "$H_NX"
+check "resolve-tag responde sem cache (Cache-Control: no-store)" has "$H_NX" 'cache-control: no-store'
+T_NX="$(curl -s -o /dev/null -w '%{time_total}' -X POST "$API_URL/functions/v1/resolve-tag" -H "apikey: $ANON_KEY" -H "Authorization: Bearer $ANON_KEY" \
+  -H "Content-Type: application/json" -H "x-faro-ssr-key: $SSR_KEY" -d "{\"code\":\"$NONEXISTENT\",\"ip_hash\":\"ci-resolve-9\"}")"
+check "resolve-tag: not_found respeita o piso de 150 ms ($T_NX s)" awk -v t="$T_NX" 'BEGIN { exit !(t >= 0.15) }'
+check "digito invalido nao toca o banco: nenhuma linha de limite para o ip_hash dele" test "$(rest GET 'rate_limits?key=eq.ci-inv-ip&select=key')" = "[]"
+RL_AT=0
+for i in $(seq 1 70); do
+  R="$(ssr_call resolve-tag "{\"code\":\"$CODE_AS\",\"ip_hash\":\"ci-flood-resolve\"}")"
+  if has "$R" '"state":"rate_limited"'; then RL_AT="$i"; break; fi
+done
+echo "resolve-tag: rate_limited apareceu na chamada $RL_AT do mesmo ip_hash (esperado 31, ou ate 61 se a janela de 1 minuto virou no meio)"
+check "resolve-tag: o limite por ip_hash (30 por minuto) e aplicado" bash -c '[ "$1" -ge 2 ] && [ "$1" -le 61 ]' _ "$RL_AT"
+
+# --- register-scan ---
+C="$(curl -s -o /tmp/scan-nokey.out -w '%{http_code}' -X POST "$API_URL/functions/v1/register-scan" -H "apikey: $ANON_KEY" -H "Authorization: Bearer $ANON_KEY" \
+  -H "Content-Type: application/json" -d "{\"code\":\"$CODE_AS\",\"ip_hash\":\"ci-scan-nokey\"}")"
+check "register-scan sem a chave do servidor: 401 com corpo vazio ($C)" bash -c '[ "$1" = "401" ] && [ ! -s /tmp/scan-nokey.out ]' _ "$C"
+check "register-scan sem a chave nao gravou scan" test "$(rest GET 'scan_events?ip_hash=eq.ci-scan-nokey&select=id')" = "[]"
+
+RS1="$(ssr_call register-scan "{\"code\":\"$CODE_AS\",\"ip_hash\":\"ci-scan-1\"}")"
+check "register-scan: scan novo responde owner false com scan_token" bash -c 'printf "%s" "$1" | grep -q "\"owner\":false" && printf "%s" "$1" | grep -qE "\"scan_token\":\"[0-9a-f]{64}\""' _ "$RS1"
+check "register-scan: a resposta nao traz scan_id, e-mail nem notify" bash -c '! printf "%s" "$1" | grep -qE "scan_id|notify|@faro.test"' _ "$RS1"
+SCAN_ROW="$(rest GET 'scan_events?ip_hash=eq.ci-scan-1&select=status_at_scan,geo_method,notify_attempts,assignment_id')"
+check "register-scan: o scan foi gravado (assigned, sem geo, com vinculo)" bash -c 'printf "%s" "$1" | grep -q "\"status_at_scan\":\"assigned\"" && printf "%s" "$1" | grep -q "\"geo_method\":\"none\"" && printf "%s" "$1" | grep -q "00000000-0000-0000-0000-0000000b0001"' _ "$SCAN_ROW"
+NOTIFIED=0
+for _ in $(seq 1 15); do
+  if has "$(rest GET 'scan_events?ip_hash=eq.ci-scan-1&select=notified_at')" '"notified_at":"20'; then NOTIFIED=1; break; fi
+  sleep 1
+done
+check "register-scan: o aviso saiu fora do caminho da resposta (driver de teste) e notified_at foi gravado" test "$NOTIFIED" = "1"
+check "register-scan: o aviso saiu no driver log (so o assunto)" bash -c 'grep -qF "[email:log] assunto=A tag do Paçoca foi escaneada" "$1"' _ "$LOG_FILE"
+RS2="$(ssr_call register-scan "{\"code\":\"$CODE_AS\",\"ip_hash\":\"ci-scan-1\"}")"
+check "register-scan: o mesmo codigo e origem em seguida e duplicado (devolve token novo)" has "$RS2" '"scan_token"'
+check "register-scan: duplicado nao cria outra linha" test "$(rest GET 'scan_events?ip_hash=eq.ci-scan-1&select=id' | grep -o '"id"' | wc -l)" = "1"
+TOKEN_SCAN="$(printf '%s' "$RS2" | grep -oE '"scan_token":"[0-9a-f]{64}"' | cut -d'"' -f4)"
+RS3="$(ssr_call register-scan "{\"code\":\"$CODE_AS\",\"ip_hash\":\"ci-scan-geo\",\"geo\":{\"lat\":-23.5505,\"lng\":-46.6333,\"city\":\"São Paulo\",\"region\":\"SP\"}}")"
+check "register-scan: com coordenadas do cabecalho grava metodo ip com margem de 3000 m" \
+  bash -c 'printf "%s" "$1" | grep -q "\"geo_method\":\"ip\"" && printf "%s" "$1" | grep -q "\"accuracy_m\":3000"' _ "$(rest GET 'scan_events?ip_hash=eq.ci-scan-geo&select=geo_method,accuracy_m,city')"
+RS4="$(ssr_call register-scan "{\"code\":\"$CODE_AV\",\"ip_hash\":\"ci-scan-av\"}")"
+RS5="$(ssr_call register-scan "{\"code\":\"$CODE_BL\",\"ip_hash\":\"ci-scan-bl\"}")"
+RS6="$(ssr_call register-scan "{\"code\":\"$CODE_VD\",\"ip_hash\":\"ci-scan-vd\"}")"
+SCAN_Q="$(rest GET 'scan_events?ip_hash=in.(ci-scan-av,ci-scan-bl,ci-scan-vd)&select=status_at_scan,assignment_id,notified_at,notify_attempts')"
+check "register-scan: tag disponivel, bloqueada e anulada gravam para a fila do admin (sem vinculo, sem aviso)" \
+  bash -c 'for s in available blocked void; do printf "%s" "$1" | grep -q "\"status_at_scan\":\"$s\"" || exit 1; done; ! printf "%s" "$1" | grep -q "\"notified_at\":\"" && ! printf "%s" "$1" | grep -q "\"notify_attempts\":[1-9]"' _ "$SCAN_Q"
+RS7="$(ssr_call register-scan "{\"code\":\"7K3MQ9XAD\",\"ip_hash\":\"ci-scan-inv\"}")"
+check "register-scan: codigo com digito invalido responde owner false e nao grava" bash -c '[ "$1" = "{\"owner\":false}" ]' _ "$RS7"
+check "register-scan: o codigo invalido nao gravou scan" test "$(rest GET 'scan_events?ip_hash=eq.ci-scan-inv&select=id')" = "[]"
+# Localizacao precisa pelo token (uso unico) e aviso de localizacao.
+LOC_BODY="{\"action\":\"location\",\"scan_token\":\"$TOKEN_SCAN\",\"lat\":-23.5614,\"lng\":-46.6559,\"accuracy_m\":12}"
+RL1="$(ssr_call register-scan "$LOC_BODY")"
+check "register-scan (location): token valido atualiza o scan" test "$RL1" = '{"updated":true}'
+check "register-scan (location): o scan passou a gps com as coordenadas e a margem" \
+  bash -c 'printf "%s" "$1" | grep -q "\"geo_method\":\"gps\"" && printf "%s" "$1" | grep -q "\"accuracy_m\":12"' _ "$(rest GET 'scan_events?ip_hash=eq.ci-scan-1&select=geo_method,accuracy_m,lat,lng')"
+RL2="$(ssr_call register-scan "$LOC_BODY")"
+check "register-scan (location): o token e de uso unico (a segunda vez nao tem efeito)" test "$RL2" = '{"updated":false}'
+LOC_MAIL=0
+for _ in $(seq 1 15); do
+  if grep -qF "[email:log] assunto=Quem achou o Paçoca enviou a localização" "$LOG_FILE"; then LOC_MAIL=1; break; fi
+  sleep 1
+done
+check "register-scan (location): o aviso de localizacao saiu (driver log)" test "$LOC_MAIL" = "1"
+RL3="$(ssr_call register-scan '{"action":"location","scan_token":"0000000000000000000000000000000000000000000000000000000000000000","lat":-23.5,"lng":-46.6,"accuracy_m":10}')"
+check "register-scan (location): token inventado: 200 sem efeito" test "$RL3" = '{"updated":false}'
+# Dono logado: nada gravado, nenhum aviso.
+OWNER_LOGIN="$(curl -s -X POST "$API_URL/auth/v1/token?grant_type=password" -H "apikey: $ANON_KEY" -H "Content-Type: application/json" \
+  -d '{"email":"tutor.a@faro.test","password":"TesteSenha123!"}')"
+OWNER_TOKEN="$(printf '%s' "$OWNER_LOGIN" | grep -oE '"access_token":"[^"]+"' | head -1 | cut -d'"' -f4)"
+check "login da Ana (dona do Paçoca no seed)" test -n "$OWNER_TOKEN"
+RS8="$(ssr_call register-scan "{\"code\":\"$CODE_AS\",\"ip_hash\":\"ci-scan-owner\",\"user_jwt\":\"$OWNER_TOKEN\"}")"
+check "register-scan: o dono logado recebe owner true" test "$RS8" = '{"owner":true}'
+check "register-scan: o dono logado nao gera scan" test "$(rest GET 'scan_events?ip_hash=eq.ci-scan-owner&select=id')" = "[]"
+RS9="$(ssr_call register-scan "{\"code\":\"$CODE_AS\",\"ip_hash\":\"ci-scan-badjwt\",\"user_jwt\":\"token-invalido\"}")"
+check "register-scan: JWT invalido nao e dono (o scan e gravado)" has "$RS9" '"owner":false'
+RR="$(ssr_call register-scan '{"action":"resend"}')"
+check "register-scan (resend): responde {sent, failed} sem erro" bash -c 'printf "%s" "$1" | grep -qE "^\{\"sent\":[0-9]+,\"failed\":[0-9]+\}$"' _ "$RR"
+rest DELETE 'scan_events?ip_hash=like.ci-scan-*' > /dev/null
+rest DELETE 'scan_events?ip_hash=like.ci-resolve-*' > /dev/null
+check "limpeza: os scans de teste do CI foram removidos (o seed volta a ter so os 3 do Paçoca)" \
+  test "$(rest GET 'scan_events?select=id' | grep -o '"id"' | wc -l)" = "3"
+
+# --- activate_tag pela API: o PIN de desenvolvimento do seed, o contador que sobrevive ao erro e a corrida ---
+act_a() { # act_a <json do corpo>  (RPC activate_tag como a Ana)
+  curl -s -X POST "$API_URL/rest/v1/rpc/activate_tag" -H "apikey: $ANON_KEY" -H "Authorization: Bearer $OWNER_TOKEN" \
+    -H "Content-Type: application/json" -d "$1"
+}
+MEL_ID="00000000-0000-0000-0000-0000000a0002"
+AC="$(curl -s -o /dev/null -w '%{http_code}' -X POST "$API_URL/rest/v1/rpc/activate_tag" -H "apikey: $ANON_KEY" -H "Authorization: Bearer $ANON_KEY" \
+  -H "Content-Type: application/json" -d "{\"p_code\":\"$CODE_AV3\",\"p_pin\":\"$PIN_AV3\",\"p_pet_id\":\"$MEL_ID\"}")"
+check "anon chamando activate_tag recebe 401 ou 403 [$AC]" bash -c '[ "$1" = "401" ] || [ "$1" = "403" ]' _ "$AC"
+R="$(act_a "{\"p_code\":\"$CODE_AV2\",\"p_pin\":\"000000\",\"p_pet_id\":\"$MEL_ID\"}")"
+check "activate_tag: PIN errado devolve {ok:false, error:wrong_pin} (sem excecao)" has "$R" '"error": "wrong_pin"'
+check "activate_tag: depois do wrong_pin a tentativa FICOU gravada (a contagem sobrevive ao retorno)" \
+  has "$(rest GET "tag_pin_attempts?tag_code=eq.$CODE_AV2&select=fail_count")" '"fail_count":1'
+R="$(act_a "{\"p_code\":\"$CODE_AV2\",\"p_pin\":\"$PIN_AV2\",\"p_pet_id\":\"00000000-0000-0000-0000-0000000a0099\"}")"
+check "activate_tag: pet que nao e da conta: pet_not_found (antes do PIN)" has "$R" '"error": "pet_not_found"'
+R="$(act_a "{\"p_code\":\"$NONEXISTENT\",\"p_pin\":\"$PIN_AV2\",\"p_pet_id\":\"$MEL_ID\"}")"
+check "activate_tag: codigo inexistente: tag_unavailable" has "$R" '"error": "tag_unavailable"'
+R="$(act_a "{\"p_code\":\"$CODE_BL\",\"p_pin\":\"$PIN_AV2\",\"p_pet_id\":\"$MEL_ID\"}")"
+check "activate_tag: tag bloqueada: a mesma resposta (tag_unavailable)" has "$R" '"error": "tag_unavailable"'
+
+# Corrida: quatro ativacoes simultaneas da MESMA tag com o PIN certo: exatamente uma vence.
+RACE_BODY="{\"p_code\":\"$CODE_AV3\",\"p_pin\":\"$PIN_AV3\",\"p_pet_id\":\"$MEL_ID\"}"
+rm -f /tmp/race-*.out
+RACE_PIDS=()
+for i in 1 2 3 4; do
+  act_a "$RACE_BODY" > "/tmp/race-$i.out" &
+  RACE_PIDS+=("$!")
+done
+wait "${RACE_PIDS[@]}"
+RACE_ALL="$(for i in 1 2 3 4; do cat "/tmp/race-$i.out"; echo; done)"
+RACE_OK="$(printf '%s\n' "$RACE_ALL" | grep -cE '"ok": ?true' || true)"
+RACE_UNAV="$(printf '%s\n' "$RACE_ALL" | grep -c '"error": "tag_unavailable"' || true)"
+echo "corrida de 4 ativacoes: $RACE_OK com sucesso, $RACE_UNAV tag_unavailable"
+check "corrida: exatamente UMA das 4 ativacoes simultaneas vence" test "$RACE_OK" = "1"
+check "corrida: as outras 3 recebem tag_unavailable" test "$RACE_UNAV" = "3"
+check "corrida: a tag tem um unico vinculo ativo" test "$(rest GET "tag_assignments?tag_code=eq.$CODE_AV3&ended_at=is.null&select=id" | grep -o '"id"' | wc -l)" = "1"
+check "corrida: a tag ficou assigned" seed_status_is available3 assigned
+R="$(act_a "{\"p_code\":\"$CODE_AV2\",\"p_pin\":\"$PIN_AV2\",\"p_pet_id\":\"$MEL_ID\"}")"
+check "activate_tag: o PIN de desenvolvimento do segundo codigo confere (a Mel ja tem tag: pet_has_tag, depois do PIN)" has "$R" '"error": "pet_has_tag"'
+# Limpeza: devolve o seed ao estado de antes (vinculo da Mel encerrado, tag available, tentativas zeradas).
+NOW_ISO="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+rest PATCH "tag_assignments?tag_code=eq.$CODE_AV3&ended_at=is.null" "{\"ended_at\":\"$NOW_ISO\",\"end_reason\":\"admin\"}" > /dev/null
+rest PATCH "tag_codes?code=eq.$CODE_AV3" '{"status":"available","pin_fail_count_24h":0,"pin_fail_window_start":null,"pin_locked_until":null}' > /dev/null
+rest PATCH "tag_codes?code=eq.$CODE_AV2" '{"pin_fail_count_24h":0,"pin_fail_window_start":null,"pin_locked_until":null}' > /dev/null
+rest DELETE "tag_pin_attempts?tag_code=in.($CODE_AV2,$CODE_AV3)" > /dev/null
+check "limpeza: available3 voltou a available" seed_status_is available3 available
+check "limpeza: nenhum vinculo ativo restou para a Mel" test "$(rest GET "tag_assignments?pet_id=eq.$MEL_ID&ended_at=is.null&select=id")" = "[]"
 
 echo "== T099: guard:ip:m (60 chamadas por minuto por IP) =="
 FLOOD=0
