@@ -13,4 +13,9 @@ export const ACCOUNT_ROUTES: Routes = [
     data: { hub: true },
     title: 'Conta — Faro',
   },
+  {
+    path: 'privacidade',
+    loadComponent: () => import('./privacy/privacy').then((m) => m.Privacy),
+    title: 'Privacidade — Faro',
+  },
 ];
