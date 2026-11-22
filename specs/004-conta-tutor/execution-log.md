@@ -110,3 +110,9 @@ Kong). Detalhes nas seções acima.
    `contracts/auth-config.contract.md`. T003 marcada.
 4. **T021**: aceita com a prova por `POST` e testes de `handleOptions`. Ressalva: no ambiente hospedado o
    preflight precisa ser conferido no preview. Marcada.
+
+## Estado final
+
+Run verde 45032898592 (commit ec9a130): pgTAP 9 arquivos e 213 asserções, deno 46 testes, script de CI 19 PASS e
+0 FAIL, job `app` 48 arquivos e 238 testes. Marcadas todas as tarefas BE/QA de T001 a T021 (menos as `[FE]`
+T005 e T006).

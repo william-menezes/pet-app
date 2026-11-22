@@ -141,7 +141,7 @@ função que não precisam de banco podem rodar localmente.
   `ALLOWED_ORIGINS`, `SITE_URL`, com um comentário de uma linha cada e os valores de exemplo de
   `quickstart.md` §1 (nenhum segredo real). **Feito quando**: o arquivo lista as oito e
   `git check-ignore supabase/.env.local` confirma que o arquivo real é ignorado.
-- [ ] T003 [BE] Ajustar `supabase/config.toml` exatamente como em
+- [x] T003 [BE] Ajustar `supabase/config.toml` exatamente como em
   `contracts/auth-config.contract.md` ("valores exigidos"), **sem** as seções de modelo de e-mail
   (T004): remover a linha `enable_confirmations` de `[auth]`; definir `minimum_password_length`,
   `password_requirements`, `[auth.rate_limit]`, `[auth.email]` e `[auth.sms]`. Se a CLI recusar o
@@ -194,16 +194,16 @@ navegação do frontend.
   Motivo em `research.md` R13. **Feito quando**: `supabase db reset` passa e
   `select has_function_privilege('anon','public.log_auth_event(public.evento_auth_enum,uuid,text,text,jsonb)','EXECUTE');`
   devolve `false`.
-- [ ] T009 [P] [QA] Criar `supabase/tests/funcoes_auth_grants.test.sql` com os quatro testes do
+- [x] T009 [P] [QA] Criar `supabase/tests/funcoes_auth_grants.test.sql` com os quatro testes do
   bloco "`funcoes_auth_grants.test.sql`" de `contracts/account.rpc.md`. **Feito quando**:
   `supabase test db` passa, incluindo os três arquivos da `001` sem edição.
-- [ ] T010 [BE] Criar `supabase/migrations/0010_perfis_conta.sql` conforme `data-model.md` §1:
+- [x] T010 [BE] Criar `supabase/migrations/0010_perfis_conta.sql` conforme `data-model.md` §1:
   5 colunas novas, os 2 `CHECK` de formato, as 3 restrições nomeadas, o bloco de privilégios
   (copiar os 4 comandos) e o gatilho `perfis_set_updated_at`. Não alterar as políticas da `001`.
   **Feito quando**: `supabase db reset` passa;
   `select has_column_privilege('authenticated','public.perfis','celular','UPDATE');` devolve
   `false` e o mesmo para `nome` devolve `true`.
-- [ ] T011 [P] [QA] Criar `supabase/tests/rls_perfis_conta.test.sql` cobrindo **todas** as linhas
+- [x] T011 [P] [QA] Criar `supabase/tests/rls_perfis_conta.test.sql` cobrindo **todas** as linhas
   de `perfis` da matriz de `contracts/rls-expectations.md` (cada "nega" de coluna espera o erro
   `42501`), incluindo o teste de segurança nº 3 ("não se autoconfirma") e o nº 4 ("não escala
   papel"). **Feito quando**: `supabase test db` passa.
@@ -214,7 +214,7 @@ navegação do frontend.
   (passos 1 a 6). **Feito quando**: `supabase db reset` passa e, como `service_role`,
   `select public.rate_limit_check('[{"bucket":"t","key":"k","max":1,"window":60}]'::jsonb, true);`
   devolve `allowed = true` na primeira chamada e `allowed = false` na segunda.
-- [ ] T013 [P] [QA] Criar `supabase/tests/rate_limit_events.test.sql` com os sete testes de
+- [x] T013 [P] [QA] Criar `supabase/tests/rate_limit_events.test.sql` com os sete testes de
   `contracts/rate-limit.rpc.md`. **Feito quando**: `supabase test db` passa.
 - [x] T014 [BE] Criar `supabase/migrations/0012_funcoes_conta.sql` com `CREATE OR REPLACE FUNCTION
   public.handle_new_user()` conforme `contracts/account.rpc.md` (tabela de metadados, regra do
@@ -231,7 +231,7 @@ navegação do frontend.
   com os `REVOKE`/`GRANT` de `data-model.md` §5. **Feito quando**: `supabase db reset` passa e
   `select has_function_privilege('authenticated','public.account_auth_facts(uuid)','EXECUTE');`
   devolve `false`.
-- [ ] T016 [P] [QA] Criar `supabase/tests/funcoes_conta.test.sql` com os nove testes do bloco
+- [x] T016 [P] [QA] Criar `supabase/tests/funcoes_conta.test.sql` com os nove testes do bloco
   "`funcoes_conta.test.sql`" de `contracts/account.rpc.md`. **Feito quando**: `supabase test db` passa.
 - [x] T017 [BE] Criar `supabase/migrations/0013_auditoria_auth_users.sql`: função
   `public.audit_auth_user_changes()` e gatilho `on_auth_user_updated`
@@ -239,7 +239,7 @@ navegação do frontend.
   conforme `contracts/account.rpc.md`, com o corpo dentro de `EXCEPTION WHEN OTHERS` e
   `RETURN NEW` sempre. **Feito quando**: `supabase db reset` passa e um login pelo app (ou pelo
   `curl` de `quickstart.md` §6) continua funcionando.
-- [ ] T018 [P] [QA] Criar `supabase/tests/auditoria_auth_users.test.sql` com os cinco testes do
+- [x] T018 [P] [QA] Criar `supabase/tests/auditoria_auth_users.test.sql` com os cinco testes do
   bloco correspondente de `contracts/account.rpc.md`. **Feito quando**: `supabase test db` passa.
 
 ### Edge Functions: módulos compartilhados
@@ -253,7 +253,7 @@ navegação do frontend.
   (vetor HMAC-SHA256 da RFC 4231, caso 2: chave `Jefe`, dado `what do ya want for nothing?`,
   resultado `5bdcc146bf60754e6a042426089575c75a003f089d2739839dec58b964ec3843`; e as duas funções
   de entrada de hash). **Feito quando**: `deno test supabase/functions/_shared/hash.test.ts` passa.
-- [ ] T021 [BE] Em `supabase/functions/login-guard/index.ts`, tratar `OPTIONS` e acrescentar os
+- [x] T021 [BE] Em `supabase/functions/login-guard/index.ts`, tratar `OPTIONS` e acrescentar os
   cabeçalhos CORS em **todas** as respostas usando `handleOptions` e `corsHeaders` de
   `_shared/http.ts`. Não mudar a lógica de decisão nem os corpos das respostas. **Feito quando**:
   o `curl -X OPTIONS` de `contracts/shared-edge.contract.md` devolve 204 (ou 200) com
