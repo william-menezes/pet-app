@@ -223,3 +223,69 @@ cumprir o "Feito quando" da T028 e quebra toda recarga de página.
   sessão válida em `localStorage` e em `sessionStorage` permanece em `/app`; conta sem aceite vai para
   `/auth/termos?returnUrl=%2Fapp`; sem sessão vai ao login; `/` sem sessão não faz nenhum pedido a `*.supabase.co`.
 - T028 marcada. Continua não provado com os usuários reais do seed (só com sessão simulada).
+
+## Frontend — Phase 3 (T031 a T037, telas da US1)
+
+Execução de 2026-11-22 pelo subagente `frontend-angular`. Commits: T031 `e3729bd`, T032 `871745c`, T037 `2549573`,
+T033 a T036 `a4981a0`. As `[QA]` T038 a T040 ficam para a execução com Supabase local e coletor de e-mail.
+
+### Desvios, decisões e interpretações
+
+- **429 no cadastro (T031)**: o contrato diz "429 ⇒ `rate_limited`", e `auth-config.contract.md` diz que o 429 de reenvio
+  (e-mail não confirmado) é sucesso uniforme. Resolvi pelo código do erro: `over_email_send_rate_limit` ⇒ `{ ok: true }`;
+  qualquer outro 429 ⇒ `rate_limited`. 422 `user_already_exists` ⇒ `{ ok: true }`. Se o GoTrue não mandar `code` no 429,
+  cai em `rate_limited`: confirmar no QA com o stack local.
+- **`confirmEmail` entrega a sessão ao `AuthStore` (T031/T036)**: o cliente do Supabase guarda a sessão do `verifyOtp`, mas o
+  `AuthStore` só sabe dela se alguém avisar (o `onAuthStateChange` só é assinado em `restoreSession()`, que o bootstrap
+  chama apenas quando já há chave gravada). Sem isso o `authGuard` de `/auth/celular` e de `/app` mandaria a pessoa recém
+  confirmada de volta às boas-vindas. `RegistrationService.confirmEmail` faz `authStore.setSession(data.session)` (arquivo
+  novo, em `core/auth/`); o papel não é gravado (o `PostAuthNavigator` usa `account.papel`).
+- **Confirmar e-mail em espera (T035)**: sem e-mail no estado do roteador, a contagem **não** inicia (só depois de um
+  reenvio); o contrato só manda iniciar em 60 s quando há e-mail. Para perceber a sessão aberta em outra aba, a tela chama
+  `AuthService.restoreSession()` ao abrir no estado de espera (assina o `onAuthStateChange`; há a ressalva de assinar duas
+  vezes se o bootstrap já tinha assinado, o que só acontece com chave de sessão gravada e sessão inválida). **Não verificado
+  com navegador e Supabase reais**: no e2e só há prova de que `restoreSession` é chamado (unitário) e de que o efeito chama
+  `PostAuthNavigator.go()` quando o store ganha a sessão.
+- **Textos que o contrato não traz** (escritos por mim, a confirmar pelo William): mensagens de erro por campo do cadastro
+  ("Informe seu nome.", "Use entre 2 e 80 caracteres.", "Informe seu e-mail.", "Informe um e-mail válido.", "Informe seu
+  celular.", "Informe um celular com DDD e o 9 na frente, por exemplo (11) 98765-4421.", "Use uma senha com pelo menos 8
+  caracteres.", "Use no máximo 72 caracteres.", "Para criar a conta, aceite os Termos e a Política de privacidade."); o aviso
+  geral do cadastro (`signup-error`: `weak_password` usa o texto do contrato de recuperação de senha; `rate_limited` e
+  `network` reutilizam os textos do login; `invalid`: "Confira os campos destacados e tente de novo."); no modo sem e-mail,
+  "Informe o e-mail do seu cadastro e enviamos um novo link de confirmação."; erro de rede ao confirmar: o texto do login.
+- **`data-testid` fora da tabela do contrato**: `confirm-email-error` (aviso de rede ao confirmar), `signup-*-error` por campo,
+  `welcome-photo`, `login-back`, `legal-*`. Úteis aos testes; nenhum muda os ids do contrato.
+- **Botão do Google e divisor "ou" fora do cadastro**: o Google entra na T061; sem ele o "ou" não teria o que separar, então
+  também não entrou.
+- **Ícone de envelope**: não existe em `shared/icons/faro-icons.ts` (compartilhado, fora do meu escopo). Criei
+  `features/auth/shared/status-badge.ts` (círculo de 56 px) com `provideIcons` local (`Envelope` do Boxicons + todos os do
+  Faro: o provedor de componente substitui o conjunto global). Avaliar mover o envelope para `faro-icons.ts`.
+- **Foto das boas-vindas**: `public/photos/boas-vindas.jpg` não existe. O `<img>` fica invisível até carregar e some se o
+  arquivo falhar, então hoje só se vê o fundo `bg-photo`. Quando o William colocar o arquivo, aparece sem mexer no código.
+- **`z-button` com `[disabled]`**: no ZardUI do repo, o host sobrescreve o atributo `disabled`; só `[zDisabled]` ou `[zLoading]`
+  desabilitam de verdade. Usei `[zDisabled]` nas telas novas. O login atual usa `[disabled]` (herdado; só `zLoading` o
+  protege durante o envio).
+- **Lint de i18n**: `back`, `backLink` e `form` viram `[back]="'back'"`, `[backLink]="'…'"` e `[attr.form]="'signup-form'"` para
+  não pedir `i18n-<atributo>` (são valores técnicos).
+- **Rota `/auth` (T033)**: o índice agora é a boas-vindas com `anonGuard`; o redirecionamento provisório para o login saiu.
+  Por isso o `authGuard` sem a marca de "já entrou" manda para `/auth?returnUrl=…`; os três e2e de
+  `account-foundation.spec.ts` que esperavam o login nessa situação foram atualizados (esperam as boas-vindas) e ganhou um
+  teste da marca (`faro.returning`) ⇒ login com `reason=session_expired`.
+- **Botão Voltar no login (T037)** preserva o `returnUrl` (a tarefa só diz "para `/auth`"); fica escondido em `xl`, onde a
+  referência não tem o botão (o painel de marca ocupa a esquerda).
+- **Legal (T032)**: componente de modelo `features/legal/legal-page/` compartilhado pelas duas páginas; build gera
+  `dist/faro/browser/legal/{termos,privacidade}/index.html`.
+
+### Verificação
+
+- `npm run lint`: passa. `npm test -- --watch=false`: **61 arquivos, 407 testes** passam (antes da fase: 56 e 345).
+- `npm run build:stats`: passa, **pacote inicial 408,81 kB** (110,23 kB transferidos; antes 400,28 kB; orçamento 500 kB).
+  `npm run check:ui` e `npm run check:bundle`: ok (a página pública não carrega o app autenticado).
+- E2E, backend 100% simulado (`e2e/signup-ui.spec.ts`, 11 testes, e `account-foundation.spec.ts`, 15 testes): sem rolagem
+  horizontal em 320, 390, 768 e 1440 px nas boas-vindas, no cadastro, na confirmação (espera e link) e na página legal;
+  boas-vindas preservam `returnUrl`; cadastro com erros não envia; cadastro envia `name`, `phone` E.164, `terms_version`,
+  `return_to` e `return_to_at`, vai a `/auth/confirmar-email` sem e-mail nem senha na URL; reenvio sem estado; link não
+  chama `verifyOtp` ao carregar, o clique chama uma vez e segue para `/auth/celular`; link inválido mostra o estado e os
+  dois caminhos. Nenhuma requisição chegou ao projeto hospedado (`blocked` vazio).
+- **Não verificado**: o fluxo com o Supabase local e o coletor de e-mail (T039), a prova contra enumeração (T040) e o avanço
+  automático por sessão em outra aba.
