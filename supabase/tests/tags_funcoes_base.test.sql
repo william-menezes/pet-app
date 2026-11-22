@@ -53,7 +53,7 @@ SELECT is(public.rate_limit_hit('teste_limite', 'chave-b', 30, 60), false, 'outr
 SELECT is(public.rate_limit_hit('outro_escopo', 'chave-a', 30, 60), false, 'outro escopo tem o proprio contador');
 
 -- A janela e fixa e alinhada ao multiplo de p_window_seconds desde a epoca.
-DO $
+DO $$
 BEGIN
   PERFORM public.rate_limit_hit('teste_janela', 'k60', 5, 60);
   PERFORM public.rate_limit_hit('teste_janela', 'k900', 5, 900);
