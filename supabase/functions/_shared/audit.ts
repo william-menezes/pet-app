@@ -4,10 +4,14 @@
  * (exceto onde o contrato da funcao disser o contrario).
  * `detalhe` e minimo: proibido e-mail, telefone, codigo, link, senha e IP.
  */
-import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+/** Parte do cliente Supabase que a auditoria usa (estrutural: os testes nao precisam do supabase-js). */
+export interface RpcClient {
+  rpc(fn: string, args?: Record<string, unknown>): PromiseLike<{ data?: unknown; error: unknown }>;
+}
 
 export async function logEvent(
-  svc: SupabaseClient,
+  svc: RpcClient,
   evento: string,
   ator: string | null,
   ipHash: string,

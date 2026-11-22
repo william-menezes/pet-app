@@ -1,6 +1,5 @@
 import { assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
-import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { requireRecentAuth } from "./reauth.ts";
+import { type ReauthPasswordClient, type ReauthService, requireRecentAuth } from "./reauth.ts";
 import type { FaroEnv } from "./env.ts";
 
 const ENV = {} as FaroEnv;
@@ -15,7 +14,7 @@ interface Calls {
 type LimitReply = { data: unknown; error: unknown } | "throw";
 
 /** Servico falso: `limit` define a resposta do rate_limit_check; as demais rpc (auditoria) sempre dao certo. */
-function fakeSvc(calls: Calls, limit: () => LimitReply): SupabaseClient {
+function fakeSvc(calls: Calls, limit: () => LimitReply): ReauthService {
   return {
     rpc: (fn: string, args: Record<string, unknown>) => {
       calls.rpc.push({ fn, args });
@@ -34,10 +33,10 @@ function fakeSvc(calls: Calls, limit: () => LimitReply): SupabaseClient {
         },
       },
     },
-  } as unknown as SupabaseClient;
+  } as unknown as ReauthService;
 }
 
-function fakeAnon(ok: boolean, seen: { password?: string } = {}): () => SupabaseClient {
+function fakeAnon(ok: boolean, seen: { password?: string } = {}): () => ReauthPasswordClient {
   return () =>
     ({
       auth: {
@@ -50,13 +49,13 @@ function fakeAnon(ok: boolean, seen: { password?: string } = {}): () => Supabase
           );
         },
       },
-    }) as unknown as SupabaseClient;
+    }) as unknown as ReauthPasswordClient;
 }
 
 const allow = (): LimitReply => ({ data: { allowed: true, denied_bucket: null, retry_after_seconds: 0 }, error: null });
 const newCalls = (): Calls => ({ rpc: [], signOut: [] });
 
-function base(svc: SupabaseClient, over: Record<string, unknown> = {}) {
+function base(svc: ReauthService, over: Record<string, unknown> = {}) {
   return {
     env: ENV,
     svc,
