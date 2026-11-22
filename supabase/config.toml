@@ -18,7 +18,8 @@ major_version = 15
 enabled = true
 port = 54323
 
-[inbucket]
+# Coletor de e-mails local (CLI >= 3.x: `local_smtp`, antes `inbucket`).
+[local_smtp]
 enabled = true
 port = 54324
 
@@ -27,22 +28,17 @@ enabled = true
 
 [auth]
 enabled = true
-port = 54321
 site_url = "http://localhost:4200"
 additional_redirect_urls = ["http://localhost:4200/auth/callback"]
 jwt_expiry = 3600
 
-# E-mail + senha com confirmação obrigatória (FR-024).
-# em local dev, confirmação é auto-confirmada para facilitar testes; setar enable_confirmations=true em staging/prod.
-enable_confirmations = false    # dev: false | staging/prod: true
-
 # Rate-limit nativo do GoTrue — camada ampla (FR-018, defesa em duas camadas).
 # A segunda camada é a tabela auth_login_attempts + Edge login-guard.
+# Nomes válidos na CLI 3.x: email_sent (e-mails por hora), token_refresh (por 5 min, por IP).
 [auth.rate_limit]
-# Ajuste conforme a política do GoTrue disponível na versão usada.
 # Os valores abaixo são defaults conservadores para dev/staging.
-email_sent_per_hour = 10
-token_refresh_per_hour = 30
+email_sent = 10
+token_refresh = 30
 
 [auth.email]
 enable_signup = true
@@ -61,6 +57,6 @@ redirect_uri = "http://localhost:54321/auth/v1/callback"
 [analytics]
 enabled = false
 
-[functions]
-# Edge Functions servidas localmente em supabase functions serve
+# Edge Functions: verify_jwt é configurado por função (a chave global não existe mais).
+[functions.login-guard]
 verify_jwt = true

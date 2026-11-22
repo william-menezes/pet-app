@@ -18,6 +18,11 @@ BEGIN;
 
 SELECT plan(14);
 
+-- Schema de apoio do teste: criado dentro da transação (some no ROLLBACK).
+-- anon e authenticated precisam de USAGE para chamar tests.* depois de trocar de papel.
+CREATE SCHEMA IF NOT EXISTS tests;
+GRANT USAGE ON SCHEMA tests TO anon, authenticated;
+
 -- ─────────────────────────────────────────
 -- Helpers (replicados do rls_perfis.test.sql para independência)
 -- ─────────────────────────────────────────
@@ -41,6 +46,13 @@ AS $$
     set_config('request.jwt.claim.sub', '', true),
     set_config('role', 'anon', true);
 $$;
+
+-- Linhas-semente (como dono das tabelas, antes de trocar de papel): sem elas, "zero linhas"
+-- poderia ser só tabela vazia e o teste de leitura negada não provaria nada.
+INSERT INTO public.auth_audit_log(evento, ip_hash, user_agent, detalhe)
+VALUES ('login_sucesso', 'hash_semente', 'ua', '{}');
+INSERT INTO public.auth_login_attempts(identity_hash, ip_hash, sucesso)
+VALUES ('test_semente', 'test_ip_semente', false);
 
 -- ─────────────────────────────────────────
 -- Snapshot de minimização (guardião de schema — FR-021)
@@ -84,9 +96,9 @@ SELECT has_column('public', 'auth_audit_log', 'detalhe',   'auth_audit_log tem d
 
 SELECT tests.set_anon();
 
-SELECT throws_ok(
-  $$ SELECT * FROM public.auth_audit_log LIMIT 1 $$,
-  'anon não pode SELECT em auth_audit_log'
+SELECT is_empty(
+  $$ SELECT * FROM public.auth_audit_log $$,
+  'anon não lê nenhuma linha de auth_audit_log'
 );
 
 SELECT throws_ok(
@@ -94,6 +106,7 @@ SELECT throws_ok(
     INSERT INTO public.auth_audit_log(evento, ip_hash, user_agent, detalhe)
     VALUES ('login_sucesso', 'hash_fake', 'ua', '{}')
   $$,
+  '42501', NULL,
   'anon não pode INSERT em auth_audit_log'
 );
 
@@ -103,9 +116,9 @@ SELECT throws_ok(
 
 SELECT tests.set_auth_uid('00000000-0000-0000-0000-000000000001'); -- tutor A
 
-SELECT throws_ok(
-  $$ SELECT * FROM public.auth_audit_log LIMIT 1 $$,
-  'tutor (authenticated, não-admin) não pode SELECT em auth_audit_log'
+SELECT is_empty(
+  $$ SELECT * FROM public.auth_audit_log $$,
+  'tutor (authenticated, não-admin) não lê nenhuma linha de auth_audit_log'
 );
 
 SELECT throws_ok(
@@ -113,6 +126,7 @@ SELECT throws_ok(
     INSERT INTO public.auth_audit_log(evento, ip_hash, user_agent, detalhe)
     VALUES ('login_sucesso', 'hash_fake', 'ua', '{}')
   $$,
+  '42501', NULL,
   'tutor não pode INSERT em auth_audit_log (somente service_role via log_auth_event)'
 );
 
@@ -133,9 +147,9 @@ SELECT lives_ok(
 
 SELECT tests.set_auth_uid('00000000-0000-0000-0000-000000000003'); -- até admin é negado
 
-SELECT throws_ok(
-  $$ SELECT * FROM public.auth_login_attempts LIMIT 1 $$,
-  'nem o admin pode SELECT em auth_login_attempts (deny-by-default total)'
+SELECT is_empty(
+  $$ SELECT * FROM public.auth_login_attempts $$,
+  'nem o admin lê nenhuma linha de auth_login_attempts (deny-by-default total)'
 );
 
 SELECT finish();
