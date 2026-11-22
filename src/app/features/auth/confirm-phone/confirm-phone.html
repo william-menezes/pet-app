@@ -19,9 +19,7 @@
         @case ('load_error') {}
         @case ('ended') {
           <p class="mt-2.5 text-base leading-[1.45] text-text">
-            <span i18n>O código que enviamos para</span>
-            <strong class="font-semibold text-foreground" data-testid="confirm-phone-number">{{ phoneText() }}</strong>
-            <span i18n>não vale mais.</span>
+            <span i18n>O código que enviamos para</span>&ngsp;<strong class="font-semibold whitespace-nowrap text-foreground" data-testid="confirm-phone-number">{{ phoneText() }}</strong>&ngsp;<span i18n>não vale mais.</span>
           </p>
         }
         @case ('unavailable') {
@@ -31,14 +29,12 @@
         }
         @case ('request') {
           <p class="mt-2.5 text-base leading-[1.45] text-text">
-            <span i18n>Peça um código para continuar. Vamos enviar por SMS para</span>
-            <strong class="font-semibold text-foreground" data-testid="confirm-phone-number">{{ phoneText() }}</strong>.
+            <span i18n>Peça um código para continuar. Vamos enviar por SMS para</span>&ngsp;<strong class="font-semibold whitespace-nowrap text-foreground" data-testid="confirm-phone-number">{{ phoneText() }}</strong>.
           </p>
         }
         @default {
           <p class="mt-2.5 text-base leading-[1.45] text-text">
-            <span i18n>Enviamos um código de 6 dígitos por SMS para</span>
-            <strong class="font-semibold text-foreground" data-testid="confirm-phone-number">{{ phoneText() }}</strong>.
+            <span i18n>Enviamos um código de 6 dígitos por SMS para</span>&ngsp;<strong class="font-semibold whitespace-nowrap text-foreground" data-testid="confirm-phone-number">{{ phoneText() }}</strong>.
             <span i18n>É esse número que aparece para quem encontrar seu pet.</span>
           </p>
         }
