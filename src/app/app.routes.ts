@@ -93,8 +93,7 @@ export const routes: Routes = [
         path: 'celular',
         canMatch: [authGuard, termsGuard],
         loadComponent: () =>
-          import('./shared/shells/shell-fallback/shell-fallback').then((m) => m.ShellFallback),
-        data: { home: '/app' },
+          import('./features/auth/phone-entry/phone-entry').then((m) => m.PhoneEntry),
         title: 'Celular — Faro',
       },
       {

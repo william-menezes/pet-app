@@ -1,0 +1,63 @@
+<!-- Informar celular (primeira confirmação). Referência: design/telas-v2/V2-informar-celular*.dc.html; contrato §4. -->
+<app-flow-shell [headline]="headline" [sub]="sub">
+  <div [attr.aria-busy]="sending()">
+    <h1 class="font-display text-[32px] leading-[1.04] font-bold tracking-[-0.03em] text-foreground md:text-[42px]" i18n>
+      Qual é o seu celular?
+    </h1>
+    <p class="mt-2.5 text-base leading-[1.45] text-text" i18n>
+      É por ele que quem achou o seu pet fala com você. Vamos confirmar por SMS.
+    </p>
+  </div>
+
+  <form id="phone-entry-form" class="flex flex-col gap-4" (submit)="$event.preventDefault(); onSend()" novalidate>
+    <div z-field>
+      <label z-field-label for="phone-entry-input" i18n>Celular</label>
+      <input
+        z-input
+        id="phone-entry-input"
+        type="tel"
+        inputmode="numeric"
+        autocomplete="tel-national"
+        [formControl]="phone"
+        aria-required="true"
+        [attr.aria-invalid]="phoneInvalid() ? 'true' : null"
+        [attr.aria-describedby]="phoneInvalid() ? 'phone-entry-error' : 'phone-entry-help'"
+        (input)="onPhoneInput($event)"
+        data-testid="phone-input" />
+      <p z-field-description id="phone-entry-help" class="text-[13px]" i18n>Com DDD. Só números do Brasil.</p>
+    </div>
+  </form>
+
+  <div aria-live="polite" id="phone-entry-error">
+    @if (problemMessage(); as message) {
+      <z-alert zType="danger" zRole="status" [zDescription]="message" data-testid="phone-error" />
+    }
+  </div>
+
+  <app-note icon="info" i18n>Sem celular confirmado, não dá para ativar uma tag.</app-note>
+
+  <button
+    footer
+    type="submit"
+    [attr.form]="'phone-entry-form'"
+    z-button
+    zSize="lg"
+    class="w-full text-lg"
+    [zLoading]="sending()"
+    [zDisabled]="sendDisabled()"
+    data-testid="phone-send"
+    i18n>
+    Enviar código por SMS
+  </button>
+  <button
+    footer
+    type="button"
+    z-button
+    zType="ghost"
+    class="w-full"
+    (click)="skip()"
+    data-testid="phone-skip"
+    i18n>
+    Agora não
+  </button>
+</app-flow-shell>

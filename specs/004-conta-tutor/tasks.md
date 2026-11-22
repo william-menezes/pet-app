@@ -482,7 +482,7 @@ e ver `phone_is_confirmed` verdadeiro; repetir com código errado, vencido, reen
 - [x] T055 [P] [US2] [FE] Criar `src/app/core/account/phone-confirmed.guard.ts` e o `.spec.ts`
   (§2 do contrato). **Feito quando**: o teste cobre confirmado ⇒ `true`, admin ⇒ `true`, não
   confirmado ⇒ `/auth/celular?returnUrl=<rota>`.
-- [ ] T056 [US2] [FE] Criar a tela `src/app/features/auth/phone-entry/` (`phone-entry.ts`,
+- [x] T056 [US2] [FE] Criar a tela `src/app/features/auth/phone-entry/` (`phone-entry.ts`,
   `phone-entry.html`, `phone-entry.spec.ts`) e trocar o `ShellFallback` da rota `/auth/celular`
   por ela. Só o modo **primeira confirmação** (o modo troca é a T086): campo pré-preenchido com o
   número pendente, "Enviar código por SMS", "Agora não" ⇒ `PostAuthNavigator.go({ skipPhone: true })`,
