@@ -475,11 +475,11 @@ e ver `phone_is_confirmed` verdadeiro; repetir com código errado, vencido, reen
 
 ### Frontend
 
-- [ ] T054 [P] [US2] [FE] Criar `src/app/core/account/phone-verification.service.ts` (`status`,
+- [x] T054 [P] [US2] [FE] Criar `src/app/core/account/phone-verification.service.ts` (`status`,
   `start`, `confirm`) e o `.spec.ts` conforme `contracts/frontend-services.contract.md` §3.
   **Feito quando**: o teste mapeia cada código de erro dos dois contratos de Edge, trata resposta
   não-200 como `network` e recarrega a conta depois de `confirm` com sucesso.
-- [ ] T055 [P] [US2] [FE] Criar `src/app/core/account/phone-confirmed.guard.ts` e o `.spec.ts`
+- [x] T055 [P] [US2] [FE] Criar `src/app/core/account/phone-confirmed.guard.ts` e o `.spec.ts`
   (§2 do contrato). **Feito quando**: o teste cobre confirmado ⇒ `true`, admin ⇒ `true`, não
   confirmado ⇒ `/auth/celular?returnUrl=<rota>`.
 - [ ] T056 [US2] [FE] Criar a tela `src/app/features/auth/phone-entry/` (`phone-entry.ts`,
