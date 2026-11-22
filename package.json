@@ -15,6 +15,7 @@
     "check:stack": "node scripts/ui-checks/removed-stack.mjs",
     "check:bundle": "node scripts/ui-checks/public-bundle.mjs",
     "check:boundary": "node scripts/ui-checks/boundary.mjs",
+    "check:headers": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/security/check-headers.mjs",
     "check:ui": "npm run check:tokens && npm run check:stack && npm run check:boundary"
   },
   "private": true,
