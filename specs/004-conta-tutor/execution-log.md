@@ -347,3 +347,51 @@ T033 a T036 `a4981a0`. As `[QA]` T038 a T040 ficam para a execução com Supabas
   dois caminhos. Nenhuma requisição chegou ao projeto hospedado (`blocked` vazio).
 - **Não verificado**: o fluxo com o Supabase local e o coletor de e-mail (T039), a prova contra enumeração (T040) e o avanço
   automático por sessão em outra aba.
+
+---
+
+# Backend e QA — Phases 6 e 7 (T066, T067, T073 a T077)
+
+Execução de 2026-11-22 pelo subagente `backend-supabase`, branch `004-conta-tutor`. Run verde do job `supabase`: 45041533742
+(o job `app` desse run falhou no lint de `zRole`, arquivo do frontend; não é desta fase).
+
+## Entregue
+
+- `0016_conta_privacidade.sql`: `export_my_data()` (`authenticated`) e `delete_account_data(uuid, text, text)` (só `service_role`).
+  Os dois `EXECUTE` de texto constante com `USING` (funções da 003) estão aqui e só aqui.
+- `functions/password-recovery/` (`logic.ts`, `logic.test.ts`, `index.ts`) e `functions/account-delete/` (idem).
+  `config.toml`: `verify_jwt = true` nas duas (a chave anônima é um JWT válido, então o visitante chama a recuperação).
+- `supabase/tests/conta_privacidade.test.sql` (59 asserções) e a seção T066/T067/T076/T077 de `scripts/ci/supabase-checks.sh`.
+
+## Desvios e decisões
+
+- **T075 sem `finish()`**: o `ROLLBACK TO caso` de cada caso (exigido pela tarefa) desfaz também a tabela de resultados do
+  pgTAP, e `finish()` lança `# No tests run!` (exit 3, com "All 59 subtests passed"). O arquivo termina em `ROLLBACK` sem
+  `finish()`; o `pg_prove` confere o plano `1..59` e cada `ok`/`not ok` da saída. Uma falha continuaria vermelha.
+- **T075 com e sem a 003**: cada caso faz `DROP … IF EXISTS` / `CREATE` dos objetos de mentira. No CI a 003 não existe; o
+  ramo "com os objetos reais" só está provado por construção (os `DROP … CASCADE` rodam dentro do `SAVEPOINT`).
+- **`delete_account_data` com `p_user_id` nulo** lança `invalid_user` (acréscimo; o contrato não diz).
+- **Exclusão, fotos**: a remoção desce em subpastas (profundidade 3) e lista em páginas de 100 antes de remover em lotes de
+  100. Bucket inexistente = `404` ou texto "not found" no erro de listagem.
+- **Recuperação**: `captcha_token` é aceito e ignorado. Erro do limitador = nada enviado, mesma resposta. Entrada inválida
+  nem consulta o limitador e é auditada com `permitido = false`.
+- Os limites novos e o repasse do `captcha_token` (Phase 10) não foram feitos.
+
+## Verificação (CI, run 45041533742, job `supabase`)
+
+- pgTAP: 11 arquivos, 388 asserções, `Result: PASS` (eram 10 e 329).
+- `deno test`: 135 testes (eram 105), sem permissões.
+- `scripts/ci/supabase-checks.sh`: 125 PASS, 0 FAIL (eram 71).
+- Provado no stack local: recuperação com e sem conta devolve o mesmo corpo, ambos com piso de 0,6 s e tempos na mesma faixa;
+  4º pedido sem e-mail novo e auditado com `permitido = false`; link do e-mail com `/auth/nova-senha?token_hash=` e
+  `type=recovery`; nenhum e-mail na auditoria nem no log. Exclusão: `confirmation_required`, `reauth_required`,
+  `invalid_password` (usuário e perfil intactos), `rate_limited`, sucesso (usuário e perfil somem, `conta_excluida` com ator
+  nulo), fotos sob `<uid>/` removidas (inclusive subpasta) sem tocar a de outra conta, token antigo 401, e-mail volta a
+  cadastrar.
+
+## Não verificado
+
+- `deletion_unavailable` e `deletion_hook_missing` pela Edge (só pelo pgTAP: não há como criar `tag_assignments` no CI).
+- Conta só com o Google (`reauth_required` com `method: google`): só nos testes unitários de `reauth.ts`.
+- `Allow-Origin` da função (Kong local, mesma ressalva da T021); `EdgeRuntime.waitUntil` só no `functions serve` local.
+- O T075 contra os objetos reais da 003.
