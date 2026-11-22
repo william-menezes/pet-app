@@ -594,12 +594,22 @@ RL="$(curl -s -X POST "$API_URL/auth/v1/token?grant_type=password" -H "apikey: $
   -d "{\"email\":\"$LOGIN_EMAIL\",\"password\":\"SenhaDeTeste12345\"}")"
 RT0="$(printf '%s' "$RL" | grep -oE '"refresh_token":"[^"]+"' | head -1 | cut -d'"' -f4)"
 check "login devolve refresh_token" test -n "$RT0"
-RF1="$(curl -s -w '\n%{http_code}' -X POST "$API_URL/auth/v1/token?grant_type=refresh_token" -H "apikey: $ANON_KEY" -H "Content-Type: application/json" -d "{\"refresh_token\":\"$RT0\"}")"
+refresh() { curl -s -w '
+%{http_code}' -X POST "$API_URL/auth/v1/token?grant_type=refresh_token" -H "apikey: $ANON_KEY" -H "Content-Type: application/json" -d "{\"refresh_token\":\"$1\"}"; }
+RF1="$(refresh "$RT0")"
 check "a primeira renovacao do refresh_token funciona (200)" test "$(http_code "$RF1")" = "200"
-sleep 12
-RF2="$(curl -s -w '\n%{http_code}' -X POST "$API_URL/auth/v1/token?grant_type=refresh_token" -H "apikey: $ANON_KEY" -H "Content-Type: application/json" -d "{\"refresh_token\":\"$RT0\"}")"
-echo "reuso do refresh_token antigo depois do intervalo de 10 s: HTTP $(http_code "$RF2"); $(http_body "$RF2" | grep -oE '"error_code":"[^"]*"' | head -1)"
-check "reuso do refresh_token antigo depois de 10 s e recusado (rotacao ligada)" bash -c '[ "$1" != "200" ]' _ "$(http_code "$RF2")"
+RT1="$(http_body "$RF1" | grep -oE '"refresh_token":"[^"]+"' | head -1 | cut -d'"' -f4)"
+RF2="$(refresh "$RT1")"
+check "a segunda renovacao (com o token novo) funciona (200)" test "$(http_code "$RF2")" = "200"
+# Com rotacao ligada, o token de duas geracoes atras nao e o pai do token ativo: reuso malicioso, recusado.
+RF3="$(refresh "$RT0")"
+echo "reuso do refresh_token de duas geracoes atras: HTTP $(http_code "$RF3"); $(http_body "$RF3" | grep -oE '"error_code":"[^"]*"' | head -1)"
+check "reuso de refresh_token antigo e recusado (rotacao ligada)" bash -c '[ "$1" != "200" ]' _ "$(http_code "$RF3")"
+# Configuracao efetiva do container do Auth (so as chaves pedidas; nenhum segredo e impresso).
+AUTH_C="$(docker ps --format '{{.Names}}' | grep -E '^supabase_auth_' | head -1)"
+AUTH_ENV="$(docker inspect -f '{{range .Config.Env}}{{println .}}{{end}}' "$AUTH_C" 2>/dev/null | grep -E '^GOTRUE_(SECURITY_REFRESH_TOKEN|EXTERNAL_ANONYMOUS|SECURITY_MANUAL|SECURITY_CAPTCHA_ENABLED|SECURITY_CAPTCHA_PROVIDER)' | sed -E 's/(SECRET=).*/<oculto>/')"
+echo "configuracao efetiva do Auth ($AUTH_C):"; printf '%s
+' "$AUTH_ENV"
 
 echo "== T097: endurecimento de base (migration 0017) pela API =="
 AC="$(curl -s -o /dev/null -w '%{http_code}' "$API_URL/rest/v1/perfis?select=id" -H "apikey: $ANON_KEY" -H "Authorization: Bearer $ANON_KEY")"
