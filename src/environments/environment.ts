@@ -5,7 +5,6 @@
  */
 export const environment = {
   production: true,
-  // TODO(SUPABASE): substituir pelos valores do projeto (públicos).
-  supabaseUrl: 'https://YOUR_PROJECT.supabase.co',
-  supabaseAnonKey: 'YOUR_SUPABASE_ANON_KEY',
+  supabaseUrl: 'https://orawzpslqvduwsvmlemv.supabase.co',
+  supabaseAnonKey: 'sb_publishable_x8tQQCSOzBzznvxd9OfBEw_0_VZIL-u',
 };
