@@ -88,3 +88,25 @@ Marcadas: T001, T002, T004, T007, T008, T012, T014, T015, T017, T019, T020. Sem 
 T003 (422 acima), T009, T010, T011, T013, T016, T018 (o arquivo de teste de cada uma passa no CI; o
 `supabase test db` do conjunto está vermelho só por `rls_perfis.test.sql` da 001) e T021 (preflight local é do
 Kong). Detalhes nas seções acima.
+
+## Decisões do William e resolução (2026-11-22, segunda rodada)
+
+1. **`rls_perfis.test.sql` da 001 atualizado ao contrato (opção a).** Nenhuma asserção removida (plano continua
+   em 18). Alterações:
+   - "anon não lê nenhuma linha de perfis (deny-by-default)": antes `is_empty(SELECT * FROM perfis)`; depois
+     `throws_ok(..., '42501', NULL, 'anon não lê perfis (deny-by-default: sem privilégio, 42501)')`.
+   - "admin pode alterar papel de outro usuário (perfis_admin_all)": antes `lives_ok(UPDATE ... SET papel = 'tutor')`;
+     depois `throws_ok(..., '42501', NULL, 'admin não altera papel por UPDATE direto (privilégio de coluna, 42501)')`.
+     A asserção de que o admin **lê** os 3 perfis ficou como estava.
+   - Nenhuma outra asserção quebrou pelo privilégio de coluna (a do "0 linhas" de tutor A sobre o nome de B e a de
+     "tutor não escala papel" seguem iguais).
+2. **Seed corrigido** (extensão da T014): `UPDATE auth.users` com `instance_id` zerado, colunas de token em `''`,
+   `aud`/`role` `authenticated` e `raw_app_meta_data` com provedor `email`, mais `INSERT` em `auth.identities`
+   (uma linha `email` por usuário). Ids, e-mails e senha de teste iguais. Prova no CI: login por senha de
+   tutor.a, tutor.b e admin devolve 200 e `current_user_role` devolve tutor, tutor e admin.
+3. **T003, cadastro repetido**: investigado. O 422 `user_already_exists` ocorre também para usuário confirmado
+   pelo fluxo normal do link (não só o criado pela API de admin), e o repetido de não confirmado dá 429. É
+   comportamento da versão do Auth, sem chave de configuração. Aceito; ressalva registrada em
+   `contracts/auth-config.contract.md`. T003 marcada.
+4. **T021**: aceita com a prova por `POST` e testes de `handleOptions`. Ressalva: no ambiente hospedado o
+   preflight precisa ser conferido no preview. Marcada.

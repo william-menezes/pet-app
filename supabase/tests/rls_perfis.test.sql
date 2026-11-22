@@ -78,7 +78,7 @@ SELECT tests.set_anon();
 
 -- Spec 004 (0010): anon perde todo privilégio em perfis; leitura agora dá 42501 (antes: zero linhas).
 SELECT throws_ok(
-  $ SELECT * FROM public.perfis $,
+  $$ SELECT * FROM public.perfis $$,
   '42501', NULL,
   'anon não lê perfis (deny-by-default: sem privilégio, 42501)'
 );
@@ -200,7 +200,7 @@ SELECT results_eq(
 -- Spec 004 (0010): só "nome" é atualizável por authenticated; promoção de papel é operação controlada
 -- (fora do PostgREST). Antes: lives_ok.
 SELECT throws_ok(
-  $ UPDATE public.perfis SET papel = 'tutor' WHERE id = '00000000-0000-0000-0000-000000000002' $,
+  $$ UPDATE public.perfis SET papel = 'tutor' WHERE id = '00000000-0000-0000-0000-000000000002' $$,
   '42501', NULL,
   'admin não altera papel por UPDATE direto (privilégio de coluna, 42501)'
 );
