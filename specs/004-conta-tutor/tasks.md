@@ -406,69 +406,69 @@ e ver `phone_is_confirmed` verdadeiro; repetir com código errado, vencido, reen
 
 ### Banco
 
-- [ ] T041 [US2] [BE] Criar `supabase/migrations/0014_phone_verifications.sql`: tabela
+- [x] T041 [US2] [BE] Criar `supabase/migrations/0014_phone_verifications.sql`: tabela
   `public.phone_verifications` com **exatamente** as 10 colunas de `data-model.md` §2, os dois
   índices (o único parcial e o de `(user_id, created_at DESC)`), `ENABLE ROW LEVEL SECURITY`, sem
   política, `REVOKE ALL … FROM anon, authenticated`. **Feito quando**: `supabase db reset` passa e
   `select count(*) from information_schema.columns where table_name = 'phone_verifications';`
   devolve `10`.
-- [ ] T042 [US2] [BE] Criar `supabase/migrations/0015_funcoes_celular.sql` com
+- [x] T042 [US2] [BE] Criar `supabase/migrations/0015_funcoes_celular.sql` com
   `phone_is_confirmed(uuid)` (corpo de `data-model.md` §5), `phone_verification_status()`,
   `phone_verification_begin(…)`, `phone_verification_send_failed(uuid)` e
   `phone_verification_active(uuid)` conforme `contracts/phone-verification.rpc.md`, com os
   `REVOKE`/`GRANT` de `data-model.md` §5. **Feito quando**: `supabase db reset` passa e
   `select has_function_privilege('authenticated','public.phone_verification_begin(uuid,text,text,text,integer,integer)','EXECUTE');`
   devolve `false`.
-- [ ] T043 [US2] [BE] No mesmo arquivo `0015_funcoes_celular.sql`, acrescentar
+- [x] T043 [US2] [BE] No mesmo arquivo `0015_funcoes_celular.sql`, acrescentar
   `phone_verification_confirm(uuid, uuid, text, text, text)` seguindo a tabela de 6 linhas de
   `contracts/phone-verification.rpc.md`, com `SELECT … FOR UPDATE` e a auditoria na mesma
   transação. **Feito quando**: `supabase db reset` passa.
-- [ ] T044 [P] [US2] [QA] Criar `supabase/tests/phone_verifications.test.sql` com os testes de
+- [x] T044 [P] [US2] [QA] Criar `supabase/tests/phone_verifications.test.sql` com os testes de
   **privilégios**, de `begin`, de `phone_is_confirmed` (5 casos) e de `phone_verification_status`
   de `contracts/phone-verification.rpc.md`, mais o guardião de esquema do item 5 de
   `contracts/rls-expectations.md` (conjunto exato de colunas). **Feito quando**:
   `supabase test db` passa.
-- [ ] T045 [US2] [QA] No mesmo arquivo, acrescentar os testes de `confirm`: acerto; 4 erros + 5º
+- [x] T045 [US2] [QA] No mesmo arquivo, acrescentar os testes de `confirm`: acerto; 4 erros + 5º
   bloqueia + 6º certo ⇒ `no_active`; vencido; verificação de outra conta; **troca** (o número
   antigo permanece até o acerto); nenhum `detalhe` com dígitos do telefone. **Feito quando**:
   `supabase test db` passa.
 
 ### Edge Functions
 
-- [ ] T046 [P] [US2] [BE] Criar `supabase/functions/_shared/phone.ts` e `phone.test.ts` com a
+- [x] T046 [P] [US2] [BE] Criar `supabase/functions/_shared/phone.ts` e `phone.test.ts` com a
   tabela de casos de `contracts/shared-edge.contract.md`. **Feito quando**:
   `deno test supabase/functions/_shared/phone.test.ts` passa com os 9 casos.
-- [ ] T047 [P] [US2] [BE] Criar `supabase/functions/_shared/otp.ts` (`generateCode`,
+- [x] T047 [P] [US2] [BE] Criar `supabase/functions/_shared/otp.ts` (`generateCode`,
   `resolveCode`) e `otp.test.ts`. **Feito quando**: o teste gera 10.000 códigos, todos `^[0-9]{6}$`,
   e prova que `resolveCode` só devolve o código fixo com `smsDriver = 'stub'` **e** `faroEnv` em
   `local`/`test`.
-- [ ] T048 [P] [US2] [BE] Criar `supabase/functions/_shared/sms/sender.ts` (`SmsSender`,
+- [x] T048 [P] [US2] [BE] Criar `supabase/functions/_shared/sms/sender.ts` (`SmsSender`,
   `resolveSender`, `buildOtpMessage`, drivers `log` e `stub`, e um comentário
   `// TODO(SMS_PROVIDER)` onde entra o driver real) e `sender.test.ts`. **Feito quando**: o teste
   cobre as quatro linhas da tabela de `resolveSender` e o texto **exato** de `buildOtpMessage`.
-- [ ] T049 [US2] [BE] Criar `supabase/functions/_shared/reauth.ts` (`requireRecentAuth`) conforme
+- [x] T049 [US2] [BE] Criar `supabase/functions/_shared/reauth.ts` (`requireRecentAuth`) conforme
   `contracts/shared-edge.contract.md`, recebendo os clientes por parâmetro para poder ser testado,
   e `reauth.test.ts` com clientes falsos. **Feito quando**: o teste cobre: limite atingido ⇒
   `rate_limited`; erro do limitador ⇒ `rate_limited`; conta com senha sem `password` ⇒
   `reauth_required`; senha errada ⇒ registra a falha, audita `reautenticacao_falha` e devolve
   `invalid_password`; senha certa ⇒ `ok` e revoga a sessão criada; conta sem senha com login há 5
   min ⇒ `ok`, há 11 min ⇒ `reauth_required`.
-- [ ] T050 [US2] [BE] Criar `supabase/functions/phone-verify-start/logic.ts` (funções puras:
+- [x] T050 [US2] [BE] Criar `supabase/functions/phone-verify-start/logic.ts` (funções puras:
   escolher o número alvo, decidir se é troca, mapear `denied_bucket` para
   `cooldown`/`rate_limited`/`sms_unavailable`, montar os 6 limites) e `logic.test.ts`.
   **Feito quando**: `deno test supabase/functions/phone-verify-start/` passa, cobrindo os 5 casos
   de número alvo e os 3 mapeamentos.
-- [ ] T051 [US2] [BE] Criar `supabase/functions/phone-verify-start/index.ts` seguindo os **16
+- [x] T051 [US2] [BE] Criar `supabase/functions/phone-verify-start/index.ts` seguindo os **16
   passos, na ordem**, de `contracts/phone-verify-start.edge.md`. **Feito quando**: com
   `supabase functions serve --env-file ./supabase/.env.local` e `SMS_DRIVER=log`, os quatro
   primeiros comandos `fn phone-verify-start …` de `quickstart.md` §6 devolvem as respostas
   indicadas e o código aparece **só** na linha `[sms:log]` do terminal.
-- [ ] T052 [US2] [BE] Criar `supabase/functions/phone-verify-confirm/logic.ts` (validação de
+- [x] T052 [US2] [BE] Criar `supabase/functions/phone-verify-confirm/logic.ts` (validação de
   formato; mapeamento de `status`), `logic.test.ts` e `index.ts` seguindo os 8 passos de
   `contracts/phone-verify-confirm.edge.md`. **Feito quando**: `deno test supabase/functions/phone-verify-confirm/`
   passa e a sequência de `quickstart.md` §6 dá `invalid_format`, 4 × `invalid_code`, `locked`,
   `no_active`.
-- [ ] T053 [US2] [QA] Executar e registrar a tabela "Falha fechada" e o bloco de CORS de
+- [x] T053 [US2] [QA] Executar e registrar a tabela "Falha fechada" e o bloco de CORS de
   `quickstart.md` §6 para as duas funções. **Feito quando**: as cinco linhas da tabela dão o
   resultado esperado e os `OPTIONS` devolvem 204/200; qualquer divergência é relatada, não
   contornada.

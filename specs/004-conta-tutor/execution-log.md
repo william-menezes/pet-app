@@ -119,6 +119,64 @@ T005 e T006).
 
 ---
 
+# Backend e QA — Phase 4 (T041 a T053)
+
+Execução de 2026-11-22 pelo subagente `backend-supabase`, branch `004-conta-tutor`. Run verde final: 45040169923.
+
+## Entregue
+
+- `0014_phone_verifications.sql`: tabela com as 10 colunas, índice único parcial (uma verificação aberta por conta) e
+  índice `(user_id, created_at DESC)`, RLS sem política, `REVOKE ALL` de `anon`/`authenticated`.
+- `0015_funcoes_celular.sql`: `phone_is_confirmed`, `phone_verification_status`, `phone_verification_begin`,
+  `phone_verification_send_failed`, `phone_verification_active`, `phone_verification_confirm`, todas
+  `SECURITY DEFINER` com `search_path = public, pg_temp` e o `GRANT` exato de `data-model.md` §5.
+- `_shared/`: `phone.ts`, `otp.ts`, `sms/sender.ts` (drivers `log` e `stub`; `// TODO(SMS_PROVIDER)` em `REAL_DRIVERS`,
+  vazio), `reauth.ts`, `clients.ts` (acrescentado `anonClient`). Funções `phone-verify-start` e `phone-verify-confirm`
+  (`logic.ts`, `logic.test.ts`, `index.ts`), com `[functions.<nome>] verify_jwt = true` no `config.toml`.
+- `supabase/tests/phone_verifications.test.sql` (116 asserções) e 59 testes `deno` novos (105 no total).
+
+## Desvios e decisões
+
+- **`reauth.ts`**: recebe também `makeAnonClient` (fábrica do cliente que confere a senha) e `now` (relógio, opcional),
+  além dos argumentos do contrato. Os tipos dos clientes são estruturais (`ReauthService`, `ReauthPasswordClient`,
+  `RpcClient` em `audit.ts`): importar o tipo de `esm.sh` fez o `deno test` do CI falhar com "Could not find
+  @types/node" (o Deno do runner enxerga o `package.json` da raiz). `deno check` dos dois `index.ts` passa com o
+  `SupabaseClient` real.
+- **`phone_verification_begin`** faz `SELECT … FOR UPDATE` no perfil antes de tudo, para serializar chamadas
+  simultâneas da mesma conta (o índice único parcial seria o último recurso). Não está no contrato; não muda a saída.
+- **CORS em T053**: o Kong local responde o `OPTIONS` (200, `Allow-Origin: *`) e também acrescenta `Allow-Origin: *` às
+  respostas de `POST`. Então `Allow-Origin: http://localhost:4200` da função não é observável localmente (mesma
+  ressalva da T021). Provas usadas: `OPTIONS` 200 nas três funções, `Allow-Headers` e `Allow-Methods` exatos da função
+  no `POST`, e `http.test.ts` para a regra da origem. No ambiente hospedado, conferir o preflight no preview.
+- **Driver `log` escreve duas linhas** (o texto tem `\n`): o script de CI aceita o registro `[sms:log]` + a linha
+  `@tagfaro.com.br #codigo` como "só o log do driver".
+- **pgTAP**: `phone_is_confirmed` depende do papel da requisição; depois de `set_no_uid`, as `claims` ficam no estado
+  `authenticated` sem `sub` e o teste devolvia `false` (erro do teste, não da função). Os dois testes afetados agora
+  rodam sob `tests.set_service()`.
+- **jsonb no PostgREST**: `detalhe` volta com `": "` (espaço) na leitura por REST; o script confere só `limite_envio`.
+
+## Verificação (CI)
+
+- pgTAP: 10 arquivos, 329 asserções, `Result: PASS` (eram 9 arquivos e 213; `phone_verifications.test.sql` acrescenta 116).
+- `deno test`: 105 testes passam, sem permissões.
+- `scripts/ci/supabase-checks.sh`: 71 PASS, 0 FAIL. Novo trecho T051 a T053 (restarta o `functions serve` seis vezes
+  com ambientes diferentes): 401 com chave anônima, `terms_required`, envio, `cooldown`, `invalid_phone`,
+  `invalid_format` sem gastar tentativa, 4 × `invalid_code` (4, 3, 2, 1) e `locked`, depois `no_active` com o código certo;
+  novo envio e acerto (`perfis.celular` promovido e `phone_is_confirmed` verdadeiro); troca (`reauth_required` com
+  `method`, `invalid_password`, ok com a senha certa, número antigo permanece, `same_number`); `rate_limited` com 5
+  eventos de `sms:account:h` e auditoria `limite_envio`; código só no registro `[sms:log]` e fora das tabelas; as cinco
+  linhas de "Falha fechada"; e o driver `stub` com código fixo em `FARO_ENV=test`.
+
+## Não verificado
+
+- Driver real de SMS (`TODO(SMS_PROVIDER)`): não existe; o envio real não foi exercitado.
+- `Allow-Origin` da função (só o ambiente hospedado).
+- O teto global `sms:global:d` (`sms_unavailable` por volume) só tem a cobertura unitária de `mapDeniedBucket` e do
+  `rate_limit_check`; não há teste de integração com 500 eventos.
+- Corrida real entre dois `begin` simultâneos (o `FOR UPDATE` e o índice único cobrem; não houve teste concorrente).
+
+---
+
 # Frontend — Phases 1 e 2 (T005, T006, T022 a T030)
 
 Execução de 2026-11-22 pelo subagente `frontend-angular`, branch `004-conta-tutor`.
