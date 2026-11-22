@@ -29,11 +29,11 @@ export interface AuthResult {
 
 /** Mensagens PT-BR canônicas (anti-enumeração: nunca ramifica por código do GoTrue). */
 const ERROR_MESSAGES: Record<NonNullable<AuthResult['reason']>, string> = {
-  invalid: 'E-mail ou senha inválidos. Verifique e tente de novo.',
-  unconfirmed: 'Confirme seu e-mail para entrar. Não recebeu o e-mail de confirmação?',
-  rate_limited: 'Muitas tentativas em sequência. Aguarde alguns minutos antes de tentar de novo.',
-  provider_unavailable: 'Login com Google está indisponível agora. Entre com e-mail e senha.',
-  network: 'Não conseguimos conectar. Verifique sua conexão e tente de novo.',
+  invalid: $localize`E-mail ou senha inválidos. Verifique e tente de novo.`,
+  unconfirmed: $localize`Confirme seu e-mail para entrar. Não recebeu o e-mail de confirmação?`,
+  rate_limited: $localize`Muitas tentativas em sequência. Aguarde alguns minutos antes de tentar de novo.`,
+  provider_unavailable: $localize`Login com Google está indisponível agora. Entre com e-mail e senha.`,
+  network: $localize`Não conseguimos conectar. Verifique sua conexão e tente de novo.`,
 };
 
 @Injectable({ providedIn: 'root' })

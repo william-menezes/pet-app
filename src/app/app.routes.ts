@@ -76,66 +76,66 @@ export const routes: Routes = [
         path: 'login',
         canMatch: [anonGuard],
         loadComponent: () => import('./features/auth/login/login').then((m) => m.Login),
-        title: 'Entrar — Faro',
+        title: $localize`Entrar — Faro`,
       },
       {
         path: 'callback',
         loadComponent: () =>
           import('./features/auth/callback/oauth-callback').then((m) => m.OAuthCallback),
-        title: 'Verificando — Faro',
+        title: $localize`Verificando — Faro`,
       },
       {
         path: 'termos',
         canMatch: [authGuard],
         loadComponent: () =>
           import('./features/auth/accept-terms/accept-terms').then((m) => m.AcceptTerms),
-        title: 'Termos — Faro',
+        title: $localize`Termos — Faro`,
       },
       {
         path: 'celular',
         canMatch: [authGuard, termsGuard],
         loadComponent: () =>
           import('./features/auth/phone-entry/phone-entry').then((m) => m.PhoneEntry),
-        title: 'Celular — Faro',
+        title: $localize`Celular — Faro`,
       },
       {
         path: 'confirmar-celular',
         canMatch: [authGuard, termsGuard],
         loadComponent: () =>
           import('./features/auth/confirm-phone/confirm-phone').then((m) => m.ConfirmPhone),
-        title: 'Confirmar celular — Faro',
+        title: $localize`Confirmar celular — Faro`,
       },
       {
         path: 'criar-conta',
         canMatch: [anonGuard],
         loadComponent: () => import('./features/auth/signup/signup').then((m) => m.Signup),
-        title: 'Criar conta — Faro',
+        title: $localize`Criar conta — Faro`,
       },
       {
         path: 'confirmar-email',
         loadComponent: () =>
           import('./features/auth/confirm-email/confirm-email').then((m) => m.ConfirmEmail),
-        title: 'Confirmar e-mail — Faro',
+        title: $localize`Confirmar e-mail — Faro`,
       },
       {
         path: 'recuperar-senha',
         canMatch: [anonGuard],
         loadComponent: () =>
           import('./features/auth/forgot-password/forgot-password').then((m) => m.ForgotPassword),
-        title: 'Esqueci a senha — Faro',
+        title: $localize`Esqueci a senha — Faro`,
       },
       {
         path: 'nova-senha',
         loadComponent: () =>
           import('./features/auth/reset-password/reset-password').then((m) => m.ResetPassword),
-        title: 'Nova senha — Faro',
+        title: $localize`Nova senha — Faro`,
       },
       {
         path: '',
         pathMatch: 'full',
         canMatch: [anonGuard],
         loadComponent: () => import('./features/auth/welcome/welcome').then((m) => m.Welcome),
-        title: 'Bem-vindo — Faro',
+        title: $localize`Bem-vindo — Faro`,
       },
     ],
   },
@@ -144,13 +144,13 @@ export const routes: Routes = [
   {
     path: 'legal/termos',
     loadComponent: () => import('./features/legal/terms/terms').then((m) => m.Terms),
-    title: 'Termos de uso — Faro',
+    title: $localize`Termos de uso — Faro`,
   },
   {
     path: 'legal/privacidade',
     loadComponent: () =>
       import('./features/legal/privacy-policy/privacy-policy').then((m) => m.PrivacyPolicy),
-    title: 'Política de privacidade — Faro',
+    title: $localize`Política de privacidade — Faro`,
   },
 
   // ── Galeria de desenvolvimento (só em dev: o CLI troca `ngDevMode` por `false` em produção,

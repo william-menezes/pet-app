@@ -105,15 +105,15 @@ export class Login implements OnInit {
   get emailFieldError(): string | null {
     const ctrl = this.form.get('email');
     if (!ctrl || !ctrl.touched || ctrl.valid) return null;
-    if (ctrl.hasError('required')) return 'Informe seu e-mail.';
-    if (ctrl.hasError('email')) return 'Informe um e-mail válido.';
+    if (ctrl.hasError('required')) return $localize`Informe seu e-mail.`;
+    if (ctrl.hasError('email')) return $localize`Informe um e-mail válido.`;
     return null;
   }
 
   get passwordFieldError(): string | null {
     const ctrl = this.form.get('password');
     if (!ctrl || !ctrl.touched || ctrl.valid) return null;
-    if (ctrl.hasError('required')) return 'Informe sua senha.';
+    if (ctrl.hasError('required')) return $localize`Informe sua senha.`;
     return null;
   }
 
@@ -217,15 +217,15 @@ export class Login implements OnInit {
     await this.authService.resendConfirmation(email);
 
     // Toast de confirmação (resposta uniforme — não confirma existência)
-    this.sonner.success('E-mail reenviado', {
-      description: 'E-mail de confirmação reenviado. Verifique sua caixa de entrada.',
+    this.sonner.success($localize`E-mail reenviado`, {
+      description: $localize`E-mail de confirmação reenviado. Verifique sua caixa de entrada.`,
       duration: 6000,
     });
   }
 
   private showGoogleCancelledInfo(): void {
-    this.sonner.info('Login não concluído', {
-      description: 'Login com Google não foi concluído. Use e-mail e senha para entrar.',
+    this.sonner.info($localize`Login não concluído`, {
+      description: $localize`Login com Google não foi concluído. Use e-mail e senha para entrar.`,
       duration: 5000,
     });
   }

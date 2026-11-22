@@ -8,31 +8,31 @@ export const ACCOUNT_ROUTES: Routes = [
     loadComponent: () =>
       import('./account-home/account-home').then((m) => m.AccountHome),
     data: { hub: true },
-    title: 'Conta — Faro',
+    title: $localize`Conta — Faro`,
   },
   {
     path: 'dados',
     loadComponent: () => import('./personal-data/personal-data').then((m) => m.PersonalData),
-    title: 'Dados pessoais — Faro',
+    title: $localize`Dados pessoais — Faro`,
   },
   {
     path: 'celular',
     loadComponent: () => import('./phone/phone').then((m) => m.AccountPhone),
-    title: 'Celular — Faro',
+    title: $localize`Celular — Faro`,
   },
   {
     path: 'senha',
     loadComponent: () => import('./password/password').then((m) => m.AccountPassword),
-    title: 'Senha — Faro',
+    title: $localize`Senha — Faro`,
   },
   {
     path: 'aparencia',
     loadComponent: () => import('./appearance/appearance').then((m) => m.AccountAppearance),
-    title: 'Aparência — Faro',
+    title: $localize`Aparência — Faro`,
   },
   {
     path: 'privacidade',
     loadComponent: () => import('./privacy/privacy').then((m) => m.Privacy),
-    title: 'Privacidade — Faro',
+    title: $localize`Privacidade — Faro`,
   },
 ];
