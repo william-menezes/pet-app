@@ -59,7 +59,7 @@ BEGIN
   PERFORM public.rate_limit_hit('teste_janela', 'k900', 5, 900);
   PERFORM public.rate_limit_hit('teste_janela', 'k3600', 5, 3600);
 END;
-$;
+$$;
 SELECT is((SELECT (extract(epoch FROM window_start))::bigint % 60 FROM public.rate_limits WHERE scope = 'teste_janela' AND key = 'k60'), 0::bigint,
   'janela de 60 s alinhada ao minuto');
 SELECT is((SELECT (extract(epoch FROM window_start))::bigint % 900 FROM public.rate_limits WHERE scope = 'teste_janela' AND key = 'k900'), 0::bigint,
