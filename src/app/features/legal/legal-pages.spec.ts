@@ -1,4 +1,4 @@
-import { provideZonelessChangeDetection } from '@angular/core';
+import { Type, provideZonelessChangeDetection } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 
@@ -12,10 +12,11 @@ describe('Páginas legais', () => {
     });
   });
 
-  for (const [nome, componente, titulo] of [
+  const casos: [string, Type<unknown>, string][] = [
     ['Termos de uso', Terms, 'Termos de uso'],
     ['Política de privacidade', PrivacyPolicy, 'Política de privacidade'],
-  ] as const) {
+  ];
+  for (const [nome, componente, titulo] of casos) {
     it(`${nome}: mostra o título e o aviso de rascunho`, async () => {
       const fixture = TestBed.createComponent(componente);
       await fixture.whenStable();

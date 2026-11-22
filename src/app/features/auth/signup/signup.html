@@ -1,0 +1,161 @@
+<!-- Criar conta. Referência: design/telas-v2/V2-criar-conta*.dc.html; contrato frontend-services §4. -->
+<app-flow-shell [back]="'back'" [backLink]="'/auth'" [headline]="headline" [sub]="sub">
+  <div [attr.aria-busy]="isLoading()">
+    <h1 class="font-display text-[32px] leading-[1.04] font-bold tracking-[-0.03em] text-foreground md:text-[42px]" i18n>
+      Crie sua conta
+    </h1>
+    <p class="mt-2.5 text-base leading-[1.45] text-text" i18n>
+      Só o necessário para quem encontrar seu pet falar com você.
+    </p>
+  </div>
+
+  @if (failureMessage(); as message) {
+    <z-alert zType="danger" [zDescription]="message" data-testid="signup-error" />
+  }
+
+  <form id="signup-form" class="flex flex-col gap-3.5" [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
+    <div z-field>
+      <label z-field-label for="signup-name-input" i18n>Nome</label>
+      <input
+        z-input
+        id="signup-name-input"
+        type="text"
+        formControlName="nome"
+        autocomplete="name"
+        aria-required="true"
+        [attr.aria-invalid]="fieldError('nome') ? 'true' : null"
+        [attr.aria-describedby]="fieldError('nome') ? 'signup-name-error' : null"
+        data-testid="signup-name" />
+      @if (fieldError('nome'); as error) {
+        <z-field-error id="signup-name-error" data-testid="signup-name-error">{{ error }}</z-field-error>
+      }
+    </div>
+
+    <div z-field>
+      <label z-field-label for="signup-email-input" i18n>E-mail</label>
+      <input
+        z-input
+        id="signup-email-input"
+        type="email"
+        formControlName="email"
+        autocomplete="email"
+        inputmode="email"
+        aria-required="true"
+        [attr.aria-invalid]="fieldError('email') ? 'true' : null"
+        [attr.aria-describedby]="fieldError('email') ? 'signup-email-error' : null"
+        data-testid="signup-email" />
+      @if (fieldError('email'); as error) {
+        <z-field-error id="signup-email-error" data-testid="signup-email-error">{{ error }}</z-field-error>
+      }
+    </div>
+
+    <div z-field>
+      <label z-field-label for="signup-phone-input" i18n>Celular</label>
+      <input
+        z-input
+        id="signup-phone-input"
+        type="tel"
+        inputmode="numeric"
+        formControlName="celular"
+        autocomplete="tel-national"
+        aria-required="true"
+        [attr.aria-invalid]="fieldError('celular') ? 'true' : null"
+        [attr.aria-describedby]="fieldError('celular') ? 'signup-phone-error' : 'signup-phone-help'"
+        (input)="onPhoneInput($event)"
+        data-testid="signup-phone" />
+      @if (fieldError('celular'); as error) {
+        <z-field-error id="signup-phone-error" data-testid="signup-phone-error">{{ error }}</z-field-error>
+      } @else {
+        <p z-field-description id="signup-phone-help" class="text-[13px]" i18n>
+          Vamos confirmar este número por SMS.
+        </p>
+      }
+    </div>
+
+    <div z-field>
+      <label z-field-label for="signup-password-input" i18n>Senha</label>
+      <div class="relative">
+        <input
+          z-input
+          id="signup-password-input"
+          class="pr-[52px]"
+          [type]="showPassword() ? 'text' : 'password'"
+          formControlName="senha"
+          autocomplete="new-password"
+          placeholder="Pelo menos 8 caracteres"
+          i18n-placeholder
+          aria-required="true"
+          [attr.aria-invalid]="fieldError('senha') ? 'true' : null"
+          [attr.aria-describedby]="fieldError('senha') ? 'signup-password-error' : null"
+          data-testid="signup-password" />
+        <button
+          type="button"
+          z-button
+          zType="ghost"
+          zSize="icon"
+          class="absolute top-[5px] right-[5px]"
+          [attr.aria-pressed]="showPassword()"
+          [attr.aria-label]="showPassword() ? hidePasswordLabel : showPasswordLabel"
+          (click)="showPassword.set(!showPassword())"
+          data-testid="signup-password-toggle">
+          <ng-icon [name]="showPassword() ? 'eyeOff' : 'eye'" size="20" class="text-muted-foreground" aria-hidden="true" />
+        </button>
+      </div>
+      @if (fieldError('senha'); as error) {
+        <z-field-error id="signup-password-error" data-testid="signup-password-error">{{ error }}</z-field-error>
+      }
+    </div>
+
+    <div>
+      <z-checkbox
+        formControlName="aceite"
+        zId="signup-terms-input"
+        [zInvalid]="!!fieldError('aceite')"
+        data-testid="signup-terms">
+        <span i18n>Li e aceito os</span>&nbsp;<a
+          href="/legal/termos"
+          target="_blank"
+          rel="noopener"
+          class="font-semibold text-link underline underline-offset-[3px]"
+          i18n
+          >Termos</a
+        >&nbsp;<span i18n>e a</span>&nbsp;<a
+          href="/legal/privacidade"
+          target="_blank"
+          rel="noopener"
+          class="font-semibold text-link underline underline-offset-[3px]"
+          i18n
+          >Política de privacidade</a
+        >.
+      </z-checkbox>
+      @if (fieldError('aceite'); as error) {
+        <z-field-error id="signup-terms-error" data-testid="signup-terms-error">{{ error }}</z-field-error>
+      }
+    </div>
+  </form>
+
+  <button
+    footer
+    type="submit"
+    [attr.form]="'signup-form'"
+    z-button
+    zSize="lg"
+    class="w-full text-lg"
+    [zLoading]="isLoading()"
+    [zDisabled]="isLoading()"
+    data-testid="signup-submit"
+    i18n>
+    Criar conta
+  </button>
+  <p footer class="text-sm text-text">
+    <span i18n>Já tem conta?</span>
+    <a
+      routerLink="/auth/login"
+      [queryParams]="queryParams()"
+      class="ml-1 inline-flex min-h-11 items-center font-semibold text-link underline underline-offset-[3px] hover:text-foreground"
+      data-testid="signup-login-link"
+      i18n
+      >Entrar</a
+    >
+  </p>
+</app-flow-shell>

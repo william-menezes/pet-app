@@ -169,6 +169,19 @@ describe('RegistrationService', () => {
       expect(verifyOtp).toHaveBeenCalledWith({ token_hash: 'abc123', type: 'email' });
     });
 
+    it('entrega a sessão ao AuthStore quando o verifyOtp devolve uma', async () => {
+      const session = { user: { id: 'u1' } };
+      verifyOtp.mockResolvedValue({ data: { session }, error: null });
+      await service.confirmEmail('abc123');
+      expect(TestBed.inject(AuthStore).isAuthenticated()).toBe(true);
+    });
+
+    it('não mexe no AuthStore quando o link é inválido', async () => {
+      verifyOtp.mockResolvedValue({ data: { session: null }, error: { status: 403, code: 'otp_expired' } });
+      await service.confirmEmail('abc123');
+      expect(TestBed.inject(AuthStore).isAuthenticated()).toBe(false);
+    });
+
     it('link vencido, usado ou adulterado vira invalid_link', async () => {
       verifyOtp.mockResolvedValue({ data: {}, error: { status: 403, code: 'otp_expired' } });
       expect(await service.confirmEmail('x')).toEqual({ ok: false, reason: 'invalid_link' });

@@ -1,0 +1,168 @@
+<!-- Confirmar e-mail. Referência: design/telas-v2/V2-confirmar-email{,-link,-invalido}*.dc.html; contrato §4. -->
+@switch (mode()) {
+  @case ('wait') {
+    <app-flow-shell [back]="'back'" [backLink]="'/auth/criar-conta'" [headline]="headline" [sub]="sub">
+      <app-auth-status-badge icon="mail" />
+      <div>
+        <h1 class="font-display text-[32px] leading-[1.04] font-bold tracking-[-0.03em] text-foreground md:text-[42px]" i18n>
+          Confirme seu e-mail
+        </h1>
+        @if (email(); as address) {
+          <p class="mt-2.5 text-base leading-[1.45] text-text" i18n>
+            Enviamos um link para <strong class="font-semibold text-foreground" data-testid="confirm-email-address">{{ address }}</strong>. Abra o e-mail e toque em “Confirmar meu e-mail”. O link vale por 1 hora.
+          </p>
+        } @else {
+          <p class="mt-2.5 text-base leading-[1.45] text-text" i18n>
+            Informe o e-mail do seu cadastro e enviamos um novo link de confirmação.
+          </p>
+        }
+      </div>
+
+      @if (email() === null) {
+        <div z-field>
+          <label z-field-label for="confirm-email-input" i18n>E-mail</label>
+          <input
+            z-input
+            id="confirm-email-input"
+            type="email"
+            autocomplete="email"
+            inputmode="email"
+            [formControl]="emailControl"
+            [attr.aria-invalid]="emailError() ? 'true' : null"
+            [attr.aria-describedby]="emailError() ? 'confirm-email-input-error' : null"
+            data-testid="confirm-email-input" />
+          @if (emailError()) {
+            <z-field-error id="confirm-email-input-error" i18n>Informe um e-mail válido.</z-field-error>
+          }
+        </div>
+      }
+
+      @if (resent()) {
+        <z-alert
+          zType="neutral"
+          zDescription="Se houver um cadastro pendente para este e-mail, enviamos um novo link."
+          i18n-zDescription
+          data-testid="confirm-email-resent-notice" />
+      }
+
+      @if (remaining() > 0) {
+        <div class="flex items-center gap-2 text-sm text-muted-foreground" data-testid="confirm-email-countdown" role="timer">
+          <ng-icon name="clock" size="18" aria-hidden="true" />
+          <span><span i18n>Reenviar em</span> {{ countdownText() }}</span>
+        </div>
+      }
+
+      <app-note icon="info" i18n>Não achou? Olhe também a caixa de spam.</app-note>
+
+      <button
+        footer
+        type="button"
+        z-button
+        zType="outline"
+        zSize="lg"
+        class="w-full text-lg"
+        [zLoading]="resending()"
+        [zDisabled]="remaining() > 0 || resending()"
+        (click)="onResend()"
+        data-testid="confirm-email-resend"
+        i18n>
+        Reenviar e-mail
+      </button>
+      <p footer class="text-sm text-text">
+        <span i18n>E-mail errado?</span>
+        <a
+          routerLink="/auth/criar-conta"
+          [queryParams]="queryParams()"
+          class="ml-1 inline-flex min-h-11 items-center font-semibold text-link underline underline-offset-[3px] hover:text-foreground"
+          i18n
+          >Voltar</a
+        >
+      </p>
+      <p footer class="text-sm text-text">
+        <span i18n>Já confirmei.</span>
+        <a
+          routerLink="/auth/login"
+          [queryParams]="queryParams()"
+          class="ml-1 inline-flex min-h-11 items-center font-semibold text-link underline underline-offset-[3px] hover:text-foreground"
+          data-testid="confirm-email-login"
+          i18n
+          >Entrar</a
+        >
+      </p>
+    </app-flow-shell>
+  }
+
+  @case ('link') {
+    <app-flow-shell [headline]="headline" [sub]="sub">
+      <app-auth-status-badge icon="mail" />
+      <div [attr.aria-busy]="confirming()">
+        <h1 class="font-display text-[32px] leading-[1.04] font-bold tracking-[-0.03em] text-foreground md:text-[42px]" i18n>
+          Confirmar seu e-mail
+        </h1>
+        <p class="mt-2.5 text-base leading-[1.45] text-text" i18n>Toque no botão para ativar sua conta.</p>
+      </div>
+
+      @if (confirmError()) {
+        <z-alert
+          zType="danger"
+          zDescription="Não conseguimos conectar. Verifique sua conexão e tente de novo."
+          i18n-zDescription
+          data-testid="confirm-email-error" />
+      }
+
+      <button
+        footer
+        type="button"
+        z-button
+        zSize="lg"
+        class="w-full text-lg"
+        [zLoading]="confirming()"
+        [zDisabled]="confirming()"
+        (click)="onConfirm()"
+        data-testid="confirm-email-confirm"
+        i18n>
+        Confirmar meu e-mail
+      </button>
+    </app-flow-shell>
+  }
+
+  @case ('invalid') {
+    <app-flow-shell [headline]="headline" [sub]="sub">
+      <div class="flex flex-col gap-4 md:gap-[18px]" data-testid="confirm-email-invalid">
+        <app-auth-status-badge icon="alert" />
+        <div>
+          <h1 class="font-display text-[32px] leading-[1.04] font-bold tracking-[-0.03em] text-foreground md:text-[42px]" i18n>
+            Este link não vale mais
+          </h1>
+          <p class="mt-2.5 text-base leading-[1.45] text-text" i18n>
+            O link de confirmação vale por 1 hora e funciona uma vez só. Peça um novo: ele chega no seu e-mail em instantes.
+          </p>
+        </div>
+      </div>
+
+      <a
+        footer
+        z-button
+        zSize="lg"
+        class="w-full text-lg"
+        routerLink="/auth/confirmar-email"
+        [queryParams]="queryParams()"
+        data-testid="confirm-email-new-link"
+        i18n>
+        Pedir novo link
+      </a>
+      <a
+        footer
+        z-button
+        zType="ghost"
+        zSize="md"
+        class="w-full"
+        routerLink="/auth/login"
+        [queryParams]="queryParams()"
+        data-testid="confirm-email-login"
+        i18n>
+        Entrar
+      </a>
+    </app-flow-shell>
+  }
+}

@@ -105,8 +105,25 @@ export const routes: Routes = [
         data: { home: '/app' },
         title: 'Confirmar celular — Faro',
       },
-      // Provisório até as boas-vindas (spec 004, T033): preserva a query (returnUrl).
-      { path: '', redirectTo: 'login', pathMatch: 'full' },
+      {
+        path: 'criar-conta',
+        canMatch: [anonGuard],
+        loadComponent: () => import('./features/auth/signup/signup').then((m) => m.Signup),
+        title: 'Criar conta — Faro',
+      },
+      {
+        path: 'confirmar-email',
+        loadComponent: () =>
+          import('./features/auth/confirm-email/confirm-email').then((m) => m.ConfirmEmail),
+        title: 'Confirmar e-mail — Faro',
+      },
+      {
+        path: '',
+        pathMatch: 'full',
+        canMatch: [anonGuard],
+        loadComponent: () => import('./features/auth/welcome/welcome').then((m) => m.Welcome),
+        title: 'Bem-vindo — Faro',
+      },
     ],
   },
 

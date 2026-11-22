@@ -15,6 +15,7 @@ import { normalizeBrPhone } from '../account/phone';
 import { TERMS_VERSION } from '../account/terms';
 import { SupabaseService } from '../supabase/supabase.service';
 import { AuthService } from './auth.service';
+import { AuthStore } from './auth.store';
 import { ReturnUrlService } from './return-url';
 
 export interface SignUpInput {
@@ -56,6 +57,7 @@ function isNetworkError(error: AuthErrorLike): boolean {
 export class RegistrationService {
   private readonly supabase = inject(SupabaseService);
   private readonly authService = inject(AuthService);
+  private readonly authStore = inject(AuthStore);
   private readonly returnUrl = inject(ReturnUrlService);
 
   async signUp(input: SignUpInput): Promise<SignUpResult> {
@@ -114,14 +116,18 @@ export class RegistrationService {
     await this.authService.resendConfirmation(email);
   }
 
-  /** Troca o `token_hash` do link por sessão. Vencido, usado ou adulterado: a mesma resposta. */
+  /** Troca o `token_hash` do link por sessão (e a entrega ao `AuthStore`). Vencido, usado ou adulterado: a mesma resposta. */
   async confirmEmail(tokenHash: string): Promise<ConfirmEmailResult> {
     try {
-      const { error } = await this.supabase.client.auth.verifyOtp({
+      const { data, error } = await this.supabase.client.auth.verifyOtp({
         token_hash: tokenHash,
         type: 'email',
       });
-      if (!error) return { ok: true };
+      if (!error) {
+        // O cliente já guarda a sessão; o AuthStore (guards) só sabe dela se alguém avisar.
+        if (data?.session) this.authStore.setSession(data.session);
+        return { ok: true };
+      }
       return isNetworkError(error as AuthErrorLike)
         ? { ok: false, reason: 'network' }
         : { ok: false, reason: 'invalid_link' };

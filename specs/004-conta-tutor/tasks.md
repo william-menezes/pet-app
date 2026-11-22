@@ -340,14 +340,14 @@ verificar sessão de tutor com aceite registrado; antes de confirmar, o login é
   `src/app/app.routes.ts` (antes das rotas da tag) e em `src/app/app.routes.server.ts` como
   `RenderMode.Prerender`. Sempre claras, coluna de leitura de 680 px. **Feito quando**:
   `npm run build` passa e gera os dois HTML pré-renderizados; as duas rotas abrem sem sessão.
-- [ ] T033 [US1] [FE] Criar a tela de boas-vindas em `src/app/features/auth/welcome/`
+- [x] T033 [US1] [FE] Criar a tela de boas-vindas em `src/app/features/auth/welcome/`
   (`welcome.ts`, `welcome.html`, `welcome.spec.ts`) e trocar a rota `/auth` (índice) para ela, com
   `anonGuard`. Referência: `design/telas-v2/V2-boas-vindas.dc.html`, `-tablet`, `-desktop`; textos,
   medidas e regra da foto em `contracts/frontend-services.contract.md` §4 ("Boas-vindas").
   **Feito quando**: o teste confere `welcome-create-account` e `welcome-login`, a preservação do
   `returnUrl` nos dois links e o aviso `welcome-deleted-notice` com `?conta=excluida`; a tela não
   tem rolagem horizontal em 320, 390, 768 e 1440 px.
-- [ ] T034 [US1] [FE] Criar a tela de cadastro em `src/app/features/auth/signup/` (`signup.ts`,
+- [x] T034 [US1] [FE] Criar a tela de cadastro em `src/app/features/auth/signup/` (`signup.ts`,
   `signup.html`, `signup.spec.ts`) e registrar `/auth/criar-conta` com `anonGuard`. Referência:
   `design/telas-v2/V2-criar-conta.dc.html`, `-tablet`, `-desktop`; casca `app-flow-shell`; campos,
   atributos e textos em `contracts/frontend-services.contract.md` §4 ("Criar conta"). Reactive
@@ -356,7 +356,7 @@ verificar sessão de tutor com aceite registrado; antes de confirmar, o login é
   **estado do roteador**. **Feito quando**: o teste cobre cada validação (nome 1 e 81 caracteres,
   e-mail inválido, celular fixo, senha de 7, aceite desmarcado), os `data-testid` `signup-*` (menos
   `signup-google`) e que o e-mail não aparece na URL depois do envio.
-- [ ] T035 [US1] [FE] Criar a tela `src/app/features/auth/confirm-email/` (`confirm-email.ts`,
+- [x] T035 [US1] [FE] Criar a tela `src/app/features/auth/confirm-email/` (`confirm-email.ts`,
   `confirm-email.html`, `confirm-email.spec.ts`), registrar `/auth/confirmar-email` **sem guard**,
   e implementar o estado **de espera** (URL sem `token_hash`): e-mail do estado do roteador,
   reenvio com contagem de 60 s, campo de e-mail quando não há estado, mensagem uniforme depois do
@@ -364,13 +364,13 @@ verificar sessão de tutor com aceite registrado; antes de confirmar, o login é
   `PostAuthNavigator.go()` se a sessão aparecer. Tela: `V2-confirmar-email*.dc.html`
   (regra 14). **Feito quando**: o teste cobre a contagem (relógio falso), o reenvio chamando
   `resendConfirmation`, a mensagem `confirm-email-resent-notice` e o modo sem estado.
-- [ ] T036 [US1] [FE] No mesmo componente, implementar o estado **do link** (URL com
+- [x] T036 [US1] [FE] No mesmo componente, implementar o estado **do link** (URL com
   `token_hash` e `type=email`): **nenhuma** chamada ao carregar; botão `confirm-email-confirm` ⇒
   `confirmEmail(tokenHash)`; sucesso ⇒ `PostAuthNavigator.go()`; `invalid_link` ⇒ estado
   `confirm-email-invalid` com "Pedir novo link" e "Entrar". (A ligação com o envio do SMS entra na
   T059.) **Feito quando**: o teste prova que `verifyOtp` **não** é chamado na criação do
   componente, que é chamado uma vez no clique, e cobre os dois resultados.
-- [ ] T037 [US1] [FE] Em `src/app/features/auth/login/` (`login.ts` e `login.html`): o link "Criar
+- [x] T037 [US1] [FE] Em `src/app/features/auth/login/` (`login.ts` e `login.html`): o link "Criar
   conta" passa a navegar para `/auth/criar-conta` preservando `returnUrl` e perde o `aria-label`
   com "(em breve)"; entra o botão "Voltar" (`z-button zSize="icon"`, ícone `back`,
   `aria-label="Voltar"`) para `/auth`, no espaço de 56 px reservado pela `002`

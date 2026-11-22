@@ -134,18 +134,28 @@ test.describe('navegação depois do login (backend simulado)', () => {
 });
 
 test.describe('carga a frio (sem sessão em memória)', () => {
-  test('/app sem sessão e sem marca cai no login, com o destino', async ({ page }) => {
+  test('/app sem sessão e sem marca cai nas boas-vindas, com o destino', async ({ page }) => {
     const { blocked } = await mockBackend(page, 'tutorComAceite');
+    await page.goto('/app/conta');
+    await expect(page.locator(tid('welcome-create-account'))).toBeVisible();
+    expect(new URL(page.url()).pathname).toBe('/auth');
+    expect(new URL(page.url()).searchParams.get('returnUrl')).toBe('/app/conta');
+    expect(blocked).toEqual([]);
+  });
+
+  test('/app sem sessão e com a marca de quem já entrou cai no login, com o aviso de sessão expirada', async ({ page }) => {
+    await mockBackend(page, 'tutorComAceite');
+    await page.addInitScript(() => window.localStorage.setItem('faro.returning', '1'));
     await page.goto('/app/conta');
     await expect(page.locator(tid('login-submit'))).toBeVisible();
     expect(new URL(page.url()).searchParams.get('returnUrl')).toBe('/app/conta');
-    expect(blocked).toEqual([]);
+    expect(new URL(page.url()).searchParams.get('reason')).toBe('session_expired');
   });
 
   test('/auth/termos sem sessão não guarda destino dentro de /auth', async ({ page }) => {
     await mockBackend(page, 'tutorSemAceite');
     await page.goto('/auth/termos');
-    await expect(page.locator(tid('login-submit'))).toBeVisible();
+    await expect(page.locator(tid('welcome-create-account'))).toBeVisible();
     expect(new URL(page.url()).searchParams.get('returnUrl')).toBeNull();
   });
 });
@@ -181,10 +191,10 @@ test.describe('carga a frio com a sessão restaurada (session-bootstrap)', () =>
     await expect(page).toHaveURL(/\/auth\/termos\?returnUrl=%2Fapp$/);
   });
 
-  test('sem sessão: /app vai para o login', async ({ page }) => {
+  test('sem sessão: /app vai para as boas-vindas', async ({ page }) => {
     await mockBackend(page, 'tutorComAceite');
     await page.goto('/app');
-    await expect(page.locator(tid('login-submit'))).toBeVisible();
+    await expect(page.locator(tid('welcome-create-account'))).toBeVisible();
     expect(new URL(page.url()).searchParams.get('returnUrl')).toBe('/app');
   });
 
