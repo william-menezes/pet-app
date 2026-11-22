@@ -163,7 +163,7 @@
           zSize="lg"
           class="mt-3 w-full text-lg"
           [zLoading]="isLoading()"
-          [disabled]="submitButtonDisabled"
+          [zDisabled]="submitButtonDisabled"
           data-testid="login-submit"
           i18n>
           Entrar
@@ -182,7 +182,7 @@
           zType="outline"
           zSize="lg"
           class="w-full"
-          [disabled]="isLoading() || isGoogleDisabled()"
+          [zDisabled]="isLoading() || isGoogleDisabled()"
           (click)="onGoogleLogin()"
           data-testid="login-google">
           <app-google-glyph />

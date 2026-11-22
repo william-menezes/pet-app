@@ -239,4 +239,38 @@ describe('Login', () => {
     expect(back.getAttribute('href')).toBe('/auth');
     expect(back.getAttribute('aria-label')).toBe('Voltar');
   });
+
+  // ── Correção: z-button só desabilita por [zDisabled] (o host sobrescreve o atributo disabled) ──
+
+  it('o botão Entrar fica de fato desabilitado em rate_limited e habilitado fora dele', async () => {
+    const submit = () => fixture.nativeElement.querySelector('[data-testid="login-submit"]') as HTMLButtonElement;
+    expect(submit().disabled).toBe(false);
+    component.formError.set('rate_limited');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    expect(submit().disabled).toBe(true);
+    expect(submit().hasAttribute('disabled')).toBe(true);
+  });
+
+  it('o botão Entrar continua desabilitado em rate_limited depois que o envio termina (zLoading não o reabilita)', async () => {
+    const submit = () => fixture.nativeElement.querySelector('[data-testid="login-submit"]') as HTMLButtonElement;
+    component.isLoading.set(true);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    expect(submit().disabled).toBe(true);
+    component.formError.set('rate_limited');
+    component.isLoading.set(false);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    expect(submit().disabled).toBe(true);
+  });
+
+  it('o botão do Google fica de fato desabilitado quando o provedor está indisponível', async () => {
+    const google = () => fixture.nativeElement.querySelector('[data-testid="login-google"]') as HTMLButtonElement;
+    expect(google().disabled).toBe(false);
+    component.isGoogleDisabled.set(true);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    expect(google().disabled).toBe(true);
+  });
 });
