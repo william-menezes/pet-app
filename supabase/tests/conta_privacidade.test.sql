@@ -322,5 +322,6 @@ RESET ROLE;
 ROLLBACK TO caso;
 RELEASE caso;
 
-SELECT * FROM finish();
+-- Sem `SELECT * FROM finish()`: o ROLLBACK TO de cada caso desfaz tambem a tabela de resultados do pgTAP e o
+-- finish() lancaria "No tests run!". O pg_prove confere a linha do plano (1..59) e cada "ok"/"not ok" da saida.
 ROLLBACK;
