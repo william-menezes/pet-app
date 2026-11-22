@@ -26,13 +26,34 @@ async function open(page: Page, path: string, testId: string): Promise<void> {
   await page.waitForFunction(() => getComputedStyle(document.body).backgroundColor === 'rgb(247, 248, 248)');
 }
 
+/** Com 16 ou mais testes em paralelo o servidor de desenvolvimento demora para entregar a página. */
+const SLOW_DEV = 20_000;
+
 async function box(page: Page, selector: string) {
-  // Em dev o servidor pode recarregar a página uma vez; tenta de novo até haver uma caixa.
+  // Em dev o servidor pode recarregar a página uma vez e, sob carga, demora a desenhar: tenta de novo
+  // até haver uma caixa e devolve a que foi medida (uma leitura só, sem corrida com um recarregamento).
   const locator = page.locator(selector).first();
-  await expect.poll(() => locator.boundingBox().catch(() => null), { message: `sem caixa: ${selector}` }).not.toBeNull();
-  const b = await locator.boundingBox();
-  expect(b, `sem caixa: ${selector}`).not.toBeNull();
-  return b as NonNullable<typeof b>;
+  let found: { x: number; y: number; width: number; height: number } | null = null;
+  await expect
+    .poll(
+      async () => {
+        found = await locator.boundingBox().catch(() => null);
+        return found !== null;
+      },
+      { message: `sem caixa: ${selector}`, timeout: SLOW_DEV },
+    )
+    .toBe(true);
+  return found as unknown as { x: number; y: number; width: number; height: number };
+}
+
+/** Mede de novo até a largura chegar ao valor esperado: o layout final só vale depois do CSS e da hidratação. */
+async function expectWidth(page: Page, selector: string, expected: number): Promise<void> {
+  await expect
+    .poll(async () => Math.abs((await box(page, selector)).width - expected), {
+      message: `largura de ${selector} deve chegar a ${expected}px (±2)`,
+      timeout: SLOW_DEV,
+    })
+    .toBeLessThanOrEqual(2);
 }
 
 test.describe('casca do tutor', () => {
@@ -110,8 +131,7 @@ test.describe('casca dos fluxos', () => {
   test('tablet: coluna de 480px', async ({ page }) => {
     await page.setViewportSize(WIDTHS.tablet);
     await open(page, '/dev/ui/flow', 'dev-gallery-flow');
-    const column = await box(page, `${tid('flow-shell')} main >> xpath=..`);
-    expect(Math.abs(column.width - 480)).toBeLessThanOrEqual(2);
+    await expectWidth(page, `${tid('flow-shell')} main >> xpath=..`, 480);
     await expect(page.locator(tid('flow-shell-brand-panel'))).toBeHidden();
   });
 
@@ -119,8 +139,7 @@ test.describe('casca dos fluxos', () => {
     await page.setViewportSize(WIDTHS.desktop);
     await open(page, '/dev/ui/flow', 'dev-gallery-flow');
     await expect(page.locator(tid('flow-shell-brand-panel'))).toBeVisible();
-    const panel = await box(page, tid('flow-shell-brand-panel'));
-    expect(Math.abs(panel.width - 560)).toBeLessThanOrEqual(2);
+    await expectWidth(page, tid('flow-shell-brand-panel'), 560);
   });
 });
 
