@@ -126,7 +126,7 @@ função que não precisam de banco podem rodar localmente.
 
 **Objetivo**: conferir os pré-requisitos e preparar configuração e pastas.
 
-- [ ] T001 [QA] Criar a branch `004-conta-tutor` a partir de `develop` e conferir os
+- [x] T001 [QA] Criar a branch `004-conta-tutor` a partir de `develop` e conferir os
   pré-requisitos da `002`: existem `src/app/shared/shells/flow-shell/flow-shell.ts`,
   `src/app/shared/shells/screen-header/screen-header.ts`, `src/app/features/pets/tutor-app/tutor-app.ts`,
   `src/app/core/theme/theme.service.ts`, `src/app/shared/icons/faro-icons.ts`, as pastas
@@ -136,7 +136,7 @@ função que não precisam de banco podem rodar localmente.
   `src/app/shared/components/faro/`; a rota `app` em `src/app/app.routes.ts` tem `children`.
   **Feito quando**: todos os caminhos existem, `grep -ril primeng src package.json` não devolve
   nada e `npm run build` passa. Se faltar qualquer item: **pare e relate a lista do que falta**.
-- [ ] T002 [P] [BE] Acrescentar a `supabase/.env.local.example` as variáveis `SUPABASE_ANON_KEY`,
+- [x] T002 [P] [BE] Acrescentar a `supabase/.env.local.example` as variáveis `SUPABASE_ANON_KEY`,
   `PHONE_OTP_PEPPER`, `FARO_ENV`, `SMS_DRIVER`, `SMS_STUB_CODE`, `SMS_DAILY_CAP`,
   `ALLOWED_ORIGINS`, `SITE_URL`, com um comentário de uma linha cada e os valores de exemplo de
   `quickstart.md` §1 (nenhum segredo real). **Feito quando**: o arquivo lista as oito e
@@ -148,7 +148,7 @@ função que não precisam de banco podem rodar localmente.
   nome de alguma chave, pare e relate. **Feito quando**: `supabase start` sobe sem erro de
   configuração e os dois primeiros `curl` da seção "Conferência" do contrato dão o resultado
   esperado (senha de 7 caracteres recusada; cadastro repetido responde 200 sem sessão).
-- [ ] T004 [P] [BE] Criar `supabase/templates/confirmation.html` e `supabase/templates/recovery.html`
+- [x] T004 [P] [BE] Criar `supabase/templates/confirmation.html` e `supabase/templates/recovery.html`
   conforme `contracts/auth-config.contract.md` ("Modelos de e-mail"), com os links **exatos**, e
   registrar os dois em `supabase/config.toml` (`[auth.email.template.confirmation]` e
   `[auth.email.template.recovery]`). **Feito quando**: depois de `supabase stop && supabase start`,
@@ -178,7 +178,7 @@ navegação do frontend.
 
 ### Banco
 
-- [ ] T007 [BE] Criar `supabase/migrations/0008_enum_eventos_conta.sql` contendo **apenas** 12
+- [x] T007 [BE] Criar `supabase/migrations/0008_enum_eventos_conta.sql` contendo **apenas** 12
   comandos `ALTER TYPE public.evento_auth_enum ADD VALUE IF NOT EXISTS '<valor>';` para:
   `conta_criada`, `email_confirmado`, `termos_aceitos`, `celular_codigo_enviado`,
   `celular_codigo_invalido`, `celular_bloqueado`, `celular_confirmado`,
@@ -186,7 +186,7 @@ navegação do frontend.
   `conta_excluida`. Nenhum outro comando no arquivo. **Feito quando**: `supabase db reset` passa e
   `select count(*) from pg_enum e join pg_type t on t.oid = e.enumtypid where t.typname = 'evento_auth_enum';`
   devolve `16`.
-- [ ] T008 [BE] Criar `supabase/migrations/0009_hardening_funcoes_auth.sql`:
+- [x] T008 [BE] Criar `supabase/migrations/0009_hardening_funcoes_auth.sql`:
   `REVOKE ALL ON FUNCTION … FROM PUBLIC, anon, authenticated` + `GRANT EXECUTE … TO service_role`
   para `public.log_auth_event(public.evento_auth_enum, uuid, text, text, jsonb)` e
   `public.record_login_attempt(text, text, boolean)`; e, para `public.is_admin()` e
@@ -207,7 +207,7 @@ navegação do frontend.
   de `perfis` da matriz de `contracts/rls-expectations.md` (cada "nega" de coluna espera o erro
   `42501`), incluindo o teste de segurança nº 3 ("não se autoconfirma") e o nº 4 ("não escala
   papel"). **Feito quando**: `supabase test db` passa.
-- [ ] T012 [BE] Criar `supabase/migrations/0011_rate_limit_events.sql`: tabela
+- [x] T012 [BE] Criar `supabase/migrations/0011_rate_limit_events.sql`: tabela
   `public.rate_limit_events` (`data-model.md` §3) com `ENABLE ROW LEVEL SECURITY`, sem política,
   `REVOKE ALL … FROM anon, authenticated`, índice `(bucket, key, at DESC)`, e a função
   `public.rate_limit_check(jsonb, boolean)` exatamente como em `contracts/rate-limit.rpc.md`
@@ -216,7 +216,7 @@ navegação do frontend.
   devolve `allowed = true` na primeira chamada e `allowed = false` na segunda.
 - [ ] T013 [P] [QA] Criar `supabase/tests/rate_limit_events.test.sql` com os sete testes de
   `contracts/rate-limit.rpc.md`. **Feito quando**: `supabase test db` passa.
-- [ ] T014 [BE] Criar `supabase/migrations/0012_funcoes_conta.sql` com `CREATE OR REPLACE FUNCTION
+- [x] T014 [BE] Criar `supabase/migrations/0012_funcoes_conta.sql` com `CREATE OR REPLACE FUNCTION
   public.handle_new_user()` conforme `contracts/account.rpc.md` (tabela de metadados, regra do
   provedor, `papel = 'tutor'` fixo, auditoria dentro de bloco `EXCEPTION`). O gatilho
   `on_auth_user_created` da `001` continua o mesmo. Em seguida, ajustar `supabase/seed.sql` para
@@ -226,14 +226,14 @@ navegação do frontend.
   Não mexer no tutor B nem no admin. **Feito quando**: `supabase db reset` passa;
   `select count(*) from auth_audit_log where evento = 'conta_criada';` devolve `3`; o tutor A tem
   `termos_versao = '2026-11'` e `celular` preenchido; o tutor B tem os dois nulos.
-- [ ] T015 [BE] No mesmo arquivo `0012_funcoes_conta.sql`, acrescentar `accept_terms(text)`,
+- [x] T015 [BE] No mesmo arquivo `0012_funcoes_conta.sql`, acrescentar `accept_terms(text)`,
   `log_logout()`, `my_account()` e `account_auth_facts(uuid)` conforme `contracts/account.rpc.md`,
   com os `REVOKE`/`GRANT` de `data-model.md` §5. **Feito quando**: `supabase db reset` passa e
   `select has_function_privilege('authenticated','public.account_auth_facts(uuid)','EXECUTE');`
   devolve `false`.
 - [ ] T016 [P] [QA] Criar `supabase/tests/funcoes_conta.test.sql` com os nove testes do bloco
   "`funcoes_conta.test.sql`" de `contracts/account.rpc.md`. **Feito quando**: `supabase test db` passa.
-- [ ] T017 [BE] Criar `supabase/migrations/0013_auditoria_auth_users.sql`: função
+- [x] T017 [BE] Criar `supabase/migrations/0013_auditoria_auth_users.sql`: função
   `public.audit_auth_user_changes()` e gatilho `on_auth_user_updated`
   (`AFTER UPDATE OF email_confirmed_at, encrypted_password, recovery_sent_at ON auth.users`)
   conforme `contracts/account.rpc.md`, com o corpo dentro de `EXCEPTION WHEN OTHERS` e
@@ -244,11 +244,11 @@ navegação do frontend.
 
 ### Edge Functions: módulos compartilhados
 
-- [ ] T019 [P] [BE] Criar `supabase/functions/_shared/http.ts` e `supabase/functions/_shared/env.ts`
+- [x] T019 [P] [BE] Criar `supabase/functions/_shared/http.ts` e `supabase/functions/_shared/env.ts`
   conforme `contracts/shared-edge.contract.md`, e `supabase/functions/_shared/env.test.ts`
   cobrindo cada regra de `loadEnv` (incluindo `HASH_SALT` curto, pepper curto e `FARO_ENV` ausente
   ⇒ `production`). **Feito quando**: `deno test supabase/functions/_shared/env.test.ts` passa.
-- [ ] T020 [P] [BE] Criar `supabase/functions/_shared/hash.ts`, `ip.ts`, `clients.ts` e `audit.ts`
+- [x] T020 [P] [BE] Criar `supabase/functions/_shared/hash.ts`, `ip.ts`, `clients.ts` e `audit.ts`
   conforme `contracts/shared-edge.contract.md`, e `supabase/functions/_shared/hash.test.ts`
   (vetor HMAC-SHA256 da RFC 4231, caso 2: chave `Jefe`, dado `what do ya want for nothing?`,
   resultado `5bdcc146bf60754e6a042426089575c75a003f089d2739839dec58b964ec3843`; e as duas funções

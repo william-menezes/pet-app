@@ -70,3 +70,21 @@ hospedado. Substituí a prova por (a) testes de `handleOptions`/`corsHeadersFor`
 uma resposta real de `POST` ao `login-guard`, que traz `Access-Control-Allow-Headers` e
 `Access-Control-Allow-Methods` com o texto exato de `_shared/http.ts` (o Kong só envia esses dois no preflight,
 com outro valor). T021 fica sem `[x]` por essa razão.
+
+## T003: cadastro repetido responde 422, não 200
+
+Com a CLI 3.2.0 (GoTrue v2.198) e `enable_confirmations = true`, `POST /auth/v1/signup` com o e-mail de um
+usuário **já confirmado** respondeu **HTTP 422** (run 45032125748), não o 200 ofuscado que
+`auth-config.contract.md` ("O que o Auth garante") promete para FR-006. Os outros critérios da T003 passaram:
+`supabase start` sobe com a configuração (a CLI só avisa que `enable_signup` está obsoleto), senha de 7
+caracteres recebe 422 `weak_password`. T003 fica sem `[x]` até o William decidir: o cliente já trata "usuário já
+existe" como resposta uniforme (T031), mas quem chama `/auth/v1/signup` direto consegue distinguir. O script de
+CI agora imprime o `error_code` e o status do cadastro repetido de e-mail ainda não confirmado, para dar base à
+decisão.
+
+## Estado das caixas ao fim da execução
+
+Marcadas: T001, T002, T004, T007, T008, T012, T014, T015, T017, T019, T020. Sem marca, com o código entregue:
+T003 (422 acima), T009, T010, T011, T013, T016, T018 (o arquivo de teste de cada uma passa no CI; o
+`supabase test db` do conjunto está vermelho só por `rls_perfis.test.sql` da 001) e T021 (preflight local é do
+Kong). Detalhes nas seções acima.
