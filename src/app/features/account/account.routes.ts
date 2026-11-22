@@ -1,9 +1,6 @@
 import type { Routes } from '@angular/router';
 
-/**
- * Rotas de `/app/conta/*` (filhas da rota `app`, hospedeiro `TutorApp`). As telas internas ainda não
- * existentes (dados, celular, senha, aparência: Phase 8) caem no `**` do `ShellFallback` da rota `app`.
- */
+/** Rotas de `/app/conta/*` (filhas da rota `app`, hospedeiro `TutorApp`). */
 export const ACCOUNT_ROUTES: Routes = [
   {
     path: '',
@@ -12,6 +9,26 @@ export const ACCOUNT_ROUTES: Routes = [
       import('./account-home/account-home').then((m) => m.AccountHome),
     data: { hub: true },
     title: 'Conta — Faro',
+  },
+  {
+    path: 'dados',
+    loadComponent: () => import('./personal-data/personal-data').then((m) => m.PersonalData),
+    title: 'Dados pessoais — Faro',
+  },
+  {
+    path: 'celular',
+    loadComponent: () => import('./phone/phone').then((m) => m.AccountPhone),
+    title: 'Celular — Faro',
+  },
+  {
+    path: 'senha',
+    loadComponent: () => import('./password/password').then((m) => m.AccountPassword),
+    title: 'Senha — Faro',
+  },
+  {
+    path: 'aparencia',
+    loadComponent: () => import('./appearance/appearance').then((m) => m.AccountAppearance),
+    title: 'Aparência — Faro',
   },
   {
     path: 'privacidade',
