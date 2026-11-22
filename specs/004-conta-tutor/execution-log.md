@@ -203,3 +203,23 @@ Cumprida com o que existe: `lint`, `test` e `build` rodaram localmente (números
 - Decidir o `restoreSession` (acima). Sem isso, T035 (avanço automático) e as recargas de `/app/conta` não se
   comportam como o contrato descreve.
 - Foto das boas-vindas (`public/photos/boas-vindas.jpg`) ainda não existe: a T033 mostrará só o fundo `bg-photo`.
+
+## Atualização: `restoreSession()` ligado (decisão da sessão principal, 2026-11-22)
+
+A sessão principal mandou corrigir o defeito herdado da 001 descrito acima. **Desvio registrado**: a T028 não nomeava
+`app.config.ts`; a edição existe porque a ausência de chamador de `restoreSession()` é um defeito da `001` que impedia
+cumprir o "Feito quando" da T028 e quebra toda recarga de página.
+
+- `src/app/core/auth/session-bootstrap.ts` (`bootstrapSession`, `hasPersistedSession`) e `provideAppInitializer` em
+  `src/app/app.config.ts`. No servidor não faz nada; no navegador procura `sb-*-auth-token` em `localStorage` e em
+  `sessionStorage`; sem chave resolve sem importar nada; com chave faz `import('./auth.service')` e aguarda
+  `restoreSession()`; erro resolve sem lançar (visitante anônimo).
+- Pacote inicial: **399,80 kB antes, 400,28 kB depois** (+0,48 kB; 107,91 kB transferidos). O `AuthService` e o
+  supabase-js continuam fora do inicial (o `session-bootstrap.ts` entra em `main`, o serviço não).
+  `npm run check:bundle`: ok (o aviso conhecido de guards em `main` agora também lista `guard-url`, `terms.guard` e
+  `session-bootstrap`; não há `@supabase`).
+- Testes: `session-bootstrap.spec.ts` (5 casos: servidor, sem chave, chave em `localStorage`, chave em
+  `sessionStorage`, erro). Suíte: 56 arquivos, 345 testes. E2E (backend simulado, 14 de 14): cold load de `/app` com
+  sessão válida em `localStorage` e em `sessionStorage` permanece em `/app`; conta sem aceite vai para
+  `/auth/termos?returnUrl=%2Fapp`; sem sessão vai ao login; `/` sem sessão não faz nenhum pedido a `*.supabase.co`.
+- T028 marcada. Continua não provado com os usuários reais do seed (só com sessão simulada).

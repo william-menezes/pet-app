@@ -1,6 +1,7 @@
 import {
   ApplicationConfig,
   ErrorHandler,
+  provideAppInitializer,
   provideBrowserGlobalErrorListeners,
   provideZonelessChangeDetection,
 } from '@angular/core';
@@ -12,6 +13,7 @@ import {
 } from '@angular/platform-browser';
 
 import { routes } from './app.routes';
+import { bootstrapSession } from './core/auth/session-bootstrap';
 import { GlobalErrorHandler } from './core/error/global-error-handler';
 import { provideZard } from '@/shared/core/provider/providezard';
 import { provideIcons } from '@ng-icons/core';
@@ -30,6 +32,10 @@ export const appConfig: ApplicationConfig = {
     // SSR híbrido: hidratação incremental (mantém o painel longe da rota pública) +
     // event replay (não perde o clique no CTA de resgate antes da hidratação).
     provideClientHydration(withIncrementalHydration(), withEventReplay()),
+
+    // Restaura a sessão do Supabase antes do roteador (só no navegador e só se houver sessão
+    // gravada; sem ela nada é importado). Ver core/auth/session-bootstrap.ts.
+    provideAppInitializer(() => bootstrapSession()),
 
     provideZard(),
 

@@ -149,3 +149,52 @@ test.describe('carga a frio (sem sessão em memória)', () => {
     expect(new URL(page.url()).searchParams.get('returnUrl')).toBeNull();
   });
 });
+
+/** Grava a sessão do Supabase como o navegador a deixaria depois de um login (chave `sb-<ref>-auth-token`). */
+async function persistSession(page: Page, where: 'localStorage' | 'sessionStorage'): Promise<void> {
+  await page.addInitScript(
+    ({ where, session }) => window[where].setItem('sb-orawzpslqvduwsvmlemv-auth-token', JSON.stringify(session)),
+    { where, session: SESSION },
+  );
+}
+
+test.describe('carga a frio com a sessão restaurada (session-bootstrap)', () => {
+  test('sessão válida no localStorage: /app permanece em /app', async ({ page }) => {
+    await mockBackend(page, 'tutorComAceite');
+    await persistSession(page, 'localStorage');
+    await page.goto('/app');
+    await expect(page).toHaveURL(/\/app$/);
+    await expect(page.locator(tid('login-submit'))).toHaveCount(0);
+  });
+
+  test('sessão válida no sessionStorage ("Manter conectado" desligado) também é restaurada', async ({ page }) => {
+    await mockBackend(page, 'tutorComAceite');
+    await persistSession(page, 'sessionStorage');
+    await page.goto('/app');
+    await expect(page).toHaveURL(/\/app$/);
+  });
+
+  test('sessão de conta sem aceite: /app vai para /auth/termos', async ({ page }) => {
+    await mockBackend(page, 'tutorSemAceite');
+    await persistSession(page, 'localStorage');
+    await page.goto('/app');
+    await expect(page).toHaveURL(/\/auth\/termos\?returnUrl=%2Fapp$/);
+  });
+
+  test('sem sessão: /app vai para o login', async ({ page }) => {
+    await mockBackend(page, 'tutorComAceite');
+    await page.goto('/app');
+    await expect(page.locator(tid('login-submit'))).toBeVisible();
+    expect(new URL(page.url()).searchParams.get('returnUrl')).toBe('/app');
+  });
+
+  test('a página pública / sem sessão não faz nenhum pedido ao Supabase', async ({ page }) => {
+    const hosts: string[] = [];
+    page.on('request', (request) => hosts.push(new URL(request.url()).hostname));
+    const { blocked } = await mockBackend(page, 'tutorComAceite');
+    await page.goto('/');
+    await page.waitForLoadState('networkidle');
+    expect(hosts.filter((h) => h.endsWith('.supabase.co'))).toEqual([]);
+    expect(blocked).toEqual([]);
+  });
+});

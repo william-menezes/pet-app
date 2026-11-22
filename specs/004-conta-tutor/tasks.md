@@ -291,7 +291,7 @@ navegação do frontend.
   cobrem: tutor sem aceite ⇒ `/auth/termos?returnUrl=…`; admin ⇒ `true`; falha ao carregar ⇒
   `true`; sem sessão e sem marca ⇒ `/auth?returnUrl=…`; sem sessão e com marca ⇒
   `/auth/login?returnUrl=…&reason=session_expired`.
-- [ ] T028 [FE] Reestruturar as rotas em `src/app/app.routes.ts` conforme
+- [x] T028 [FE] Reestruturar as rotas em `src/app/app.routes.ts` conforme
   `contracts/frontend-services.contract.md` §1: tirar `anonGuard` do pai `auth` e aplicá-lo só em
   `login`; `callback` sem guard; acrescentar `termsGuard` ao `canMatch` de `app`; registrar
   `auth/termos` (`authGuard`), `auth/celular` e `auth/confirmar-celular` (`authGuard`,
