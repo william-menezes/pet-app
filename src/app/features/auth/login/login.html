@@ -59,6 +59,16 @@
         <z-alert class="mt-4" zType="success" zDescription="Você saiu com segurança." i18n-zDescription data-testid="login-logged-out" />
       }
 
+      <!-- Senha trocada pelo link de recuperação (T071) -->
+      @if (showPasswordChanged()) {
+        <z-alert
+          class="mt-4"
+          zType="success"
+          zDescription="Senha alterada. Entre com a nova senha."
+          i18n-zDescription
+          data-testid="login-password-changed" />
+      }
+
       <!-- Erro do formulário (FR-014/019/018) -->
       @if (formError() && !isUnconfirmed()) {
         <z-alert class="mt-4" [zType]="bannerType" [zDescription]="errorBannerMessage() ?? ''" data-testid="login-error" />
@@ -147,11 +157,9 @@
             Manter conectado
           </z-checkbox>
           <a
-            href="#"
+            routerLink="/auth/recuperar-senha"
+            [queryParams]="linkQueryParams()"
             class="inline-flex min-h-11 items-center text-sm font-medium text-link underline underline-offset-[3px] hover:text-foreground"
-            (click)="onProvisionalLink($event)"
-            aria-label="Esqueci a senha (em breve)"
-            i18n-aria-label
             data-testid="login-forgot-link">
             <span i18n>Esqueci a senha</span>
           </a>

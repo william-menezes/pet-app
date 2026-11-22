@@ -5,7 +5,7 @@
  * exibição de erro genérico e presença dos data-testid.
  */
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { Router, provideRouter } from '@angular/router';
 import { ReactiveFormsModule } from '@angular/forms';
 import { provideZonelessChangeDetection } from '@angular/core';
 import { Login } from './login';
@@ -272,5 +272,29 @@ describe('Login', () => {
     fixture.detectChanges();
     await fixture.whenStable();
     expect(google().disabled).toBe(true);
+  });
+
+  // ── Spec 004 (T071): recuperar a senha ──
+
+  it('o link "Esqueci a senha" vai para /auth/recuperar-senha, sem aria-label "em breve"', () => {
+    const link = fixture.nativeElement.querySelector('[data-testid="login-forgot-link"]') as HTMLAnchorElement;
+    expect(link.getAttribute('href')).toBe('/auth/recuperar-senha');
+    expect(link.getAttribute('aria-label')).toBeNull();
+    component.linkQueryParams.set({ returnUrl: '/app/conta' });
+    fixture.detectChanges();
+    expect(link.getAttribute('href')).toBe('/auth/recuperar-senha?returnUrl=%2Fapp%2Fconta');
+  });
+
+  it('?senha=alterada mostra o aviso de sucesso; sem o parâmetro não há aviso', async () => {
+    const notice = () => fixture.nativeElement.querySelector('[data-testid="login-password-changed"]') as HTMLElement | null;
+    expect(notice()).toBeNull();
+    await TestBed.inject(Router).navigateByUrl('/?senha=alterada');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    expect(notice()?.textContent).toContain('Senha alterada. Entre com a nova senha.');
+    await TestBed.inject(Router).navigateByUrl('/');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    expect(notice()).toBeNull();
   });
 });

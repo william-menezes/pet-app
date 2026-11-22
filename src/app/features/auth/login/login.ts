@@ -82,6 +82,8 @@ export class Login implements OnInit {
   readonly isGoogleDisabled = signal(false);
   readonly showSessionExpired = signal(false);
   readonly showLoggedOut = signal(false);
+  /** `?senha=alterada`: vindo da tela de nova senha (T071). */
+  readonly showPasswordChanged = signal(false);
   readonly showPassword = signal(false);
   /** `returnUrl` sanitizado da URL, repassado aos links para criar conta e voltar (T037). */
   readonly linkQueryParams = signal<{ returnUrl: string } | null>(null);
@@ -126,6 +128,8 @@ export class Login implements OnInit {
       if (params['reason'] === 'session_expired') {
         this.showSessionExpired.set(true);
       }
+
+      this.showPasswordChanged.set(params['senha'] === 'alterada');
 
       if (params['loggedOut'] === '1') {
         this.showLoggedOut.set(true);
@@ -216,14 +220,6 @@ export class Login implements OnInit {
     this.sonner.success('E-mail reenviado', {
       description: 'E-mail de confirmação reenviado. Verifique sua caixa de entrada.',
       duration: 6000,
-    });
-  }
-
-  onProvisionalLink(event: Event): void {
-    event.preventDefault();
-    this.sonner.info('Em breve', {
-      description: 'Esta função estará disponível em breve.',
-      duration: 4000,
     });
   }
 
