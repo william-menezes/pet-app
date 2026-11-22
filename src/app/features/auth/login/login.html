@@ -13,6 +13,20 @@
     <app-brand-panel class="flex-1" variant="page" [headline]="brandHeadline" [sub]="brandSub" />
   </div>
 
+  <!-- Voltar para as boas-vindas, no espaço de 56 px reservado no alto (celular e tablet; no desktop o painel de marca ocupa a esquerda) -->
+  <a
+    z-button
+    zType="ghost"
+    zSize="icon"
+    class="absolute top-3 left-4 z-10 bg-card md:top-6 md:left-6 xl:hidden"
+    routerLink="/auth"
+    [queryParams]="linkQueryParams()"
+    aria-label="Voltar"
+    i18n-aria-label
+    data-testid="login-back">
+    <ng-icon name="back" size="22" aria-hidden="true" />
+  </a>
+
   <main
     class="relative flex flex-1 flex-col pt-14 md:items-center md:justify-center md:pt-0 md:pb-14 xl:pb-0"
     aria-labelledby="login-heading">
@@ -179,11 +193,9 @@
       <p class="mt-auto flex flex-wrap items-center justify-center gap-x-1 pt-7 text-sm text-text md:mt-7 md:pt-0">
         <span i18n>Ainda não tem conta?</span>
         <a
-          href="#"
+          routerLink="/auth/criar-conta"
+          [queryParams]="linkQueryParams()"
           class="inline-flex min-h-11 items-center font-medium text-link underline underline-offset-[3px] hover:text-foreground"
-          (click)="onProvisionalLink($event)"
-          aria-label="Criar conta (em breve)"
-          i18n-aria-label
           data-testid="login-signup-link">
           <span i18n>Criar conta</span>
         </a>

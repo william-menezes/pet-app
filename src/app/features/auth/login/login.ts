@@ -16,7 +16,7 @@
  */
 import { Component, OnInit, signal, computed, inject } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { Router, ActivatedRoute } from '@angular/router';
+import { Router, ActivatedRoute, RouterLink } from '@angular/router';
 
 // Componentes do Faro (ZardUI + próprios)
 import { NgIcon } from '@ng-icons/core';
@@ -35,7 +35,7 @@ import { Logo } from '@/shared/components/faro/logo/logo';
 // Core (token nunca lido fora de core/)
 import { AuthService } from '../../../core/auth/auth.service';
 import { PostAuthNavigator } from '../../../core/auth/post-auth-navigation';
-import { ReturnUrlService } from '../../../core/auth/return-url';
+import { ReturnUrlService, sanitizeReturnUrl } from '../../../core/auth/return-url';
 
 type FormError = 'invalid' | 'rate_limited' | 'unconfirmed' | 'provider_unavailable' | 'network' | null;
 
@@ -45,6 +45,7 @@ type FormError = 'invalid' | 'rate_limited' | 'unconfirmed' | 'provider_unavaila
   imports: [
     ReactiveFormsModule,
     NgIcon,
+    RouterLink,
     ZardAlertComponent,
     ZardButtonComponent,
     ZardCheckboxComponent,
@@ -82,6 +83,8 @@ export class Login implements OnInit {
   readonly showSessionExpired = signal(false);
   readonly showLoggedOut = signal(false);
   readonly showPassword = signal(false);
+  /** `returnUrl` sanitizado da URL, repassado aos links para criar conta e voltar (T037). */
+  readonly linkQueryParams = signal<{ returnUrl: string } | null>(null);
 
   // Frase e apoio do painel de marca (desktop) e rótulos do botão de olho
   protected readonly brandHeadline = BRAND_HEADLINE;
@@ -117,6 +120,8 @@ export class Login implements OnInit {
     this.route.queryParams.subscribe((params) => {
       // Guarda o destino já sanitizado; quem decide para onde ir é o PostAuthNavigator.
       this.returnUrlService.capture(params['returnUrl']);
+      const safeReturnUrl = sanitizeReturnUrl(params['returnUrl']);
+      this.linkQueryParams.set(safeReturnUrl === null ? null : { returnUrl: safeReturnUrl });
 
       if (params['reason'] === 'session_expired') {
         this.showSessionExpired.set(true);

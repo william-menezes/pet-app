@@ -216,4 +216,27 @@ describe('Login', () => {
     await component.onSubmit();
     expect(postAuthMock.go).not.toHaveBeenCalled();
   });
+
+  // ── Spec 004 (T037): link para criar conta e botão Voltar ──
+
+  it('o link login-signup-link vai para /auth/criar-conta, sem aria-label "em breve"', () => {
+    const link = fixture.nativeElement.querySelector('[data-testid="login-signup-link"]') as HTMLAnchorElement;
+    expect(link.getAttribute('href')).toBe('/auth/criar-conta');
+    expect(link.getAttribute('aria-label')).toBeNull();
+  });
+
+  it('o link para criar conta e o Voltar preservam o returnUrl', () => {
+    component.linkQueryParams.set({ returnUrl: '/ativar/7K3M-Q9XA-C' });
+    fixture.detectChanges();
+    const q = '?returnUrl=%2Fativar%2F7K3M-Q9XA-C';
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('[data-testid="login-signup-link"]')!.getAttribute('href')).toBe('/auth/criar-conta' + q);
+    expect(el.querySelector('[data-testid="login-back"]')!.getAttribute('href')).toBe('/auth' + q);
+  });
+
+  it('o botão Voltar vai para /auth e tem rótulo acessível', () => {
+    const back = fixture.nativeElement.querySelector('[data-testid="login-back"]') as HTMLAnchorElement;
+    expect(back.getAttribute('href')).toBe('/auth');
+    expect(back.getAttribute('aria-label')).toBe('Voltar');
+  });
 });
