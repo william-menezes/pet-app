@@ -327,7 +327,7 @@ link, com resposta idêntica para e-mail já cadastrado.
 **Independent Test**: criar conta com e-mail novo, abrir o link no coletor local, confirmar, e
 verificar sessão de tutor com aceite registrado; antes de confirmar, o login é recusado.
 
-- [ ] T031 [P] [US1] [FE] Criar `src/app/core/auth/registration.service.ts` (`signUp`,
+- [x] T031 [P] [US1] [FE] Criar `src/app/core/auth/registration.service.ts` (`signUp`,
   `resendConfirmation`, `confirmEmail`) e `registration.service.spec.ts` conforme
   `contracts/frontend-services.contract.md` §3. **Feito quando**: o teste cobre: entrada inválida
   não chama o Supabase; os metadados enviados são `name`, `phone` em E.164, `terms_version`,
