@@ -272,12 +272,15 @@ test.describe('Conta, sair, exportar e excluir (backend simulado)', () => {
     expect(state.blocked).toEqual([]);
   });
 
-  test('uma linha da Phase 8 ainda não pronta cai na tela "em construção", não em branco', async ({ page }) => {
+  test('a linha "Dados pessoais" abre a tela; um caminho que não existe cai na tela "em construção", não em branco', async ({ page }) => {
     await mockBackend(page, newState());
     await persistSession(page);
     await page.goto('/app/conta');
     await page.locator(tid('account-row-personal')).click();
     await expect(page).toHaveURL(/\/app\/conta\/dados$/);
+    await expect(page.locator(tid('account-personal'))).toBeVisible();
+
+    await page.goto('/app/conta/inexistente');
     await expect(page.locator(tid('shell-fallback'))).toContainText('Esta parte ainda está em construção.');
     await expect(page.locator(tid('shell-fallback-home'))).toHaveAttribute('href', '/app');
   });
