@@ -2,6 +2,8 @@ import { provideZonelessChangeDetection } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 
+import { AuthService } from '../../../core/auth/auth.service';
+import { AuthStore } from '../../../core/auth/auth.store';
 import { RegistrationService } from '../../../core/auth/registration.service';
 import { ReturnUrlService } from '../../../core/auth/return-url';
 import { Signup } from './signup';
@@ -10,6 +12,7 @@ describe('Signup', () => {
   let fixture: ComponentFixture<Signup>;
   let el: HTMLElement;
   let signUp: ReturnType<typeof vi.fn>;
+  let signInWithGoogle: ReturnType<typeof vi.fn>;
   let navigate: ReturnType<typeof vi.spyOn>;
 
   const byId = (id: string) => el.querySelector<HTMLElement>(`[data-testid="${id}"]`);
@@ -44,12 +47,14 @@ describe('Signup', () => {
 
   beforeEach(async () => {
     signUp = vi.fn().mockResolvedValue({ ok: true });
+    signInWithGoogle = vi.fn().mockResolvedValue(undefined);
     TestBed.configureTestingModule({
       providers: [
         provideZonelessChangeDetection(),
         provideRouter([]),
         { provide: RegistrationService, useValue: { signUp } },
         { provide: ReturnUrlService, useValue: { capture: vi.fn() } },
+        { provide: AuthService, useValue: { signInWithGoogle } },
       ],
     });
     navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
@@ -58,7 +63,7 @@ describe('Signup', () => {
     await fixture.whenStable();
   });
 
-  it('tem os data-testid do contrato (menos o do Google)', () => {
+  it('tem os data-testid do contrato', () => {
     for (const id of [
       'signup-name',
       'signup-email',
@@ -68,10 +73,10 @@ describe('Signup', () => {
       'signup-terms',
       'signup-submit',
       'signup-login-link',
+      'signup-google',
     ]) {
       expect(byId(id), id).not.toBeNull();
     }
-    expect(byId('signup-google')).toBeNull();
   });
 
   it('atributos dos campos: autocomplete, tipo e inputmode', () => {
@@ -202,6 +207,46 @@ describe('Signup', () => {
         expect(byId('signup-error')?.textContent, reason).toContain(text);
         expect(navigate).not.toHaveBeenCalled();
       }
+    });
+  });
+
+  describe('Continuar com o Google (T061)', () => {
+    it('mostra a linha "ou" e o botão de contorno com o ícone oficial do Google', () => {
+      const google = byId('signup-google') as HTMLButtonElement;
+      expect(google.textContent).toContain('Continuar com o Google');
+      expect(google.querySelector('app-google-glyph')).not.toBeNull();
+      expect(google.querySelector('svg path[fill="#4285F4"]')).not.toBeNull();
+      expect(google.getAttribute('data-variant')).toBe('outline');
+      expect(el.textContent).toContain('ou');
+    });
+
+    it('o clique chama AuthService.signInWithGoogle() uma vez e mantém os botões desabilitados', async () => {
+      signInWithGoogle.mockReturnValue(new Promise(() => undefined));
+      byId('signup-google')!.click();
+      byId('signup-google')!.click();
+      await fixture.whenStable();
+      fixture.detectChanges();
+      expect(signInWithGoogle).toHaveBeenCalledTimes(1);
+      expect((byId('signup-google') as HTMLButtonElement).disabled).toBe(true);
+      expect((byId('signup-submit') as HTMLButtonElement).disabled).toBe(true);
+    });
+
+    it('não envia o formulário nem navega', async () => {
+      byId('signup-google')!.click();
+      await fixture.whenStable();
+      expect(signUp).not.toHaveBeenCalled();
+      expect(navigate).not.toHaveBeenCalled();
+    });
+
+    it('falha do provedor mostra o aviso e reabilita o botão', async () => {
+      signInWithGoogle.mockImplementation(async () => {
+        TestBed.inject(AuthStore).setError('x');
+      });
+      byId('signup-google')!.click();
+      await fixture.whenStable();
+      fixture.detectChanges();
+      expect(byId('signup-error')?.textContent).toContain('Não conseguimos abrir o Google agora.');
+      expect((byId('signup-google') as HTMLButtonElement).disabled).toBe(false);
     });
   });
 });

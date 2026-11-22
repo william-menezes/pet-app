@@ -80,13 +80,11 @@ export const routes: Routes = [
           import('./features/auth/callback/oauth-callback').then((m) => m.OAuthCallback),
         title: 'Verificando — Faro',
       },
-      // Provisórias: cada história da spec 004 troca pelo componente real.
       {
         path: 'termos',
         canMatch: [authGuard],
         loadComponent: () =>
-          import('./shared/shells/shell-fallback/shell-fallback').then((m) => m.ShellFallback),
-        data: { home: '/app' },
+          import('./features/auth/accept-terms/accept-terms').then((m) => m.AcceptTerms),
         title: 'Termos — Faro',
       },
       {

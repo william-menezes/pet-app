@@ -23,14 +23,17 @@ import { ZardAlertComponent } from '@/shared/components/alert';
 import { ZardButtonComponent } from '@/shared/components/button';
 import { ZardCheckboxComponent } from '@/shared/components/checkbox';
 import { ZardFieldImports } from '@/shared/components/field';
+import { GoogleGlyph } from '@/shared/components/faro/google-glyph/google-glyph';
 import { ZardInputComponent } from '@/shared/components/input';
 import { FlowShell } from '@/shared/shells/flow-shell/flow-shell';
 
 import { maskBrPhoneInput, normalizeBrPhone } from '../../../core/account/phone';
+import { AuthService } from '../../../core/auth/auth.service';
+import { AuthStore } from '../../../core/auth/auth.store';
 import { RegistrationService, type SignUpResult } from '../../../core/auth/registration.service';
 import { ReturnUrlService, sanitizeReturnUrl } from '../../../core/auth/return-url';
 
-type SignupFailure = Extract<SignUpResult, { ok: false }>['reason'];
+type SignupFailure = Extract<SignUpResult, { ok: false }>['reason'] | 'google';
 
 const EMAIL_FORMAT = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -49,7 +52,8 @@ function brMobile(control: AbstractControl<string>): ValidationErrors | null {
 
 /**
  * Criar conta (`/auth/criar-conta`, spec 004 T034). Referência: `design/telas-v2/V2-criar-conta*.dc.html`.
- * O botão do Google entra na T061. A senha nunca sai do formulário; o e-mail segue para a tela de
+ * O botão do Google (T061) leva ao fluxo OAuth da 001; o retorno cai em `/auth/callback`, que segue pelo
+ * `PostAuthNavigator` (termos e celular). A senha nunca sai do formulário; o e-mail segue para a tela de
  * confirmação pelo estado do roteador, não pela URL.
  */
 @Component({
@@ -64,6 +68,7 @@ function brMobile(control: AbstractControl<string>): ValidationErrors | null {
     ZardCheckboxComponent,
     ZardFieldImports,
     ZardInputComponent,
+    GoogleGlyph,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './signup.html',
@@ -72,6 +77,8 @@ export class Signup implements OnInit {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly registration = inject(RegistrationService);
+  private readonly authService = inject(AuthService);
+  private readonly authStore = inject(AuthStore);
   private readonly returnUrlService = inject(ReturnUrlService);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
@@ -95,6 +102,7 @@ export class Signup implements OnInit {
   });
 
   protected readonly isLoading = signal(false);
+  protected readonly googleLoading = signal(false);
   protected readonly showPassword = signal(false);
   protected readonly failure = signal<SignupFailure | null>(null);
 
@@ -116,6 +124,8 @@ export class Signup implements OnInit {
         return $localize`Não conseguimos conectar. Verifique sua conexão e tente de novo.`;
       case 'invalid':
         return $localize`Confira os campos destacados e tente de novo.`;
+      case 'google':
+        return $localize`Não conseguimos abrir o Google agora. Tente de novo ou crie a conta com e-mail e senha.`;
       default:
         return null;
     }
@@ -158,8 +168,22 @@ export class Signup implements OnInit {
     this.form.controls.celular.setValue(masked);
   }
 
+  /** "Continuar com o Google": cria a conta pelo provedor. O `returnUrl` já está guardado (`ngOnInit`). */
+  protected async onGoogle(): Promise<void> {
+    if (this.isLoading() || this.googleLoading()) return;
+    this.failure.set(null);
+    this.googleLoading.set(true);
+    await this.authService.signInWithGoogle();
+    // Com sucesso a página já está indo para o Google e o botão fica em carregamento até sair.
+    if (this.authStore.status() === 'error') {
+      this.authStore.clearError();
+      this.failure.set('google');
+      this.googleLoading.set(false);
+    }
+  }
+
   protected async onSubmit(): Promise<void> {
-    if (this.isLoading()) return;
+    if (this.isLoading() || this.googleLoading()) return;
     this.failure.set(null);
     this.form.markAllAsTouched();
     if (this.form.invalid) {

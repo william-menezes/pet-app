@@ -530,20 +530,20 @@ e ver `phone_is_confirmed` verdadeiro; repetir com código errado, vencido, reen
 **Independent Test**: uma conta sem aceite (criada pelo Google ou o tutor do seed) só chega ao app
 depois de aceitar, e é convidada a confirmar o celular, podendo adiar.
 
-- [ ] T061 [US3] [FE] Em `src/app/features/auth/signup/` (`signup.ts`, `signup.html`,
+- [x] T061 [US3] [FE] Em `src/app/features/auth/signup/` (`signup.ts`, `signup.html`,
   `signup.spec.ts`): acrescentar a linha "ou" e o botão de contorno "Continuar com o Google" com
   `app-google-glyph` (ícone oficial), `data-testid="signup-google"`, que chama
   `AuthService.signInWithGoogle()`. O `returnUrl` já está guardado pelo `ReturnUrlService`.
   **Feito quando**: o teste confere o botão, o componente `app-google-glyph` dentro dele e a
   chamada ao serviço.
-- [ ] T062 [US3] [FE] Criar a tela `src/app/features/auth/accept-terms/` (`accept-terms.ts`,
+- [x] T062 [US3] [FE] Criar a tela `src/app/features/auth/accept-terms/` (`accept-terms.ts`,
   `accept-terms.html`, `accept-terms.spec.ts`) e trocar o `ShellFallback` da rota `/auth/termos`.
   Caixa de aceite com os links para `/legal/termos` e `/legal/privacidade`; "Aceitar e continuar"
   desabilitado sem a caixa ⇒ `AccountService.acceptTerms()` ⇒ `PostAuthNavigator.go()`; botão de
   texto "Sair" ⇒ `AccountService.logout()`. Tela de referência na tabela do contrato (regra 14). **Feito quando**: o
   teste cobre o botão desabilitado, o aceite com navegação, a falha de rede (mensagem e botão
   reabilitado) e o "Sair".
-- [ ] T063 [US3] [FE] Conferir `src/app/features/auth/callback/oauth-callback.ts`: sucesso usa
+- [x] T063 [US3] [FE] Conferir `src/app/features/auth/callback/oauth-callback.ts`: sucesso usa
   `PostAuthNavigator.go()` (T029) e o cancelamento volta para `/auth/login` com a mensagem neutra
   já existente, sem criar sessão. Acrescentar a `oauth-callback` um teste
   (`oauth-callback.spec.ts`) para os dois casos se ainda não existir. **Feito quando**: o teste
@@ -571,11 +571,11 @@ senha nova e encerrar todas as sessões.
 **Independent Test**: pedir para um e-mail com conta e para um sem; comparar respostas; trocar a
 senha pelo link; a antiga deixa de valer.
 
-- [ ] T066 [P] [US4] [BE] Criar `supabase/functions/password-recovery/logic.ts` (validação de
+- [x] T066 [P] [US4] [BE] Criar `supabase/functions/password-recovery/logic.ts` (validação de
   e-mail; cálculo da espera até o piso de 600 ms) e `logic.test.ts`. **Feito quando**:
   `deno test supabase/functions/password-recovery/` passa com 8 casos de e-mail e a espera nunca
   negativa.
-- [ ] T067 [US4] [BE] Criar `supabase/functions/password-recovery/index.ts` seguindo os 8 passos
+- [x] T067 [US4] [BE] Criar `supabase/functions/password-recovery/index.ts` seguindo os 8 passos
   de `contracts/password-recovery.edge.md` (resposta sempre `{ "ok": true }`, envio em
   `EdgeRuntime.waitUntil`). **Feito quando**: os comandos de recuperação de `quickstart.md` §6
   dão: corpo idêntico e tempo ≥ 0,6 s para e-mail existente e inexistente; no 4º pedido para o
@@ -623,17 +623,17 @@ senha pelo link; a antiga deixa de valer.
 **Independent Test**: exportar e conferir o arquivo; excluir e verificar que não entra mais, que
 os dados pessoais sumiram e que a trilha de auditoria ficou sem identificação.
 
-- [ ] T073 [US5] [BE] Criar `supabase/migrations/0016_conta_privacidade.sql` com
+- [x] T073 [US5] [BE] Criar `supabase/migrations/0016_conta_privacidade.sql` com
   `public.export_my_data()` conforme `contracts/account-export.rpc.md` (5 passos; formato de
   saída; `EXECUTE` de texto constante para a função da `003`, com `USING`). **Feito quando**:
   `supabase db reset` passa e, autenticado como tutor A, a RPC devolve `conta.id` de A e
   `tags_e_pets = null` com uma observação.
-- [ ] T074 [US5] [BE] No mesmo arquivo, acrescentar `public.delete_account_data(uuid, text, text)`
+- [x] T074 [US5] [BE] No mesmo arquivo, acrescentar `public.delete_account_data(uuid, text, text)`
   seguindo o pseudocódigo de `contracts/account-delete.edge.md` (falha fechada com
   `deletion_hook_missing`; evento único). **Feito quando**: `supabase db reset` passa e
   `select has_function_privilege('authenticated','public.delete_account_data(uuid,text,text)','EXECUTE');`
   devolve `false`.
-- [ ] T075 [P] [US5] [QA] Criar `supabase/tests/conta_privacidade.test.sql` com os testes de
+- [x] T075 [P] [US5] [QA] Criar `supabase/tests/conta_privacidade.test.sql` com os testes de
   `contracts/account-export.rpc.md` (6) e de `contracts/account-delete.edge.md` (7), criando
   **dentro do teste** a tabela `public.tag_assignments` e as funções
   `end_assignments_for_account`/`export_tutor_tag_data` de mentira quando o caso pede.
@@ -645,11 +645,11 @@ os dados pessoais sumiram e que a trilha de auditoria ficou sem identificação.
   **Feito quando**: `supabase test db` passa; e passa de novo depois de criar à mão, numa sessão
   de teste, uma `public.tag_assignments` vazia e uma `end_assignments_for_account(uuid)` qualquer
   (apague as duas em seguida).
-- [ ] T076 [P] [US5] [BE] Criar `supabase/functions/account-delete/logic.ts` (validação de
+- [x] T076 [P] [US5] [BE] Criar `supabase/functions/account-delete/logic.ts` (validação de
   `confirm`; remoção paginada de arquivos sob um prefixo, recebendo o cliente de storage por
   parâmetro) e `logic.test.ts`. **Feito quando**: `deno test supabase/functions/account-delete/`
   passa com 0, 1, 100 e 250 arquivos e com bucket inexistente.
-- [ ] T077 [US5] [BE] Criar `supabase/functions/account-delete/index.ts` seguindo os **9 passos,
+- [x] T077 [US5] [BE] Criar `supabase/functions/account-delete/index.ts` seguindo os **9 passos,
   na ordem**, de `contracts/account-delete.edge.md`. **Feito quando**: por `curl`, com um usuário
   de teste: `confirm` errado ⇒ `confirmation_required`; senha errada ⇒ `invalid_password` e o
   usuário continua existindo; senha certa ⇒ `{ "ok": true }`, o usuário some de `auth.users` e de

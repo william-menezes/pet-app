@@ -142,10 +142,29 @@
     zSize="lg"
     class="w-full text-lg"
     [zLoading]="isLoading()"
-    [zDisabled]="isLoading()"
+    [zDisabled]="isLoading() || googleLoading()"
     data-testid="signup-submit"
     i18n>
     Criar conta
+  </button>
+  <div footer class="flex w-full items-center gap-2.5 text-[13px] text-muted-foreground">
+    <span class="h-px flex-1 bg-border" aria-hidden="true"></span>
+    <span i18n>ou</span>
+    <span class="h-px flex-1 bg-border" aria-hidden="true"></span>
+  </div>
+  <button
+    footer
+    type="button"
+    z-button
+    zType="outline"
+    zSize="lg"
+    class="w-full"
+    [zLoading]="googleLoading()"
+    [zDisabled]="isLoading() || googleLoading()"
+    (click)="onGoogle()"
+    data-testid="signup-google">
+    <app-google-glyph />
+    <span i18n>Continuar com o Google</span>
   </button>
   <p footer class="text-sm text-text">
     <span i18n>Já tem conta?</span>
