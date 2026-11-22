@@ -285,7 +285,7 @@ navegação do frontend.
   `nextStep` passam; `go()` com serviços falsos limpa o destino só no passo final, ignora
   `return_to` com mais de 7 dias, ignora `return_to` que `sanitizeReturnUrl` reprova e chama
   `markReturning()`.
-- [ ] T027 [FE] Criar `src/app/core/auth/terms.guard.ts` + `terms.guard.spec.ts`; alterar
+- [x] T027 [FE] Criar `src/app/core/auth/terms.guard.ts` + `terms.guard.spec.ts`; alterar
   `src/app/core/auth/auth.guard.ts` para a regra "boas-vindas x login" (§2 do contrato) e
   acrescentar os dois casos a `src/app/core/auth/guards.spec.ts`. **Feito quando**: os testes
   cobrem: tutor sem aceite ⇒ `/auth/termos?returnUrl=…`; admin ⇒ `true`; falha ao carregar ⇒
