@@ -30,7 +30,7 @@
 
   <div aria-live="polite" id="phone-entry-error">
     @if (problemMessage(); as message) {
-      <z-alert zType="danger" zRole="status" [zDescription]="message" data-testid="phone-error" />
+      <z-alert zType="danger" [zRole]="'status'" [zDescription]="message" data-testid="phone-error" />
     }
   </div>
 

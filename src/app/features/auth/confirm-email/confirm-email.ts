@@ -12,7 +12,7 @@ import {
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Location } from '@angular/common';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { NgIcon } from '@ng-icons/core';
 
 import { ZardAlertComponent } from '@/shared/components/alert';
@@ -22,6 +22,8 @@ import { ZardInputComponent } from '@/shared/components/input';
 import { Note } from '@/shared/components/faro/note/note';
 import { FlowShell } from '@/shared/shells/flow-shell/flow-shell';
 
+import { AccountService } from '../../../core/account/account.service';
+import { PhoneVerificationService } from '../../../core/account/phone-verification.service';
 import { AuthService } from '../../../core/auth/auth.service';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { PostAuthNavigator } from '../../../core/auth/post-auth-navigation';
@@ -65,6 +67,9 @@ const EMAIL_FORMAT = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 })
 export class ConfirmEmail implements OnInit {
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  private readonly accountService = inject(AccountService);
+  private readonly phoneVerification = inject(PhoneVerificationService);
   private readonly location = inject(Location);
   private readonly registration = inject(RegistrationService);
   private readonly postAuth = inject(PostAuthNavigator);
@@ -205,6 +210,26 @@ export class ConfirmEmail implements OnInit {
     this.startCountdown();
   }
 
+  /**
+   * E-mail confirmado (T059). Conta com celular pendente: pede o SMS agora; sucesso leva à tela do código;
+   * qualquer falha leva à tela do número, onde a pessoa vê o problema e pode tentar de novo. Sem celular
+   * pendente, segue o fluxo normal. O destino guardado (returnUrl) acompanha todos os caminhos.
+   */
+  private async afterConfirmed(): Promise<void> {
+    const account = await this.accountService.load(true);
+    if (account?.celularPendente == null) {
+      await this.postAuth.go();
+      return;
+    }
+    const returnUrl = this.returnUrlService.peek() ?? sanitizeReturnUrl(this.query().get('returnUrl'));
+    const extras = returnUrl === null ? {} : { queryParams: { returnUrl } };
+    const started = await this.phoneVerification.start();
+    await this.router.navigate([started.ok ? '/auth/confirmar-celular' : '/auth/celular'], {
+      replaceUrl: true,
+      ...extras,
+    });
+  }
+
   protected async onConfirm(): Promise<void> {
     const token = this.tokenHash();
     if (token === null || this.confirming()) return;
@@ -213,8 +238,7 @@ export class ConfirmEmail implements OnInit {
     try {
       const result = await this.registration.confirmEmail(token);
       if (result.ok) {
-        // A ligação com o envio do SMS entra na T059.
-        await this.postAuth.go();
+        await this.afterConfirmed();
       } else if (result.reason === 'invalid_link') {
         this.invalidLink.set(true);
       } else {

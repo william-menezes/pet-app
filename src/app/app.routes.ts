@@ -100,8 +100,7 @@ export const routes: Routes = [
         path: 'confirmar-celular',
         canMatch: [authGuard, termsGuard],
         loadComponent: () =>
-          import('./shared/shells/shell-fallback/shell-fallback').then((m) => m.ShellFallback),
-        data: { home: '/app' },
+          import('./features/auth/confirm-phone/confirm-phone').then((m) => m.ConfirmPhone),
         title: 'Confirmar celular — Faro',
       },
       {

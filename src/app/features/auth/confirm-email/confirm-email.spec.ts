@@ -1,10 +1,12 @@
 import { Location } from '@angular/common';
 import { provideZonelessChangeDetection } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
+import { ActivatedRoute, Router, convertToParamMap, provideRouter } from '@angular/router';
 import type { Session } from '@supabase/supabase-js';
 import { BehaviorSubject } from 'rxjs';
 
+import { AccountService } from '../../../core/account/account.service';
+import { PhoneVerificationService } from '../../../core/account/phone-verification.service';
 import { AuthService } from '../../../core/auth/auth.service';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { PostAuthNavigator } from '../../../core/auth/post-auth-navigation';
@@ -19,14 +21,19 @@ describe('ConfirmEmail', () => {
   let confirmEmail: ReturnType<typeof vi.fn>;
   let go: ReturnType<typeof vi.fn>;
   let restoreSession: ReturnType<typeof vi.fn>;
+  let loadAccount: ReturnType<typeof vi.fn>;
+  let startPhone: ReturnType<typeof vi.fn>;
+  let navigate: ReturnType<typeof vi.spyOn>;
 
   const byId = (id: string) => el.querySelector<HTMLElement>(`[data-testid="${id}"]`);
 
-  async function create(opts: { query?: Record<string, string>; state?: unknown } = {}) {
+  async function create(opts: { query?: Record<string, string>; state?: unknown; stored?: string } = {}) {
     resendConfirmation = vi.fn().mockResolvedValue(undefined);
     confirmEmail = vi.fn().mockResolvedValue({ ok: true });
     go = vi.fn().mockResolvedValue(true);
     restoreSession = vi.fn().mockResolvedValue(undefined);
+    loadAccount = vi.fn().mockResolvedValue({ celularPendente: null });
+    startPhone = vi.fn().mockResolvedValue({ ok: true });
     const params = new BehaviorSubject(convertToParamMap(opts.query ?? {}));
 
     TestBed.configureTestingModule({
@@ -38,9 +45,12 @@ describe('ConfirmEmail', () => {
         { provide: RegistrationService, useValue: { resendConfirmation, confirmEmail } },
         { provide: PostAuthNavigator, useValue: { go } },
         { provide: AuthService, useValue: { restoreSession } },
-        { provide: ReturnUrlService, useValue: { capture: vi.fn() } },
+        { provide: ReturnUrlService, useValue: { capture: vi.fn(), peek: vi.fn().mockReturnValue(opts.stored ?? null) } },
+        { provide: AccountService, useValue: { load: loadAccount } },
+        { provide: PhoneVerificationService, useValue: { start: startPhone } },
       ],
     });
+    navigate = vi.spyOn(TestBed.inject(Router), "navigate").mockResolvedValue(true);
     fixture = TestBed.createComponent(ConfirmEmail);
     el = fixture.nativeElement;
     fixture.detectChanges();
@@ -148,6 +158,65 @@ describe('ConfirmEmail', () => {
       expect(go).not.toHaveBeenCalled();
       expect(byId('confirm-email-confirm')?.textContent?.trim()).toBe('Confirmar meu e-mail');
       expect(el.querySelector('h1')?.textContent?.trim()).toBe('Confirmar seu e-mail');
+    });
+
+    describe('depois de confirmar (T059)', () => {
+      it('com celular pendente pede o SMS e, com sucesso, vai para /auth/confirmar-celular', async () => {
+        await create({ query });
+        loadAccount.mockResolvedValue({ celularPendente: '+5511987654421' });
+        byId('confirm-email-confirm')!.click();
+        await settle();
+        expect(loadAccount).toHaveBeenCalledWith(true);
+        expect(startPhone).toHaveBeenCalledTimes(1);
+        expect(navigate).toHaveBeenCalledWith(['/auth/confirmar-celular'], { replaceUrl: true });
+        expect(go).not.toHaveBeenCalled();
+      });
+
+      it('com celular pendente e falha no envio, vai para /auth/celular', async () => {
+        await create({ query });
+        loadAccount.mockResolvedValue({ celularPendente: '+5511987654421' });
+        startPhone.mockResolvedValue({ ok: false, error: 'sms_unavailable' });
+        byId('confirm-email-confirm')!.click();
+        await settle();
+        expect(navigate).toHaveBeenCalledWith(['/auth/celular'], { replaceUrl: true });
+        expect(go).not.toHaveBeenCalled();
+      });
+
+      it('preserva o returnUrl guardado nos dois caminhos', async () => {
+        await create({ query, stored: '/ativar/7K3M-Q9XA-C' });
+        loadAccount.mockResolvedValue({ celularPendente: '+5511987654421' });
+        byId('confirm-email-confirm')!.click();
+        await settle();
+        expect(navigate).toHaveBeenCalledWith(['/auth/confirmar-celular'], {
+          replaceUrl: true,
+          queryParams: { returnUrl: '/ativar/7K3M-Q9XA-C' },
+        });
+        startPhone.mockResolvedValue({ ok: false, error: 'network' });
+        byId('confirm-email-confirm')!.click();
+        await settle();
+        expect(navigate).toHaveBeenLastCalledWith(['/auth/celular'], {
+          replaceUrl: true,
+          queryParams: { returnUrl: '/ativar/7K3M-Q9XA-C' },
+        });
+      });
+
+      it('sem celular pendente segue por PostAuthNavigator.go() e não pede SMS', async () => {
+        await create({ query });
+        byId('confirm-email-confirm')!.click();
+        await settle();
+        expect(startPhone).not.toHaveBeenCalled();
+        expect(go).toHaveBeenCalledTimes(1);
+        expect(navigate).not.toHaveBeenCalled();
+      });
+
+      it('conta que não carregou segue por PostAuthNavigator.go()', async () => {
+        await create({ query });
+        loadAccount.mockResolvedValue(null);
+        byId('confirm-email-confirm')!.click();
+        await settle();
+        expect(startPhone).not.toHaveBeenCalled();
+        expect(go).toHaveBeenCalledTimes(1);
+      });
     });
 
     it('sem type=email a URL é tratada como espera', async () => {

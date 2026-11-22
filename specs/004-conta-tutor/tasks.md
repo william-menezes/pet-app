@@ -490,7 +490,7 @@ e ver `phone_is_confirmed` verdadeiro; repetir com código errado, vencido, reen
   (regra 14). **Feito quando**: o teste cobre o pré-preenchimento, o envio com sucesso (navega
   para `/auth/confirmar-celular` preservando `returnUrl`), `invalid_phone`, `rate_limited` e o
   "Agora não".
-- [ ] T057 [US2] [FE] Criar a tela `src/app/features/auth/confirm-phone/` (`confirm-phone.ts`,
+- [x] T057 [US2] [FE] Criar a tela `src/app/features/auth/confirm-phone/` (`confirm-phone.ts`,
   `confirm-phone.html`, `confirm-phone.spec.ts`) e trocar o `ShellFallback` da rota
   `/auth/confirmar-celular`. Referência: `design/telas-v2/V2-confirmar-celular.dc.html`, `-tablet`,
   `-desktop`. Nesta tarefa: `status()` no `init` (sem número pendente ⇒ `/auth/celular`), título e
@@ -499,7 +499,7 @@ e ver `phone_is_confirmed` verdadeiro; repetir com código errado, vencido, reen
   sucesso ⇒ `PostAuthNavigator.go()`, "Número errado? Corrigir" ⇒ `/auth/celular`.
   **Feito quando**: o teste cobre o redirecionamento sem pendente, colar `482913` preenchendo as
   seis células, o botão habilitando, o sucesso e os `data-testid` `confirm-phone-*`.
-- [ ] T058 [US2] [FE] No mesmo componente, implementar a contagem e os estados da tabela de
+- [x] T058 [US2] [FE] No mesmo componente, implementar a contagem e os estados da tabela de
   `contracts/frontend-services.contract.md` §4 ("Confirmar celular"): "Reenviar em m:ss" a partir
   de `resendAvailableAt`, botão "Reenviar código", `invalid_code` (limpa e foca a primeira
   célula), `locked`, `expired`/`no_active`, `cooldown`, `rate_limited`, `sms_unavailable`/
@@ -507,7 +507,7 @@ e ver `phone_is_confirmed` verdadeiro; repetir com código errado, vencido, reen
   confirmar" **só** nos estados indicados. Erros em região `aria-live="polite"`.
   **Feito quando**: o teste cobre cada linha da tabela de estados (relógio falso para a contagem)
   e prova que `confirm-phone-continue-without` não existe no estado normal.
-- [ ] T059 [US2] [FE] Em `src/app/features/auth/confirm-email/confirm-email.ts`, depois de
+- [x] T059 [US2] [FE] Em `src/app/features/auth/confirm-email/confirm-email.ts`, depois de
   `confirmEmail` com sucesso: se a conta tem `celularPendente`, chamar
   `PhoneVerificationService.start()`; `ok` ⇒ `/auth/confirmar-celular`; qualquer falha ⇒
   `/auth/celular`; sem pendente ⇒ `PostAuthNavigator.go()`. Sempre preservando `returnUrl`.
