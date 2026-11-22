@@ -17,6 +17,7 @@ import { isPlatformBrowser } from '@angular/common';
 import { Router } from '@angular/router';
 import { AuthStore, Role } from './auth.store';
 import { SupabaseService } from '../supabase/supabase.service';
+import { AccountStore } from '../account/account.store';
 import { getSessionStorage } from './session-persistence';
 import { environment } from '../../../environments/environment';
 
@@ -38,6 +39,7 @@ const ERROR_MESSAGES: Record<NonNullable<AuthResult['reason']>, string> = {
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly store = inject(AuthStore);
+  private readonly accountStore = inject(AccountStore);
   private readonly supabase = inject(SupabaseService);
   private readonly router = inject(Router);
   private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
@@ -269,6 +271,7 @@ export class AuthService {
       await this.supabase.client.auth.signOut();
     } finally {
       this.store.reset();
+      this.accountStore.reset();
       this.isUnconfirmed.set(false);
       await this.router.navigate(['/auth/login'], {
         queryParams: { loggedOut: '1' },

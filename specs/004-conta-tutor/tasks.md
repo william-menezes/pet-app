@@ -273,7 +273,7 @@ navegação do frontend.
   `maskBrPhoneInput`) e `phone.spec.ts` com a tabela de casos de
   `contracts/shared-edge.contract.md` (seção `phone.ts`). **Feito quando**: os 9 casos da tabela
   passam e `formatBrPhone('+5511987654421') === '(11) 98765-4421'`.
-- [ ] T025 [FE] Criar `src/app/core/account/account.store.ts` e `account.service.ts` (`load`,
+- [x] T025 [FE] Criar `src/app/core/account/account.store.ts` e `account.service.ts` (`load`,
   `ensureLoaded`, `updateName`, `acceptTerms`, `logout`) conforme
   `contracts/frontend-services.contract.md` §3, e `account.service.spec.ts`. `load` chama
   `rpc('my_account')` e converte os nomes para a interface `Account`. **Feito quando**: o teste
