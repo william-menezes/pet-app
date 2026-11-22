@@ -53,11 +53,12 @@
           i18n-zDescription
           data-testid="account-personal-error" />
       }
-      @if (saved()) {
-        <!-- O aviso visível é o do sonner; este nó só existe para os testes (sem leitura dupla). -->
-        <span class="sr-only" data-testid="account-personal-saved" i18n>Dados salvos.</span>
-      }
     </div>
+
+    @if (saved()) {
+      <!-- O aviso visível é o do sonner; este nó só existe para os testes (sem leitura dupla). -->
+      <span class="sr-only" aria-hidden="true" data-testid="account-personal-saved" i18n>Dados salvos.</span>
+    }
 
     <div class="flex">
       <button

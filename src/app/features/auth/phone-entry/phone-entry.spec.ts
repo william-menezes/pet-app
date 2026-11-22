@@ -43,6 +43,7 @@ describe('PhoneEntry', () => {
   let navigate: ReturnType<typeof vi.spyOn>;
   let navigateByUrl: ReturnType<typeof vi.spyOn>;
   let capture: ReturnType<typeof vi.fn>;
+  let clear: ReturnType<typeof vi.fn>;
   let signInWithGoogle: ReturnType<typeof vi.fn>;
 
   const byId = (id: string) => el.querySelector<HTMLElement>(`[data-testid="${id}"]`);
@@ -51,6 +52,7 @@ describe('PhoneEntry', () => {
     start = vi.fn().mockResolvedValue(START_OK);
     go = vi.fn().mockResolvedValue(true);
     capture = vi.fn();
+    clear = vi.fn();
     signInWithGoogle = vi.fn().mockResolvedValue(undefined);
     const params = new BehaviorSubject(convertToParamMap(opts.query ?? {}));
     TestBed.configureTestingModule({
@@ -65,7 +67,7 @@ describe('PhoneEntry', () => {
         { provide: PhoneVerificationService, useValue: { start } },
         { provide: PostAuthNavigator, useValue: { go } },
         { provide: AuthService, useValue: { signInWithGoogle } },
-        { provide: ReturnUrlService, useValue: { capture } },
+        { provide: ReturnUrlService, useValue: { capture, clear } },
       ],
     });
     navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
@@ -246,6 +248,7 @@ describe('PhoneEntry', () => {
       byId('phone-skip')!.click();
       await settle();
       expect(navigateByUrl).toHaveBeenCalledWith('/app/conta/celular');
+      expect(clear).toHaveBeenCalledTimes(1);
       expect(go).not.toHaveBeenCalled();
       expect(start).not.toHaveBeenCalled();
     });

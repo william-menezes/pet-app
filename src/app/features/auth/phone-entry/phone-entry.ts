@@ -213,9 +213,14 @@ export class PhoneEntry implements OnInit {
     return this.postAuth.go({ skipPhone: true });
   }
 
-  /** Modo troca: "Cancelar" volta para onde a pessoa estava (ou para a tela do celular). */
+  /**
+   * Modo troca: "Cancelar" (ou o X) volta para onde a pessoa estava, ou para a tela do celular, e apaga o
+   * destino guardado no `init` para ele não sobrar num login futuro da mesma aba.
+   */
   protected cancel(): Promise<boolean> {
-    return this.router.navigateByUrl(this.returnUrl() ?? CHANGE_FALLBACK_URL);
+    const target = this.returnUrl() ?? CHANGE_FALLBACK_URL;
+    this.returnUrlService.clear();
+    return this.router.navigateByUrl(target);
   }
 
   /** Conta só com o Google: guarda a volta para a tela do celular e abre o Google de novo. */
