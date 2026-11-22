@@ -17,22 +17,34 @@ import { ZardFieldImports } from '@/shared/components/field';
 import { ZardInputComponent } from '@/shared/components/input';
 import { FlowShell } from '@/shared/shells/flow-shell/flow-shell';
 
+import { NgIcon, provideIcons } from '@ng-icons/core';
+
 import { AccountService } from '../../../core/account/account.service';
+import { AccountStore } from '../../../core/account/account.store';
 import { formatBrPhone, maskBrPhoneInput, normalizeBrPhone } from '../../../core/account/phone';
 import {
   PhoneVerificationService,
   type StartError,
 } from '../../../core/account/phone-verification.service';
+import { AuthService } from '../../../core/auth/auth.service';
 import { PostAuthNavigator } from '../../../core/auth/post-auth-navigation';
 import { ReturnUrlService, sanitizeReturnUrl } from '../../../core/auth/return-url';
+import { ACCOUNT_ICONS } from '../../account/shared/account-icons';
 import { Countdown } from '../shared/countdown';
 import { formatWait } from '../shared/wait-time';
+
+/** Para onde a troca de celular volta quando não há destino guardado. */
+const CHANGE_FALLBACK_URL = '/app/conta/celular';
 
 type EntryProblem = StartError | 'local_invalid_phone';
 
 /**
- * Informar celular (`/auth/celular`, spec 004 T056), modo primeira confirmação. O modo troca (celular
- * já confirmado, com senha ou Google) é a T085. Referência: `V2-informar-celular*.dc.html`.
+ * Informar celular (`/auth/celular`, spec 004 T056 e T085). Referências: `V2-informar-celular*.dc.html` e,
+ * no modo troca (`AccountStore.phoneConfirmed()` verdadeiro), `V2-trocar-celular*.dc.html`.
+ *
+ * Modo troca: o celular atual continua valendo até o novo ser confirmado; o servidor pede a prova de
+ * que é a mesma pessoa (senha atual, ou entrar de novo com o Google). A senha vive só no campo e é
+ * limpa depois de qualquer resposta.
  *
  * O número e o código nunca vão para a URL, para o storage ou para o log. O que o servidor responde
  * é repassado como veio (`PhoneVerificationService`); aqui só se escolhe o texto.
@@ -41,6 +53,7 @@ type EntryProblem = StartError | 'local_invalid_phone';
   selector: 'app-phone-entry',
   imports: [
     ReactiveFormsModule,
+    NgIcon,
     FlowShell,
     Note,
     ZardAlertComponent,
@@ -48,6 +61,7 @@ type EntryProblem = StartError | 'local_invalid_phone';
     ZardFieldImports,
     ZardInputComponent,
   ],
+  providers: [provideIcons(ACCOUNT_ICONS)],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './phone-entry.html',
 })
@@ -56,6 +70,8 @@ export class PhoneEntry implements OnInit {
   private readonly router = inject(Router);
   private readonly accountService = inject(AccountService);
   private readonly verification = inject(PhoneVerificationService);
+  private readonly accountStore = inject(AccountStore);
+  private readonly authService = inject(AuthService);
   private readonly postAuth = inject(PostAuthNavigator);
   private readonly returnUrlService = inject(ReturnUrlService);
 
@@ -63,6 +79,13 @@ export class PhoneEntry implements OnInit {
   protected readonly sub = $localize`É por ele que quem achou o seu pet fala com você. Por isso confirmamos antes.`;
 
   protected readonly phone = new FormControl('', { nonNullable: true });
+  protected readonly password = new FormControl('', { nonNullable: true });
+  protected readonly showPassword = signal(false);
+  private readonly typedPassword = signal('');
+  /** Método que o servidor pediu na última resposta `reauth_required`. */
+  protected readonly reauthMethod = signal<'password' | 'google' | null>(null);
+  protected readonly showPasswordLabel = $localize`Mostrar senha`;
+  protected readonly hidePasswordLabel = $localize`Ocultar senha`;
   protected readonly sending = signal(false);
   protected readonly problem = signal<EntryProblem | null>(null);
   private readonly retryAfter = signal<number | undefined>(undefined);
@@ -72,6 +95,18 @@ export class PhoneEntry implements OnInit {
     initialValue: this.route.snapshot.queryParamMap,
   });
   private readonly returnUrl = computed(() => sanitizeReturnUrl(this.query().get('returnUrl')));
+
+  /** Modo troca: já existe um celular confirmado. */
+  protected readonly changeMode = this.accountStore.phoneConfirmed;
+  protected readonly currentPhone = computed(() => {
+    const phone = this.accountStore.account()?.celular ?? null;
+    return phone === null ? null : formatBrPhone(phone);
+  });
+  protected readonly needsPassword = computed(
+    () => this.changeMode() && (this.accountStore.hasPassword() || this.reauthMethod() === 'password'),
+  );
+  protected readonly needsGoogle = computed(() => this.changeMode() && this.reauthMethod() === 'google');
+  protected readonly passwordInvalid = computed(() => this.problem() === 'invalid_password');
 
   protected readonly phoneInvalid = computed(
     () => this.problem() === 'invalid_phone' || this.problem() === 'local_invalid_phone',
@@ -107,7 +142,12 @@ export class PhoneEntry implements OnInit {
     }
   });
 
-  protected readonly sendDisabled = computed(() => this.sending() || this.cooldown.remaining() > 0);
+  protected readonly sendDisabled = computed(
+    () =>
+      this.sending() ||
+      this.cooldown.remaining() > 0 ||
+      (this.needsPassword() && this.typedPassword() === ''),
+  );
 
   async ngOnInit(): Promise<void> {
     this.returnUrlService.capture(this.query().get('returnUrl'));
@@ -126,6 +166,15 @@ export class PhoneEntry implements OnInit {
     if (this.phoneInvalid()) this.problem.set(null);
   }
 
+  protected currentText(current: string): string {
+    return $localize`Seu celular atual: ${current}:phone:. Ele continua valendo até você confirmar o novo.`;
+  }
+
+  protected onPasswordInput(): void {
+    this.typedPassword.set(this.password.value);
+    if (this.problem() === 'invalid_password' || this.problem() === 'reauth_required') this.problem.set(null);
+  }
+
   protected async onSend(): Promise<void> {
     if (this.sendDisabled()) return;
     this.problem.set(null);
@@ -138,7 +187,11 @@ export class PhoneEntry implements OnInit {
 
     this.sending.set(true);
     try {
-      const result = await this.verification.start({ phone: e164 });
+      const password = this.needsPassword() ? this.password.value : undefined;
+      const result = await this.verification.start(
+        password === undefined ? { phone: e164 } : { phone: e164, password },
+      );
+      this.clearPassword();
       if (result.ok) {
         await this.router.navigate(['/auth/confirmar-celular'], this.queryParamsOptions());
         return;
@@ -146,6 +199,9 @@ export class PhoneEntry implements OnInit {
       if (result.error === 'terms_required') {
         await this.router.navigate(['/auth/termos'], this.queryParamsOptions());
         return;
+      }
+      if (result.error === 'reauth_required') {
+        this.reauthMethod.set(result.method ?? (this.accountStore.hasPassword() ? 'password' : 'google'));
       }
       this.retryAfter.set(result.retryAfterSeconds);
       if (result.error === 'cooldown' && result.retryAfterSeconds !== undefined) {
@@ -159,6 +215,24 @@ export class PhoneEntry implements OnInit {
 
   protected skip(): Promise<boolean> {
     return this.postAuth.go({ skipPhone: true });
+  }
+
+  /** Modo troca: "Cancelar" volta para onde a pessoa estava (ou para a tela do celular). */
+  protected cancel(): Promise<boolean> {
+    return this.router.navigateByUrl(this.returnUrl() ?? CHANGE_FALLBACK_URL);
+  }
+
+  /** Conta só com o Google: guarda a volta para a tela do celular e abre o Google de novo. */
+  protected async onGoogleReauth(): Promise<void> {
+    if (this.sending()) return;
+    this.returnUrlService.capture(CHANGE_FALLBACK_URL);
+    await this.authService.signInWithGoogle();
+  }
+
+  private clearPassword(): void {
+    this.password.setValue('');
+    this.typedPassword.set('');
+    this.showPassword.set(false);
   }
 
   private queryParamsOptions(): { queryParams?: { returnUrl: string } } {

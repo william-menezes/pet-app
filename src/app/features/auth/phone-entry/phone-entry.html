@@ -1,17 +1,42 @@
-<!-- Informar celular (primeira confirmação). Referência: design/telas-v2/V2-informar-celular*.dc.html; contrato §4. -->
-<app-flow-shell [headline]="headline" [sub]="sub">
+<!--
+  Informar celular. Referência: design/telas-v2/V2-informar-celular*.dc.html (primeira confirmação) e
+  V2-trocar-celular*.dc.html (modo troca); contrato §4.
+-->
+<app-flow-shell
+  [headline]="headline"
+  [sub]="sub"
+  [back]="changeMode() ? 'close' : null"
+  [backLink]="changeMode() ? '/app/conta/celular' : null">
   <div [attr.aria-busy]="sending()">
-    <h1 class="font-display text-[32px] leading-[1.04] font-bold tracking-[-0.03em] text-foreground md:text-[42px]" i18n>
-      Qual é o seu celular?
+    <h1 class="font-display text-[32px] leading-[1.04] font-bold tracking-[-0.03em] text-foreground md:text-[42px]" data-testid="phone-title">
+      @if (changeMode()) {
+        <ng-container i18n>Novo celular</ng-container>
+      } @else {
+        <ng-container i18n>Qual é o seu celular?</ng-container>
+      }
     </h1>
     <p class="mt-2.5 text-base leading-[1.45] text-text" i18n>
       É por ele que quem achou o seu pet fala com você. Vamos confirmar por SMS.
     </p>
   </div>
 
+  @if (changeMode() && currentPhone(); as current) {
+    <z-alert
+      zType="neutral"
+      [zRole]="'status'"
+      [zDescription]="currentText(current)"
+      data-testid="phone-current" />
+  }
+
   <form id="phone-entry-form" class="flex flex-col gap-4" (submit)="$event.preventDefault(); onSend()" novalidate>
     <div z-field>
-      <label z-field-label for="phone-entry-input" i18n>Celular</label>
+      <label z-field-label for="phone-entry-input">
+        @if (changeMode()) {
+          <ng-container i18n>Novo celular</ng-container>
+        } @else {
+          <ng-container i18n>Celular</ng-container>
+        }
+      </label>
       <input
         z-input
         id="phone-entry-input"
@@ -26,6 +51,41 @@
         data-testid="phone-input" />
       <p z-field-description id="phone-entry-help" class="text-[13px]" i18n>Com DDD. Só números do Brasil.</p>
     </div>
+
+    @if (needsPassword()) {
+      <div z-field>
+        <label z-field-label for="phone-entry-password" i18n>Senha atual</label>
+        <div class="relative">
+          <input
+            z-input
+            id="phone-entry-password"
+            class="pr-[52px]"
+            [type]="showPassword() ? 'text' : 'password'"
+            autocomplete="current-password"
+            [formControl]="password"
+            aria-required="true"
+            [attr.aria-invalid]="passwordInvalid() ? 'true' : null"
+            aria-describedby="phone-entry-password-help"
+            (input)="onPasswordInput()"
+            data-testid="phone-password" />
+          <button
+            type="button"
+            z-button
+            zType="ghost"
+            zSize="icon"
+            class="absolute top-[5px] right-[5px]"
+            [attr.aria-pressed]="showPassword()"
+            [attr.aria-label]="showPassword() ? hidePasswordLabel : showPasswordLabel"
+            (click)="showPassword.set(!showPassword())"
+            data-testid="phone-password-toggle">
+            <ng-icon [name]="showPassword() ? 'eyeOff' : 'eye'" size="20" class="text-muted-foreground" aria-hidden="true" />
+          </button>
+        </div>
+        <p z-field-description id="phone-entry-password-help" class="text-[13px]" i18n>
+          Pedimos a senha para ter certeza de que é você.
+        </p>
+      </div>
+    }
   </form>
 
   <div aria-live="polite" id="phone-entry-error">
@@ -34,7 +94,24 @@
     }
   </div>
 
-  <app-note icon="info" i18n>Sem celular confirmado, não dá para ativar uma tag.</app-note>
+  @if (needsGoogle()) {
+    <button
+      type="button"
+      z-button
+      zType="outline"
+      zSize="lg"
+      class="w-full"
+      [zDisabled]="sending()"
+      (click)="onGoogleReauth()"
+      data-testid="phone-google-reauth"
+      i18n>
+      Entrar de novo com o Google
+    </button>
+  }
+
+  @if (!changeMode()) {
+    <app-note icon="info" i18n>Sem celular confirmado, não dá para ativar uma tag.</app-note>
+  }
 
   <button
     footer
@@ -49,15 +126,29 @@
     i18n>
     Enviar código por SMS
   </button>
-  <button
-    footer
-    type="button"
-    z-button
-    zType="ghost"
-    class="w-full"
-    (click)="skip()"
-    data-testid="phone-skip"
-    i18n>
-    Agora não
-  </button>
+  @if (changeMode()) {
+    <button
+      footer
+      type="button"
+      z-button
+      zType="ghost"
+      class="w-full"
+      (click)="cancel()"
+      data-testid="phone-skip"
+      i18n>
+      Cancelar
+    </button>
+  } @else {
+    <button
+      footer
+      type="button"
+      z-button
+      zType="ghost"
+      class="w-full"
+      (click)="skip()"
+      data-testid="phone-skip"
+      i18n>
+      Agora não
+    </button>
+  }
 </app-flow-shell>
