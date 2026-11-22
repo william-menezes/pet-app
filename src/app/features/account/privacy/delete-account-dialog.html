@@ -1,0 +1,108 @@
+<!-- Diálogo "Excluir sua conta?". Referência: design/telas-v2/V2-conta-excluir*.dc.html; contrato account-delete.edge.md. -->
+<z-alert-dialog [(zVisible)]="visible">
+  <z-alert-dialog-header>
+    <z-alert-dialog-title i18n>Excluir sua conta?</z-alert-dialog-title>
+    <z-alert-dialog-description i18n>
+      Seus dados são apagados e as suas tags ficam sem dono. Não dá para desfazer.
+    </z-alert-dialog-description>
+  </z-alert-dialog-header>
+
+  <form class="flex flex-col gap-4" (submit)="$event.preventDefault(); onDelete()" novalidate [attr.aria-busy]="deleting()">
+    <div z-field>
+      <label z-field-label for="account-delete-confirm-input" i18n>Digite EXCLUIR para confirmar</label>
+      <input
+        z-input
+        id="account-delete-confirm-input"
+        type="text"
+        autocomplete="off"
+        [attr.autocapitalize]="'characters'"
+        spellcheck="false"
+        [formControl]="confirmText"
+        aria-required="true"
+        (input)="onConfirmInput()"
+        data-testid="account-delete-confirm-text" />
+    </div>
+
+    @if (needsPassword()) {
+      <div z-field>
+        <label z-field-label for="account-delete-password-input" i18n>Senha atual</label>
+        <div class="relative">
+          <input
+            z-input
+            id="account-delete-password-input"
+            class="pr-[52px]"
+            [type]="showPassword() ? 'text' : 'password'"
+            autocomplete="current-password"
+            [formControl]="password"
+            aria-required="true"
+            [attr.aria-invalid]="problem() === 'invalid_password' ? 'true' : null"
+            (input)="onPasswordInput()"
+            data-testid="account-delete-password" />
+          <button
+            type="button"
+            z-button
+            zType="ghost"
+            zSize="icon"
+            class="absolute top-[5px] right-[5px]"
+            [attr.aria-pressed]="showPassword()"
+            [attr.aria-label]="showPassword() ? hidePasswordLabel : showPasswordLabel"
+            (click)="showPassword.set(!showPassword())"
+            data-testid="account-delete-password-toggle">
+            <ng-icon [name]="showPassword() ? 'eyeOff' : 'eye'" size="20" class="text-muted-foreground" aria-hidden="true" />
+          </button>
+        </div>
+      </div>
+    } @else if (isGoogleOnly()) {
+      <p class="text-sm leading-[1.45] text-text" data-testid="account-delete-google-note" i18n>
+        Sua conta usa o login do Google. Se pedirmos, você entra de novo com o Google para confirmar que é você.
+      </p>
+    }
+
+    <div aria-live="polite">
+      @if (problemMessage(); as message) {
+        <z-alert zType="danger" [zRole]="'status'" [zDescription]="message" data-testid="account-delete-error" />
+      }
+    </div>
+
+    @if (needsGoogle()) {
+      <button
+        type="button"
+        z-button
+        zType="outline"
+        zSize="lg"
+        class="w-full"
+        [zDisabled]="deleting()"
+        (click)="onGoogleReauth()"
+        data-testid="account-delete-google-reauth"
+        i18n>
+        Entrar de novo com o Google
+      </button>
+    }
+  </form>
+
+  <z-alert-dialog-footer>
+    <button
+      type="button"
+      z-button
+      zType="outline"
+      zSize="lg"
+      [zDisabled]="deleting()"
+      (click)="cancel()"
+      data-testid="account-delete-cancel"
+      i18n>
+      Cancelar
+    </button>
+    <button
+      type="button"
+      z-button
+      zType="destructive"
+      zSize="lg"
+      [zLoading]="deleting()"
+      [zDisabled]="!canSubmit()"
+      (click)="onDelete()"
+      data-testid="account-delete-submit"
+      i18n>
+      Excluir definitivamente
+    </button>
+  </z-alert-dialog-footer>
+</z-alert-dialog>
