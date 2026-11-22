@@ -19,6 +19,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { decide, retryAfterSeconds } from "./rate-limit.ts";
+import { corsHeaders, handleOptions } from "../_shared/http.ts";
 
 // ─────────────────────────────────────────
 // Tipos de request/response (contratos/login-rate-limit.edge.md)
@@ -76,11 +77,15 @@ function getTrustedIp(req: Request): string {
 // ─────────────────────────────────────────
 
 Deno.serve(async (req: Request) => {
+  // CORS: preflight do navegador (spec 004, T021). A logica de decisao abaixo nao muda.
+  const preflight = handleOptions(req);
+  if (preflight) return preflight;
+
   // Rejeitar métodos além de POST.
   if (req.method !== "POST") {
     return new Response(JSON.stringify({ error: "Method not allowed" }), {
       status: 405,
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...corsHeaders(req) },
     });
   }
 
@@ -93,7 +98,7 @@ Deno.serve(async (req: Request) => {
     console.error("login-guard: variáveis de ambiente obrigatórias ausentes");
     return new Response(
       JSON.stringify({ error: "Configuração do servidor incompleta" }),
-      { status: 500, headers: { "Content-Type": "application/json" } },
+      { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders(req) } },
     );
   }
 
@@ -110,7 +115,7 @@ Deno.serve(async (req: Request) => {
   } catch {
     return new Response(JSON.stringify({ error: "Corpo JSON inválido" }), {
       status: 400,
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...corsHeaders(req) },
     });
   }
 
@@ -120,7 +125,7 @@ Deno.serve(async (req: Request) => {
   if (!phase || !email || typeof email !== "string") {
     return new Response(
       JSON.stringify({ error: "Parâmetros obrigatórios ausentes" }),
-      { status: 400, headers: { "Content-Type": "application/json" } },
+      { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders(req) } },
     );
   }
 
@@ -153,7 +158,7 @@ Deno.serve(async (req: Request) => {
       };
       return new Response(JSON.stringify(response), {
         status: 200,
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...corsHeaders(req) },
       });
     }
 
@@ -180,7 +185,7 @@ Deno.serve(async (req: Request) => {
 
     return new Response(JSON.stringify(response), {
       status: 200,
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...corsHeaders(req) },
     });
   }
 
@@ -189,7 +194,7 @@ Deno.serve(async (req: Request) => {
     if (typeof success !== "boolean") {
       return new Response(
         JSON.stringify({ error: "Campo 'success' obrigatório em post_result" }),
-        { status: 400, headers: { "Content-Type": "application/json" } },
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders(req) } },
       );
     }
 
@@ -247,13 +252,13 @@ Deno.serve(async (req: Request) => {
 
     return new Response(JSON.stringify(response), {
       status: 200,
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...corsHeaders(req) },
     });
   }
 
   // phase desconhecido.
   return new Response(
     JSON.stringify({ error: "Fase desconhecida. Use 'pre_attempt' ou 'post_result'." }),
-    { status: 400, headers: { "Content-Type": "application/json" } },
+    { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders(req) } },
   );
 });

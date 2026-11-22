@@ -46,10 +46,17 @@ jobs:
         run: supabase start
       - name: Testes de banco (pgTAP)
         run: supabase test db
+      # Spec 004: conferencias que o pgTAP nao alcanca (config do Auth, e-mail no coletor, login, CORS).
+      # Roda mesmo se o pgTAP falhar, para um unico run mostrar tudo que esta vermelho.
+      - name: Conferencias de integracao (Auth, e-mail, CORS)
+        if: ${{ !cancelled() }}
+        run: bash scripts/ci/supabase-checks.sh
       - uses: denoland/setup-deno@22d081ff2d3a40755e97629de92e3bcbfa7cf2ed # v2.0.5
+        if: ${{ !cancelled() }}
         with:
           deno-version: v2.x
       - name: Testes das Edge Functions (deno test)
+        if: ${{ !cancelled() }}
         run: |
           files=$(find supabase/functions -name '*.test.ts' -not -path '*/node_modules/*')
           if [ -z "$files" ]; then echo "Nenhum teste de Edge Function."; exit 0; fi
