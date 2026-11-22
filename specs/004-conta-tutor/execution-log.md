@@ -281,7 +281,7 @@ T033 a T036 `a4981a0`. As `[QA]` T038 a T040 ficam para a execução com Supabas
 - `npm run lint`: passa. `npm test -- --watch=false`: **61 arquivos, 407 testes** passam (antes da fase: 56 e 345).
 - `npm run build:stats`: passa, **pacote inicial 408,81 kB** (110,23 kB transferidos; antes 400,28 kB; orçamento 500 kB).
   `npm run check:ui` e `npm run check:bundle`: ok (a página pública não carrega o app autenticado).
-- E2E, backend 100% simulado (`e2e/signup-ui.spec.ts`, 11 testes, e `account-foundation.spec.ts`, 15 testes): sem rolagem
+- E2E, backend 100% simulado (`e2e/signup-ui.spec.ts`, 12 testes, e `account-foundation.spec.ts`, 15 testes): sem rolagem
   horizontal em 320, 390, 768 e 1440 px nas boas-vindas, no cadastro, na confirmação (espera e link) e na página legal;
   boas-vindas preservam `returnUrl`; cadastro com erros não envia; cadastro envia `name`, `phone` E.164, `terms_version`,
   `return_to` e `return_to_at`, vai a `/auth/confirmar-email` sem e-mail nem senha na URL; reenvio sem estado; link não
