@@ -1,0 +1,76 @@
+<!-- Dados pessoais. Referência: design/telas-v2/V2-conta-dados*.dc.html; contrato §4. -->
+<div class="flex w-full flex-col gap-3 md:max-w-[560px] md:gap-4" data-testid="account-personal">
+  <app-screen-header title="Dados pessoais" i18n-title [back]="'back'" [backLink]="'/app/conta'" />
+
+  <form class="flex flex-col gap-4" (submit)="$event.preventDefault(); onSave()" novalidate [attr.aria-busy]="saving()">
+    <div z-field>
+      <label z-field-label for="account-personal-name-input" i18n>Nome</label>
+      <input
+        z-input
+        id="account-personal-name-input"
+        type="text"
+        autocomplete="name"
+        [formControl]="name"
+        aria-required="true"
+        [attr.aria-invalid]="nameInvalid() ? 'true' : null"
+        [attr.aria-describedby]="nameInvalid() ? 'account-personal-name-error' : null"
+        (input)="onNameInput()"
+        data-testid="account-personal-name" />
+      @if (problem() === 'empty') {
+        <z-field-error id="account-personal-name-error" data-testid="account-personal-name-error" i18n>
+          Informe seu nome.
+        </z-field-error>
+      } @else if (problem() === 'length') {
+        <z-field-error id="account-personal-name-error" data-testid="account-personal-name-error" i18n>
+          Use entre 2 e 80 caracteres.
+        </z-field-error>
+      }
+    </div>
+
+    <div z-field>
+      <label z-field-label for="account-personal-email-input" i18n>E-mail</label>
+      <input
+        z-input
+        id="account-personal-email-input"
+        type="email"
+        readonly
+        class="bg-inset text-muted-foreground"
+        [value]="account()?.email ?? ''"
+        aria-describedby="account-personal-email-help"
+        data-testid="account-personal-email" />
+      <p id="account-personal-email-help" class="flex items-center gap-1.5 text-[13px] text-muted-foreground">
+        <ng-icon name="lock" size="16" class="shrink-0" aria-hidden="true" />
+        <span i18n>O e-mail não pode ser alterado por aqui.</span>
+      </p>
+    </div>
+
+    <div aria-live="polite">
+      @if (problem() === 'network') {
+        <z-alert
+          zType="danger"
+          [zRole]="'status'"
+          zDescription="Não conseguimos conectar. Verifique sua conexão e tente de novo."
+          i18n-zDescription
+          data-testid="account-personal-error" />
+      }
+      @if (saved()) {
+        <!-- O aviso visível é o do sonner; este nó só existe para os testes (sem leitura dupla). -->
+        <span class="sr-only" data-testid="account-personal-saved" i18n>Dados salvos.</span>
+      }
+    </div>
+
+    <div class="flex">
+      <button
+        type="submit"
+        z-button
+        zSize="lg"
+        class="w-full text-lg md:w-auto"
+        [zLoading]="saving()"
+        [zDisabled]="!changed() || saving()"
+        data-testid="account-personal-save"
+        i18n>
+        Salvar alterações
+      </button>
+    </div>
+  </form>
+</div>
