@@ -16,3 +16,4 @@
 - [Fundação da spec 004](gotcha-spec004-fundacao.md) — restoreSession sem chamador, segments do canMatch, guard no pacote inicial, e2e simulado
 - [Telas de /auth da spec 004](gotcha-spec004-fase3-telas.md) — z-button disabled, provideIcons local, flow-shell, AuthStore após verifyOtp
 - [Telas de celular, termos e Google (spec 004)](gotcha-spec004-fase4-5.md) — footer em @if, relógio falso zoneless, z-input-otp, e2e simulado
+- [Fases 6 e 7 da spec 004](gotcha-spec004-fase6-7.md) — ng test com arquivo, signOut com scope, overlay no document, e2e do Google
