@@ -13,3 +13,6 @@
 - [Fase 4 da spec 002](gotcha-zardui-fase4-testes-e-capturas.md) — matchMedia no jsdom, Playwright apaga test-results, heredoc e regex
 - [Host display vs hidden](gotcha-host-display-vs-hidden.md) — esconder por largura em div de embrulho; e2e de atalho espera hidratação
 - [Fases 6 e 7 da spec 002](gotcha-spec002-fase6-7.md) — sem Python, sed come escapes, galeria em SSR no escuro, regras do check:ui
+- [Fundação da spec 004](gotcha-spec004-fundacao.md) — restoreSession sem chamador, segments do canMatch, guard no pacote inicial, e2e simulado
+- [Telas de /auth da spec 004](gotcha-spec004-fase3-telas.md) — z-button disabled, provideIcons local, flow-shell, AuthStore após verifyOtp
+- [Telas de celular, termos e Google (spec 004)](gotcha-spec004-fase4-5.md) — footer em @if, relógio falso zoneless, z-input-otp, e2e simulado
