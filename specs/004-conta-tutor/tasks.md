@@ -581,25 +581,25 @@ senha pelo link; a antiga deixa de valer.
   dão: corpo idêntico e tempo ≥ 0,6 s para e-mail existente e inexistente; no 4º pedido para o
   mesmo e-mail, **nenhum** e-mail novo no coletor local e um evento
   `senha_recuperacao_solicitada` com `permitido = false`.
-- [ ] T068 [P] [US4] [FE] Criar `src/app/core/auth/password.service.ts` com `requestRecovery` e
+- [x] T068 [P] [US4] [FE] Criar `src/app/core/auth/password.service.ts` com `requestRecovery` e
   `resetPassword` (e a assinatura de `changePassword` lançando "não implementado": entra na T087)
   e `password.service.spec.ts`, conforme `contracts/password-recovery.edge.md`. **Feito quando**:
   o teste cobre: `requestRecovery` resolve igual em sucesso e em falha de rede; `resetPassword`
   chama `verifyOtp` (`type: 'recovery'`) → `updateUser` → `signOut({ scope: 'global' })` nessa
   ordem; `invalid_link`; `weak_password`; nova tentativa depois de `weak_password` **não** repete
   o `verifyOtp`.
-- [ ] T069 [US4] [FE] Criar a tela `src/app/features/auth/forgot-password/` (3 arquivos) e
+- [x] T069 [US4] [FE] Criar a tela `src/app/features/auth/forgot-password/` (3 arquivos) e
   registrar `/auth/recuperar-senha` com `anonGuard`. Campo de e-mail, "Enviar link", estado
   `forgot-password-sent` com o texto fixo do contrato, "Voltar para entrar", botão desabilitado
   por 60 s depois de cada envio. Tela de referência na tabela do contrato (regra 14). **Feito quando**: o teste cobre a
   validação de formato, a mesma tela de confirmação para qualquer resposta e a contagem.
-- [ ] T070 [US4] [FE] Criar a tela `src/app/features/auth/reset-password/` (3 arquivos) e
+- [x] T070 [US4] [FE] Criar a tela `src/app/features/auth/reset-password/` (3 arquivos) e
   registrar `/auth/nova-senha` **sem guard**. Sem `token_hash` ⇒ estado `reset-password-invalid`;
   campo "Nova senha" com mostrar; "Salvar nova senha" ⇒ `resetPassword`; sucesso ⇒
   `/auth/login?senha=alterada`; `invalid_link` ⇒ "Pedir novo link". Nenhuma chamada ao carregar.
   Tela de referência na tabela do contrato (regra 14). **Feito quando**: o teste prova que nada é chamado na criação e
   cobre senha de 7 caracteres, sucesso e link inválido.
-- [ ] T071 [US4] [FE] Em `src/app/features/auth/login/`: o link "Esqueci a senha" passa a navegar
+- [x] T071 [US4] [FE] Em `src/app/features/auth/login/`: o link "Esqueci a senha" passa a navegar
   para `/auth/recuperar-senha` (sem o `aria-label` "(em breve)"), e `?senha=alterada` mostra um
   `z-alert` de sucesso "Senha alterada. Entre com a nova senha." com
   `data-testid="login-password-changed"`. **Feito quando**: `login.spec.ts` continua verde, com
