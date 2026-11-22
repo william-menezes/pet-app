@@ -71,7 +71,7 @@ INSERT INTO public.tag_assignments (id, tag_code, pet_id, tutor_id, started_at) 
 CREATE TEMP TABLE t_res (k text PRIMARY KEY, r jsonb NOT NULL);
 GRANT ALL ON t_res TO service_role;
 -- Token (texto) guardado na entrada `k` da tabela de respostas (criada antes: o corpo da funcao SQL e validado ao criar).
-CREATE OR REPLACE FUNCTION tests.tok(p_k text) RETURNS text LANGUAGE sql STABLE AS $ SELECT r ->> 'scan_token' FROM t_res WHERE k = p_k; $;
+CREATE OR REPLACE FUNCTION tests.tok(p_k text) RETURNS text LANGUAGE sql STABLE AS $$ SELECT r ->> 'scan_token' FROM t_res WHERE k = p_k; $$;
 
 -- ═══════════════ Scan novo ═══════════════
 

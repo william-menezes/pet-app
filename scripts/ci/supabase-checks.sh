@@ -747,7 +747,7 @@ echo "diagnostico: resolve-tag so com x-faro-ssr-key (sem apikey nem Authorizati
 
 RA="$(ssr_call resolve-tag "{\"code\":\"$CODE_AS\",\"ip_hash\":\"ci-resolve-1\"}")"
 check "resolve-tag (tag vinculada do seed): state assigned com o nome do pet" bash -c 'printf "%s" "$1" | grep -q "\"state\":\"assigned\"" && printf "%s" "$1" | grep -qF "Paçoca"' _ "$RA"
-check "resolve-tag: devolve o primeiro nome e o link do WhatsApp liberados pela Ana" bash -c 'printf "%s" "$1" | grep -qF "\"tutor_first_name\":\"Ana\"" && printf "%s" "$1" | grep -q "\"whatsapp_url\":\"https://wa.me/55"' _ "$RA"
+check "resolve-tag: devolve o primeiro nome (\"Tutor\", de \"Tutor A Teste\") e o link do WhatsApp liberados pela tutora do seed" bash -c 'printf "%s" "$1" | grep -qF "\"tutor_first_name\":\"Tutor\"" && printf "%s" "$1" | grep -qF "\"whatsapp_url\":\"https://wa.me/5511900000001?text="' _ "$RA"
 check "resolve-tag: o codigo sai no formato XXXX-XXXX-X" has "$RA" "\"code\":\"$(seed_display assigned)\""
 check "resolve-tag: nenhum identificador interno, ip_hash, hash de PIN nem photo_path" \
   bash -c '! printf "%s" "$1" | grep -qiE "tutor_id|pet_id|assignment|ip_hash|activation_pin|photo_path|00000000-0000"' _ "$RA"

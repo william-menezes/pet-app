@@ -101,11 +101,11 @@ SELECT is(public.check_tag_for_link('abcd efgh v') ->> 'ok', 'true', 'check: nor
 SELECT is(public.check_tag_for_link('7K3MQ9XAD') ->> 'error', 'invalid_code', 'check: digito verificador invalido: invalid_code');
 SELECT is(public.check_tag_for_link('ABC') ->> 'error', 'invalid_code', 'check: codigo curto: invalid_code');
 SELECT is(public.check_tag_for_link(NULL) ->> 'error', 'invalid_code', 'check: codigo nulo: invalid_code');
+-- 4 chamadas (a conta A fez 5 ate aqui; o limite e 10 por minuto, entao esta ainda e a 9a).
 SELECT is(
-  public.check_tag_for_link('0123456Z3') = public.check_tag_for_link('00000001Y')
-  AND public.check_tag_for_link('00000001Y') = public.check_tag_for_link('10000000Z')
-  AND public.check_tag_for_link('10000000Z') = public.check_tag_for_link('H8ZWE5XGH')
-  AND public.check_tag_for_link('H8ZWE5XGH') = '{"ok":false,"error":"tag_unavailable"}'::jsonb, true,
+  (SELECT array_agg(DISTINCT v.x::text) FROM (VALUES (public.check_tag_for_link('0123456Z3')), (public.check_tag_for_link('00000001Y')),
+                                                     (public.check_tag_for_link('10000000Z')), (public.check_tag_for_link('H8ZWE5XGH'))) AS v (x)),
+  ARRAY['{"ok": false, "error": "tag_unavailable"}']::text[],
   'check: vinculada, bloqueada, anulada e inexistente: a MESMA resposta (tag_unavailable)');
 RESET ROLE;
 

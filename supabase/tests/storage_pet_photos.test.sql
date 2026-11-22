@@ -40,6 +40,17 @@ EXCEPTION WHEN insufficient_privilege THEN
 END;
 $$;
 
+-- Linhas afetadas pelo comando (no papel atual), sem CTE de escrita dentro de subconsulta.
+CREATE OR REPLACE FUNCTION tests.rows_affected(p_sql text) RETURNS integer LANGUAGE plpgsql AS $$
+DECLARE
+  n integer;
+BEGIN
+  EXECUTE p_sql;
+  GET DIAGNOSTICS n = ROW_COUNT;
+  RETURN n;
+END;
+$$;
+
 -- ── Cenario ─────────────────────────────────────────────────────────────
 SELECT tests.mk_user('b6b6b6b6-0000-0000-0000-0000000000a1', 'foto.a@faro.test', 'Ana Foto');
 SELECT tests.mk_user('b6b6b6b6-0000-0000-0000-0000000000b2', 'foto.b@faro.test', 'Beto Foto');
@@ -75,7 +86,7 @@ SELECT is((SELECT count(*)::integer FROM storage.objects WHERE bucket_id = 'pet-
 SELECT lives_ok($$ INSERT INTO storage.objects (bucket_id, name) VALUES ('pet-photos', 'b6b6b6b6-0000-0000-0000-0000000000a1/pet1/outra.jpg') $$, 'A grava na propria pasta');
 SELECT is(tests.denied($$ INSERT INTO storage.objects (bucket_id, name) VALUES ('pet-photos', 'b6b6b6b6-0000-0000-0000-0000000000b2/pet2/invasao.jpg') $$), true, 'A nao grava na pasta do tutor B');
 SELECT is(tests.denied($$ INSERT INTO storage.objects (bucket_id, name) VALUES ('pet-photos', 'solta.jpg') $$), true, 'A nao grava fora de uma pasta propria (caminho sem a pasta do tutor)');
-SELECT is((WITH u AS (UPDATE storage.objects SET name = name WHERE bucket_id = 'pet-photos' AND name LIKE 'b6b6b6b6-0000-0000-0000-0000000000b2/%' RETURNING 1) SELECT count(*)::integer FROM u), 0, 'A nao altera objeto do tutor B');
+SELECT is(tests.rows_affected($$ UPDATE storage.objects SET name = name WHERE bucket_id = 'pet-photos' AND name LIKE 'b6b6b6b6-0000-0000-0000-0000000000b2/%' $$), 0, 'A nao altera objeto do tutor B');
 SELECT is(tests.denied($$ UPDATE storage.objects SET name = 'b6b6b6b6-0000-0000-0000-0000000000b2/pet2/roubo.jpg' WHERE name = 'b6b6b6b6-0000-0000-0000-0000000000a1/pet1/foto.jpg' $$), true, 'A nao move o proprio objeto para a pasta do tutor B');
 RESET ROLE;
 SELECT is((SELECT count(*)::integer FROM storage.objects WHERE bucket_id = 'pet-photos' AND name LIKE 'b6b6b6b6-0000-0000-0000-0000000000b2/%'), 1, 'o objeto do tutor B continua intacto');
