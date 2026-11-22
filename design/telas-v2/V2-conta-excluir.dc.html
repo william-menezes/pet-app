@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Privacidade · celular</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com"></link>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"></link>
+<style>
+body{margin:0}
+a{color:#25337A}a:hover{color:#13201E}
+</style>
+</helmet>
+<div style="position: relative; width: 390px; min-height: 900px; box-sizing: border-box; background: #F7F8F8; font-family: Inter, system-ui, sans-serif; color: #13201E; display: flex; flex-direction: column; overflow: hidden">
+<div style="padding: 12px 16px 0; flex-shrink: 0"><div style="display: flex; align-items: center; gap: 12px; min-height: 48px"><a href="V2-conta.dc.html" aria-label="Voltar" style="position: relative; width: 44px; height: 44px; border-radius: 999px; border: none; background: #FFFFFF; display: flex; align-items: center; justify-content: center; padding: 0; flex-shrink: 0; text-decoration: none"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="#13201E" style="flex-shrink: 0"><path d="M14.29 6.29 8.59 12l5.7 5.71 1.42-1.42-4.3-4.29 4.3-4.29z"></path></svg></a><h1 style="margin: 0; flex-grow: 1; font-family: 'Outfit', Inter, system-ui, sans-serif; font-size: 19px; font-weight: 600; color: #13201E">Privacidade</h1></div></div>
+<div style="flex-grow: 1; padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 12px">
+<div style="background: #FFFFFF; border-radius: 20px; padding: 18px; display: flex; flex-direction: column; gap: 10px; flex-shrink: 0"><h2 style="margin: 0; font-family: 'Outfit', Inter, system-ui, sans-serif; font-size: 19px; line-height: 1.15; font-weight: 600; letter-spacing: -0.01em; color: #13201E">Baixar meus dados</h2><p style="margin: 0; font-size: 15px; line-height: 1.45; color: #33403D">Um arquivo com os dados da sua conta, dos seus pets, das suas tags e o histórico de scans.</p></div><div style="background: #FFFFFF; border-radius: 20px; padding: 18px; display: flex; flex-direction: column; gap: 10px; flex-shrink: 0"><h2 style="margin: 0; font-family: 'Outfit', Inter, system-ui, sans-serif; font-size: 19px; line-height: 1.15; font-weight: 600; letter-spacing: -0.01em; color: #13201E">Excluir minha conta</h2><p style="margin: 0; font-size: 15px; line-height: 1.45; color: #33403D">Suas tags são desvinculadas e ficam livres para uma nova ativação.</p></div><div style="position: absolute; left: 0; top: 0; right: 0; bottom: 0; background: rgba(8, 11, 32, 0.62); display: flex; align-items: flex-end; justify-content: center; padding: 16px; box-sizing: border-box">
+<div role="alertdialog" aria-modal="true" aria-labelledby="exttl" style="width: 100%; max-width: 440px; background: #FFFFFF; border-radius: 24px; padding: 22px; box-sizing: border-box; display: flex; flex-direction: column; gap: 14px; box-shadow: 0 12px 34px rgba(19,32,30,.14), 0 3px 10px rgba(19,32,30,.06)">
+<h2 id="exttl" style="margin: 0; font-family: 'Outfit', Inter, system-ui, sans-serif; font-size: 24px; line-height: 1.1; font-weight: 700; letter-spacing: -0.02em; color: #13201E">Excluir sua conta?</h2>
+<p style="margin: 0; font-size: 15px; line-height: 1.45; color: #33403D">Seus dados são apagados e as suas tags ficam sem dono. Não dá para desfazer.</p>
+<div style="display: flex; flex-direction: column; gap: 6px"><label for="exconf" style="font-size: 14px; font-weight: 600; color: #13201E">Digite EXCLUIR para confirmar</label><div style="position: relative"><input id="exconf" type="text" value="EXCLUIR" style="height: 54px; width: 100%; box-sizing: border-box; border-radius: 12px; border: 1.5px solid #7F8B88; background: #FFFFFF; padding: 0 16px 0 16px; font-family: Inter, system-ui, sans-serif; font-size: 16px; color: #13201E"></input></div></div>
+<div style="display: flex; flex-direction: column; gap: 6px"><label for="exsenha" style="font-size: 14px; font-weight: 600; color: #13201E">Senha atual</label><div style="position: relative"><input id="exsenha" type="password" value="senhasegura" style="height: 54px; width: 100%; box-sizing: border-box; border-radius: 12px; border: 1.5px solid #7F8B88; background: #FFFFFF; padding: 0 52px 0 16px; font-family: Inter, system-ui, sans-serif; font-size: 16px; color: #13201E"></input><button aria-label="Mostrar senha" style="position: absolute; right: 5px; top: 5px; width: 44px; height: 44px; border: none; border-radius: 999px; background: transparent; display: flex; align-items: center; justify-content: center; padding: 0"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="#5E6C69" style="flex-shrink: 0"><path d="M12 9a3 3 0 1 0 0 6 3 3 0 1 0 0-6"></path><path d="M12 19c7.63 0 9.93-6.62 9.95-6.68.07-.21.07-.43 0-.63-.02-.07-2.32-6.68-9.95-6.68s-9.93 6.61-9.95 6.67c-.07.21-.07.43 0 .63.02.07 2.32 6.68 9.95 6.68Zm0-12c5.35 0 7.42 3.85 7.93 5-.5 1.16-2.58 5-7.93 5s-7.42-3.84-7.93-5c.5-1.16 2.58-5 7.93-5"></path></svg></button></div></div>
+<button style="height: 56px; width: 100%; border: none; border-radius: 999px; background: #A52E22; color: #FFFFFF; font-family: 'Outfit', Inter, system-ui, sans-serif; font-size: 17px; font-weight: 600">Excluir definitivamente</button>
+<a href="V2-conta-privacidade.dc.html" style="height: 52px; width: 100%; padding: 0 20px; box-sizing: border-box; border-radius: 999px; display: flex; align-items: center; justify-content: center; gap: 10px; font-family: 'Outfit', Inter, system-ui, sans-serif; font-size: 16px; font-weight: 600; text-decoration: none; flex-shrink: 0; background: #FFFFFF; color: #13201E; border: 1.5px solid #13201E"><span>Cancelar</span></a>
+</div></div><div style="flex-grow: 1; min-height: 4px"></div>
+</div>
+
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":900}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>
