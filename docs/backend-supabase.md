@@ -1,5 +1,7 @@
 # Arquitetura de Backend & Dados (Supabase) — Faro
 
+> **DESATUALIZADO (pivô de novembro de 2026).** Este documento descreve o produto anterior ao pivô (plataforma de saúde por assinatura, PrimeNG). Não use para decidir nada. Vale: `.specify/memory/constitution.md` (v2.0.0), `docs/decisoes-pivo.md`, `CLAUDE.md`, `DESIGN.md` e as specs `002`, `003`, `004`. Mantido só como histórico até ser reescrito ou removido.
+
 > **Documento de Arquitetura de Backend/Dados** do Faro — SaaS de cuidado, saúde e **resgate de pets** via QR Code.
 >
 > **Status**: v1.0 (rascunho de referência do MVP) · **Data**: 2026-06-03 · **Autor**: Especialista Supabase

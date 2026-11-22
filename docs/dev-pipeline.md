@@ -1,67 +1,90 @@
 # Esteira de Desenvolvimento do Faro
 
-Pipeline de desenvolvimento orientado a Spec Kit, com subagentes especializados e os
-portões (gates) de qualidade da [constituição](../.specify/memory/constitution.md).
-Para **cada feature** (uma pasta `specs/NNN-*/`), o fluxo é o abaixo.
+Como uma feature vai da ideia ao merge, quem faz cada parte e onde estão os portões. Vale a partir
+do pivô de novembro de 2026 (constituição v2.1.0).
 
-## Papéis (subagentes em `.claude/agents/`)
+## Quem faz o quê
 
-| Papel | Arquivo | Modelo | Responsabilidade |
+| Etapa | Quem | Modelo | Saída |
 |---|---|---|---|
-| **Product Owner** | `product-owner.md` | opus | Requisito → `spec.md` (+ checklist), coerência com glossário e specs antigas |
-| **Tech Lead / Arquiteto** | `tech-lead-planner.md` | opus | `spec.md` → `plan.md` (Constitution Check) + `data-model`/`contracts` + `tasks.md` |
-| **UI/UX Designer** | `ui-ux-designer.md` | opus | `ui-ux.md` + `claude-design-brief.md` (por feature) + dono da identidade (`design-system.md`) |
-| **Revisão de design (gate)** | — (humano + Claude Design) | — | Aprovar a tela **antes** de implementar (Gate 👁️) |
-| **Frontend** | `frontend-angular.md` | sonnet | Implementa UI Angular 21 + PrimeNG Aura (Paleta C); usa skill `angular-developer` |
-| **Backend/Supabase** | `backend-supabase.md` | sonnet | Migrations, RLS, Edge Functions, pool de códigos, billing port, Storage (usa **MCP Supabase**) |
-| **QA** | `qa-engineer.md` | sonnet | Testes (unit/integração RLS/e2e) + **gate de segurança/RLS + Rescue-First** |
-| **Revisão (gate)** | — (skills nativas) | — | `/security-review` + `/code-review` antes do merge (PII/RLS/pagamento/exposição) |
+| Spec, clarify, plano, contratos, tarefas | sessão principal do Claude Code, com o William | modelo forte (Opus/Fable) | `specs/NNN-nome/` completo |
+| Design de telas | Claude Design (canvas *Faro · Telas do MVP* e *Faro Design System*) | — | telas aprovadas, exportadas para `design/telas-v2/` |
+| Backend | subagente `backend-supabase` | **Sonnet** | migrations, RLS, RPCs, Edge Functions, pgTAP |
+| Frontend | subagente `frontend-angular` | **Sonnet** | telas em ZardUI + Tailwind, três larguras |
+| Testes e gate de segurança | subagente `qa-engineer` | **Sonnet** | testes e veredito VERDE ou BLOQUEADO |
+| Crítica visual | skill `impeccable` | — | achados sobre a tela renderizada |
+| Revisão final | William, com `/security-review` e `/code-review` | — | aprovação do merge |
 
-> Modelos são ajustáveis. PO e Tech Lead usam modelo forte (raciocínio); implementadores e QA usam Sonnet (velocidade).
+Os subagentes `product-owner`, `tech-lead-planner` e `ui-ux-designer` foram aposentados em
+2026-11-21: spec e plano são escritos na sessão principal, e o design nasce no Claude Design.
 
-## Fluxo por feature
+## Fluxo
 
 ```mermaid
 flowchart TD
-    A[Requisito do usuário] --> PO[Product Owner: spec.md + clarify]
-    PO -->|checklist verde| TL[Tech Lead: plan.md + Constitution Check + tasks.md]
-    TL --> UX[UI/UX: ui-ux.md + claude-design-brief.md]
-    TL -->|contracts prontos| BE[Backend/Supabase + MCP]
-    UX --> DR{Revisao de design humano: ui-ux.md ou Claude Design}
-    DR -->|aprovado| FE[Frontend Angular]
-    BE --> FE
-    BE --> QA[QA: testes + gate seguranca/RLS]
+    A[Ideia ou decisão do William] --> S[Sessão principal: spec + clarify]
+    S --> P[Sessão principal: plano, contratos, tarefas]
+    P --> G1{William aprova as tarefas}
+    G1 -->|sim| BE[backend-supabase]
+    G1 -->|sim| FE[frontend-angular]
+    BE --> QA[qa-engineer: testes + gate]
     FE --> QA
-    QA -->|verde| REV[Gate: /security-review + /code-review]
-    REV -->|aprovado| M[Merge / Demo]
+    QA -->|VERDE| G2{William: /security-review + /code-review}
+    QA -->|BLOQUEADO| BE
+    G2 -->|aprovado| M[merge em develop]
 ```
 
-1. **Requisito → Spec** (PO). Saída: `spec.md` + `checklists/requirements.md` verde. Gate: sem `[NEEDS CLARIFICATION]` crítico em aberto.
-2. **Spec → Plano + Tarefas** (Tech Lead). Saída: `plan.md` (com **Constitution Check ✓**), `data-model.md`, `contracts/`, `tasks.md`. Gate: Constitution Check sem violação injustificada.
-3. **Desenho de UI/UX** (UI/UX Designer). Saídas: `ui-ux.md` (telas/fluxos, estados, componentes PrimeNG, microcopy, a11y) **e** `claude-design-brief.md` (prompt p/ o Claude Design, escopado à feature). Roda **em paralelo** ao Backend.
-4. **Revisão de design — GATE humano** 👁️. Você avalia a tela **antes** de implementar: (a) lê o `ui-ux.md`, ou (b) cola o `claude-design-brief.md` no **Claude Design**, vê/itera o mockup e aprova (handoff volta ao Claude Code). O Frontend só começa após o "aprovado".
-5. **Implementação** (Backend + Frontend, **em paralelo**). Backend: schema/RLS/Edge/Storage (usa o **MCP Supabase**); Frontend: telas em Angular 21 + PrimeNG usando o **FaroPreset + `src/styles/faro-ds.css`**, seguindo o `ui-ux.md` (e o visual aprovado do Claude Design).
-6. **Testes & qualidade** (QA). Gate **bloqueante**: isolamento multi-tenant, anon-só-projeção, anti-enumeração, **Rescue-First com assinatura inativa**, scan de segredos.
-7. **Revisão final** (gate humano): rodar `/security-review` e `/code-review` quando o diff tocar PII/RLS/pagamento/exposição pública (exigência da constituição).
-8. **Merge/Demo**.
+1. **Spec** (`spec.md`): o quê e por quê, sem stack. Decisões já tomadas vão em "Clarifications".
+2. **Plano** (`plan.md`, `research.md`, `data-model.md`, `contracts/`): a stack entra aqui. O
+   Constitution Check percorre os oito princípios.
+3. **Tarefas** (`tasks.md`): escritas para um agente menor executar sem contexto. Cada tarefa tem
+   os arquivos exatos, a referência a seguir e um **"Feito quando"** verificável.
+4. **Portão 1**: a implementação só começa com a aprovação do William.
+5. **Implementação**: backend e frontend em paralelo depois que os contratos existem. Uma tarefa
+   por vez, na ordem. Diante de ambiguidade, o agente para e relata.
+6. **QA**: o gate de `contracts/rls-expectations.md` bloqueia o merge.
+7. **Portão 2**: `/security-review` e `/code-review` quando o diff toca dados pessoais, RLS, PIN,
+   página pública ou o código da tag.
+8. **Merge** em `develop`, depois promoção para `homolog` e `master` (ver `git-workflow.md`).
 
-## Mecânica (por que assim)
+## Como pedir a execução
 
-- **Skills `speckit-*` são user-invocable-only** (`disable-model-invocation: true`): subagentes não as invocam. PO e Tech Lead **executam o procedimento** lendo os templates em `.specify/templates/`. Você (humano) pode rodar `/speckit.specify`, `/speckit.plan`, etc. diretamente quando quiser a execução "oficial" da skill.
-- **`angular-developer` é model-invocável** e fica **pré-carregada** no Frontend e no QA (campo `skills:`), funcionando como roteador para as referências em `.agents/skills/angular-developer/references/`.
-- **Precedência** para qualquer agente: **constituição > docs do projeto > defaults genéricos de skill** (ex.: usamos PrimeNG Aura — não Tailwind; Playwright — não Cypress; Vitest).
-- **MCP do Supabase**: o `backend-supabase` declara `mcpServers: [supabase]` (de `.mcp.json`) e ganha as ferramentas do MCP sem precisar listá-las em `tools`. O `.mcp.json` é *project-scoped*: **aprove o servidor uma vez na sessão** (a aprovação vale para os subagentes).
-- **Loop do Claude Design (opcional, visual)**: o `ui-ux-designer` gera um `claude-design-brief.md` por feature; você o cola no **Claude Design** (claude.ai), que desenha as telas usando o design system Faro; você revisa/aprova e usa "entregar para o Claude Code". O `frontend-angular` reimplementa em PrimeNG/Angular (o HTML do Claude Design é referência, não produção). O design system já implementado vive em `src/styles/faro-ds.css` + `src/theme/faro-preset.ts`.
-- **Carregar os agentes**: como foram criados como arquivos, **reinicie a sessão** (ou use `/agents`) para que apareçam como `subagent_type`.
+Na sessão principal, depois de aprovar as tarefas:
 
-## Como acionar
+```text
+Execute a fase 1 e a fase 2 de specs/002-ui-zardui/tasks.md com o agente frontend-angular.
+Pare no primeiro checkpoint e me mostre o resultado.
+```
 
-- Por menção/descrição: descreva a tarefa e o harness delega ao agente cujo `description` casa.
-- Explicitamente: via ferramenta Agent com `subagent_type: product-owner | tech-lead-planner | ui-ux-designer | frontend-angular | backend-supabase | qa-engineer`.
-- **Orquestração**: o loop principal (ou um Workflow) conduz o fluxo e respeita os gates; Backend (4) e Frontend (4) podem rodar concorrentes.
+Ou, pela ferramenta Agent, `subagent_type: backend-supabase | frontend-angular | qa-engineer`,
+dizendo a spec e a fase. Depois de criar ou editar agentes, reinicie a sessão (ou use `/agents`).
 
-## Decisões e padrões de referência
+## Testes de banco sem Docker
 
-- Decisões tomadas × em aberto: [docs/README.md](README.md) (fonte única).
-- Glossário e guard-rails: [CLAUDE.md](../CLAUDE.md).
-- Convenção de teste: `data-testid="<feature>-<elemento>"`. Pastas de feature em inglês (`pets`, `health-records`, `subscription`, `reminders`, `admin`, `public`).
+A máquina de desenvolvimento não tem Docker nem a CLI do Supabase. Os testes de banco (pgTAP) e
+das Edge Functions rodam no **GitHub Actions** (`.github/workflows/ci.yml`, job "supabase"): o
+agente abre um PR em rascunho para `develop` no primeiro push (o CI só dispara em PR e em push para
+`develop`, `homolog` e `master`), faz push da branch da feature e lê o resultado com `gh run watch`. Uma tarefa de banco só é
+marcada como feita com esse job verde.
+
+## Ordem das specs do MVP
+
+1. `002-ui-zardui` — base visual. Começa pela verificação de compatibilidade do ZardUI com o Angular 21.
+2. `004-conta-tutor` — cadastro, confirmação do celular, recuperação de senha, conta.
+3. `003-tag-qr` — a tag: página pública, ativação, app do tutor, scans, admin.
+
+`003` usa as cascas de `002` e o celular confirmado de `004`. O backend de `003` (fases 1 e 2) pode
+começar em paralelo com `002`, porque não depende de UI.
+
+## Regras de precedência
+
+**Constituição > `docs/decisoes-pivo.md` > `CLAUDE.md` > `DESIGN.md` e specs > padrões de skills.**
+A skill `angular-primeng-standard` não se aplica ao Faro. Onde a skill `angular-developer` citar
+Cypress, usa-se Playwright.
+
+## Referências
+
+- Decisões: [decisoes-pivo.md](decisoes-pivo.md). Fluxo Git: [git-workflow.md](git-workflow.md).
+- Tema e componentes: [zardui-faro.md](zardui-faro.md) e `DESIGN.md`.
+- MCP do Supabase: o `backend-supabase` usa o servidor `supabase` de `.mcp.json`; aprove o servidor
+  uma vez na sessão.
