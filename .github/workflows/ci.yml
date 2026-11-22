@@ -61,7 +61,12 @@ jobs:
           files=$(find supabase/functions -name '*.test.ts' -not -path '*/node_modules/*')
           if [ -z "$files" ]; then echo "Nenhum teste de Edge Function."; exit 0; fi
           # Os testes atuais sao de logica pura: sem permissoes (nem rede, nem env, nem disco).
-          deno test $files
+          # deno.json (mapa de importacao, versoes exatas) e deno.lock versionados; se a execucao mudar o lock, reprova.
+          deno test --config supabase/functions/deno.json --lock=supabase/functions/deno.lock $files
+          git diff --exit-code -- supabase/functions/deno.lock
+      - name: Dependencias das Edge Functions fixadas
+        if: ${{ !cancelled() }}
+        run: bash scripts/ci/edge-deps-check.sh
       - name: Parar o Supabase local
         if: always()
         run: supabase stop --no-backup || true
