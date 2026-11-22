@@ -221,4 +221,12 @@ describe('AuthService', () => {
     expect(store.isAuthenticated()).toBe(false);
     expect(store.role()).toBeNull();
   });
+
+  it('apaga o destino guardado (faro.returnUrl) ao fazer signOut', async () => {
+    sessionStorage.setItem('faro.returnUrl', '/app/conta/celular');
+
+    await service.signOut();
+
+    expect(sessionStorage.getItem('faro.returnUrl')).toBeNull();
+  });
 });
