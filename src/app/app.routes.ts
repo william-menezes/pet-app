@@ -114,6 +114,19 @@ export const routes: Routes = [
         title: 'Confirmar e-mail — Faro',
       },
       {
+        path: 'recuperar-senha',
+        canMatch: [anonGuard],
+        loadComponent: () =>
+          import('./features/auth/forgot-password/forgot-password').then((m) => m.ForgotPassword),
+        title: 'Esqueci a senha — Faro',
+      },
+      {
+        path: 'nova-senha',
+        loadComponent: () =>
+          import('./features/auth/reset-password/reset-password').then((m) => m.ResetPassword),
+        title: 'Nova senha — Faro',
+      },
+      {
         path: '',
         pathMatch: 'full',
         canMatch: [anonGuard],
