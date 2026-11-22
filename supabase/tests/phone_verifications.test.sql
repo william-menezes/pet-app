@@ -363,7 +363,9 @@ SELECT is((SELECT consumed_at IS NOT NULL FROM public.phone_verifications WHERE 
 SELECT is((public.phone_verification_confirm('bbbbbbbb-0000-0000-0000-000000000007',
             (SELECT id FROM public.phone_verifications WHERE user_id = 'bbbbbbbb-0000-0000-0000-000000000007'),
             'code-u7-certo', 'ip', 'ua') ->> 'status'), 'no_active', 'o codigo vale uma vez: segunda conferencia da no_active');
+SELECT tests.set_service();
 SELECT is(public.phone_is_confirmed('bbbbbbbb-0000-0000-0000-000000000007'), true, 'phone_is_confirmed vira true depois do acerto');
+RESET ROLE;
 
 -- ── 9. confirm: vencido, esgotado, outra conta, sem pendente ────────────
 SELECT tests.do_begin('bbbbbbbb-0000-0000-0000-000000000008', '+5511933333333', 'code-u8-certo');
@@ -402,8 +404,10 @@ SELECT is(public.phone_verification_active('bbbbbbbb-0000-0000-0000-000000000001
 SELECT tests.do_begin('bbbbbbbb-0000-0000-0000-000000000002', '+5511966666666', 'code-u2-b');
 SELECT ok((SELECT celular = '+5511900000002' AND celular_pendente = '+5511966666666' FROM public.perfis
             WHERE id = 'bbbbbbbb-0000-0000-0000-000000000002'), 'troca: begin mantem o celular antigo e guarda o novo como pendente');
+SELECT tests.set_service();
 SELECT is(public.phone_is_confirmed('bbbbbbbb-0000-0000-0000-000000000002'), true,
   'troca: phone_is_confirmed continua true durante a troca');
+RESET ROLE;
 SELECT is((tests.confirm_for('bbbbbbbb-0000-0000-0000-000000000002', 'errado') ->> 'status'), 'invalid', 'troca: codigo errado e invalid');
 SELECT is((SELECT celular FROM public.perfis WHERE id = 'bbbbbbbb-0000-0000-0000-000000000002'), '+5511900000002',
   'troca: com confirm errado, o celular continua o antigo');
