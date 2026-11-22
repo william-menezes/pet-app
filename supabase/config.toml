@@ -34,6 +34,12 @@ site_url = "http://localhost:4200"
 additional_redirect_urls = ["http://localhost:4200/auth/callback"]
 jwt_expiry = 3600
 enable_signup = true
+# Spec 004, security-hardening.contract.md secao 4: rotacao de refresh token, sem entrada anonima, sem vinculo manual.
+# Sem tempo maximo de sessao nem saida por inatividade (decisao do contrato: o tutor volta no dia em que o pet some).
+enable_refresh_token_rotation = true
+refresh_token_reuse_interval = 10
+enable_anonymous_sign_ins = false
+enable_manual_linking = false
 # FR-003, imposto no servidor (contracts/auth-config.contract.md). Sem regra de composicao.
 minimum_password_length = 8
 password_requirements = ""
@@ -68,6 +74,16 @@ content_path = "./supabase/templates/recovery.html"
 [auth.sms]
 enable_signup = false
 enable_confirmations = false
+
+# Spec 004, security-hardening.contract.md secao 1: desafio anti-robo (Cloudflare Turnstile).
+# `enabled = false` ate a T104: ligar antes quebraria todo login/cadastro, porque as telas ainda nao enviam o token.
+# O segredo vem do ambiente (SUPABASE_AUTH_CAPTCHA_SECRET), nunca do arquivo. Desenvolvimento e E2E usam as chaves de
+# TESTE da Cloudflare (publicas, documentacao "Testing"): segredo 1x0000000000000000000000000000000AA (sempre aprova),
+# 2x0000000000000000000000000000000AA (sempre reprova); site key 1x00000000000000000000AA (aprova) e 2x00000000000000000000AB (reprova).
+[auth.captcha]
+enabled = false
+provider = "turnstile"
+secret = "env(SUPABASE_AUTH_CAPTCHA_SECRET)"
 
 # Google OAuth (FR-016/Princípio III): client id/secret NUNCA commitados.
 # Configure via `supabase secrets set GOOGLE_OAUTH_CLIENT_ID=... GOOGLE_OAUTH_SECRET=...`

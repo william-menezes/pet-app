@@ -586,6 +586,21 @@ check "login-guard ignorou o user_id do corpo (nenhum ator = tutor B)" bash -c '
 check "login-guard descartou o e-mail do detail" bash -c '! printf "%s" "$1" | grep -qF "vazou@faro.test"' _ "$GA"
 check "login-guard manteve a chave metodo do detail" has "$GA" 'password'
 
+echo "== T101: configuracao do Auth (rotacao de refresh token, sem entrada anonima) =="
+AN="$(curl -s -w '\n%{http_code}' -X POST "$API_URL/auth/v1/signup" -H "apikey: $ANON_KEY" -H "Content-Type: application/json" -d '{}')"
+echo "entrada anonima (signup sem e-mail): HTTP $(http_code "$AN"); $(http_body "$AN" | grep -oE '"error_code":"[^"]*"' | head -1)"
+check "entrada anonima desligada (anonymous_provider_disabled)" bash -c 'printf "%s" "$1" | grep -q "anonymous_provider_disabled"' _ "$(http_body "$AN")"
+RL="$(curl -s -X POST "$API_URL/auth/v1/token?grant_type=password" -H "apikey: $ANON_KEY" -H "Content-Type: application/json" \
+  -d "{\"email\":\"$LOGIN_EMAIL\",\"password\":\"SenhaDeTeste12345\"}")"
+RT0="$(printf '%s' "$RL" | grep -oE '"refresh_token":"[^"]+"' | head -1 | cut -d'"' -f4)"
+check "login devolve refresh_token" test -n "$RT0"
+RF1="$(curl -s -w '\n%{http_code}' -X POST "$API_URL/auth/v1/token?grant_type=refresh_token" -H "apikey: $ANON_KEY" -H "Content-Type: application/json" -d "{\"refresh_token\":\"$RT0\"}")"
+check "a primeira renovacao do refresh_token funciona (200)" test "$(http_code "$RF1")" = "200"
+sleep 12
+RF2="$(curl -s -w '\n%{http_code}' -X POST "$API_URL/auth/v1/token?grant_type=refresh_token" -H "apikey: $ANON_KEY" -H "Content-Type: application/json" -d "{\"refresh_token\":\"$RT0\"}")"
+echo "reuso do refresh_token antigo depois do intervalo de 10 s: HTTP $(http_code "$RF2"); $(http_body "$RF2" | grep -oE '"error_code":"[^"]*"' | head -1)"
+check "reuso do refresh_token antigo depois de 10 s e recusado (rotacao ligada)" bash -c '[ "$1" != "200" ]' _ "$(http_code "$RF2")"
+
 echo "== T097: endurecimento de base (migration 0017) pela API =="
 AC="$(curl -s -o /dev/null -w '%{http_code}' "$API_URL/rest/v1/perfis?select=id" -H "apikey: $ANON_KEY" -H "Authorization: Bearer $ANON_KEY")"
 echo "anon lendo perfis pela API: HTTP $AC"
