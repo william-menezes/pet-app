@@ -53,12 +53,12 @@ const ACCOUNT = {
 
 interface Backend {
   blocked: string[];
-  calls: { signup: unknown[]; verify: unknown[]; resend: unknown[] };
+  calls: { signup: unknown[]; verify: unknown[]; resend: unknown[]; phoneStart: unknown[] };
 }
 
 /** Bloqueia o Supabase real e simula só o que as telas usam. Registrar o `abort` primeiro: o último registro vence. */
 async function mockBackend(page: Page, opts: { verifyFails?: boolean } = {}): Promise<Backend> {
-  const backend: Backend = { blocked: [], calls: { signup: [], verify: [], resend: [] } };
+  const backend: Backend = { blocked: [], calls: { signup: [], verify: [], resend: [], phoneStart: [] } };
   await page.route(/\.supabase\.co\//, (route) => {
     backend.blocked.push(`${route.request().method()} ${new URL(route.request().url()).pathname}`);
     return route.abort();
@@ -84,6 +84,30 @@ async function mockBackend(page: Page, opts: { verifyFails?: boolean } = {}): Pr
   });
   await page.route('**/rest/v1/rpc/current_user_role', (route) => route.fulfill(json('tutor')));
   await page.route('**/rest/v1/rpc/my_account', (route) => route.fulfill(json(ACCOUNT)));
+  // T059: com celular pendente, confirmar o e-mail já pede o SMS (função simulada, nada é enviado).
+  await page.route('**/functions/v1/phone-verify-start', (route) => {
+    backend.calls.phoneStart.push(route.request().postDataJSON());
+    return route.fulfill(
+      json({
+        ok: true,
+        phone: '+5511987654421',
+        expires_at: '2099-01-01T00:10:00Z',
+        resend_available_at: '2099-01-01T00:01:00Z',
+        attempts_left: 5,
+      }),
+    );
+  });
+  await page.route('**/rest/v1/rpc/phone_verification_status', (route) =>
+    route.fulfill(
+      json({
+        phone_confirmed: false,
+        phone: null,
+        pending_phone: '+5511987654421',
+        active: { expires_at: '2099-01-01T00:10:00Z', attempts_left: 5 },
+        resend_available_at: null,
+      }),
+    ),
+  );
   return backend;
 }
 
@@ -194,7 +218,9 @@ test.describe('Criar conta: telas e fluxo (backend simulado)', () => {
     expect(backend.calls.verify).toHaveLength(0);
 
     await page.locator(tid('confirm-email-confirm')).click();
-    await expect(page).toHaveURL(/\/auth\/celular$/, { timeout: 10_000 });
+    // Conta com celular pendente: o SMS é pedido (simulado) e a tela do código abre (T059).
+    await expect(page).toHaveURL(/\/auth\/confirmar-celular$/, { timeout: 10_000 });
+    expect(backend.calls.phoneStart).toHaveLength(1);
     expect(backend.calls.verify).toHaveLength(1);
     expect(backend.calls.verify[0]).toMatchObject({ token_hash: 'abc123', type: 'email' });
     expect(backend.blocked).toEqual([]);
