@@ -166,10 +166,6 @@ export class PhoneEntry implements OnInit {
     if (this.phoneInvalid()) this.problem.set(null);
   }
 
-  protected currentText(current: string): string {
-    return $localize`Seu celular atual: ${current}:phone:. Ele continua valendo até você confirmar o novo.`;
-  }
-
   protected onPasswordInput(): void {
     this.typedPassword.set(this.password.value);
     if (this.problem() === 'invalid_password' || this.problem() === 'reauth_required') this.problem.set(null);

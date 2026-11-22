@@ -21,11 +21,13 @@
   </div>
 
   @if (changeMode() && currentPhone(); as current) {
-    <z-alert
-      zType="neutral"
-      [zRole]="'status'"
-      [zDescription]="currentText(current)"
-      data-testid="phone-current" />
+    <div
+      role="status"
+      class="flex items-start gap-2.5 rounded-xl bg-neutral-soft p-3.5 text-sm leading-[1.45] text-neutral-foreground"
+      data-testid="phone-current">
+      <ng-icon name="info" size="18" class="mt-px shrink-0" aria-hidden="true" />
+      <span class="min-w-0" i18n>Seu celular atual: <span class="font-semibold whitespace-nowrap">{{ current }}</span>. Ele continua valendo até você confirmar o novo.</span>
+    </div>
   }
 
   <form id="phone-entry-form" class="flex flex-col gap-4" (submit)="$event.preventDefault(); onSend()" novalidate>
