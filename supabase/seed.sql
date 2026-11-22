@@ -46,7 +46,7 @@ BEGIN
     -- bcrypt de "TesteSenha123!" gerado para dev local:
     crypt('TesteSenha123!', gen_salt('bf')),
     now(), now(),
-    '{"name": "Tutor A Teste"}'::jsonb,
+    '{"name": "Tutor A Teste", "terms_version": "2026-11"}'::jsonb,
     '{"provider": "email", "providers": ["email"]}'::jsonb,
     'authenticated',
     ''
@@ -90,6 +90,12 @@ BEGIN
 
 END;
 $$;
+
+-- Spec 004-conta-tutor (T014): o tutor A nasce pronto (aceite dos termos pelos metadados acima e celular
+-- confirmado aqui); o tutor B continua incompleto (sem aceite e sem celular); o admin nao muda.
+UPDATE public.perfis
+   SET celular = '+5511900000001', celular_confirmado_em = now()
+ WHERE id = '00000000-0000-0000-0000-000000000001';
 
 -- Nota: Em produção, o admin inicial é criado via operação manual controlada
 -- (ex.: script seguro ou painel do Supabase), nunca via seed commutado.
