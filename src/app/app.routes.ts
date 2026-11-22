@@ -10,6 +10,7 @@ import { Routes } from '@angular/router';
 import { authGuard } from './core/auth/auth.guard';
 import { adminGuard } from './core/auth/admin.guard';
 import { anonGuard } from './core/auth/anon.guard';
+import { termsGuard } from './core/auth/terms.guard';
 
 export const routes: Routes = [
   // ── Público (SSR/prerender) · Rescue-First: não depende de assinatura ativa ──
@@ -22,7 +23,7 @@ export const routes: Routes = [
   // ── Painel autenticado (CSR lazy, protegido por authGuard) ──
   {
     path: 'app',
-    canMatch: [authGuard],
+    canMatch: [authGuard, termsGuard],
     loadComponent: () => import('./features/pets/tutor-app/tutor-app').then((m) => m.TutorApp),
     children: [
       {
@@ -62,13 +63,14 @@ export const routes: Routes = [
     ],
   },
 
-  // ── Auth (CSR lazy) — anonGuard impede acesso se já logado (FR-011) ──
+  // ── Auth (CSR lazy) — o anonGuard vale só onde faz sentido (login): confirmar e-mail, nova senha,
+  // callback e o aceite dos termos precisam abrir também com sessão (spec 004, contrato §1) ──
   {
     path: 'auth',
-    canMatch: [anonGuard],
     children: [
       {
         path: 'login',
+        canMatch: [anonGuard],
         loadComponent: () => import('./features/auth/login/login').then((m) => m.Login),
         title: 'Entrar — Faro',
       },
@@ -78,6 +80,32 @@ export const routes: Routes = [
           import('./features/auth/callback/oauth-callback').then((m) => m.OAuthCallback),
         title: 'Verificando — Faro',
       },
+      // Provisórias: cada história da spec 004 troca pelo componente real.
+      {
+        path: 'termos',
+        canMatch: [authGuard],
+        loadComponent: () =>
+          import('./shared/shells/shell-fallback/shell-fallback').then((m) => m.ShellFallback),
+        data: { home: '/app' },
+        title: 'Termos — Faro',
+      },
+      {
+        path: 'celular',
+        canMatch: [authGuard, termsGuard],
+        loadComponent: () =>
+          import('./shared/shells/shell-fallback/shell-fallback').then((m) => m.ShellFallback),
+        data: { home: '/app' },
+        title: 'Celular — Faro',
+      },
+      {
+        path: 'confirmar-celular',
+        canMatch: [authGuard, termsGuard],
+        loadComponent: () =>
+          import('./shared/shells/shell-fallback/shell-fallback').then((m) => m.ShellFallback),
+        data: { home: '/app' },
+        title: 'Confirmar celular — Faro',
+      },
+      // Provisório até as boas-vindas (spec 004, T033): preserva a query (returnUrl).
       { path: '', redirectTo: 'login', pathMatch: 'full' },
     ],
   },
