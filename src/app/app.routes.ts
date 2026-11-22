@@ -16,23 +16,50 @@ export const routes: Routes = [
   {
     path: '',
     loadComponent: () => import('./features/public/landing/landing').then((m) => m.Landing),
-    title: 'Faro — cuidado, saúde e resgate de pets',
+    title: 'Faro — O caminho de volta para casa',
   },
 
   // ── Painel autenticado (CSR lazy, protegido por authGuard) ──
   {
     path: 'app',
     canMatch: [authGuard],
-    loadComponent: () => import('./features/pets/pets/pets').then((m) => m.Pets),
-    title: 'Meus pets — Faro',
+    loadComponent: () => import('./features/pets/tutor-app/tutor-app').then((m) => m.TutorApp),
+    children: [
+      {
+        path: '',
+        loadComponent: () => import('./features/pets/pets/pets').then((m) => m.Pets),
+        data: { hub: true },
+        title: 'Meus pets — Faro',
+      },
+      {
+        path: '**',
+        loadComponent: () =>
+          import('./shared/shells/shell-fallback/shell-fallback').then((m) => m.ShellFallback),
+        data: { home: '/app' },
+        title: 'Em construção — Faro',
+      },
+    ],
   },
 
   // ── Backoffice admin (CSR lazy, protegido por authGuard + adminGuard) ──
   {
     path: 'admin',
     canMatch: [authGuard, adminGuard],
-    loadComponent: () => import('./features/admin/admin/admin').then((m) => m.Admin),
-    title: 'Administração — Faro',
+    loadComponent: () => import('./features/admin/admin-app/admin-app').then((m) => m.AdminApp),
+    children: [
+      {
+        path: '',
+        loadComponent: () => import('./features/admin/admin/admin').then((m) => m.Admin),
+        title: 'Administração — Faro',
+      },
+      {
+        path: '**',
+        loadComponent: () =>
+          import('./shared/shells/shell-fallback/shell-fallback').then((m) => m.ShellFallback),
+        data: { home: '/admin' },
+        title: 'Em construção — Faro',
+      },
+    ],
   },
 
   // ── Auth (CSR lazy) — anonGuard impede acesso se já logado (FR-011) ──
@@ -54,6 +81,18 @@ export const routes: Routes = [
       { path: '', redirectTo: 'login', pathMatch: 'full' },
     ],
   },
+
+  // ── Galeria de desenvolvimento (só em dev: o CLI troca `ngDevMode` por `false` em produção,
+  // e o `import()` dentro do ramo some do pacote) · antes de `:codigo/perdido` e `:codigo` ──
+  ...(ngDevMode
+    ? [
+        {
+          path: 'dev/ui',
+          loadChildren: () =>
+            import('./features/dev-gallery/dev-gallery.routes').then((m) => m.DEV_GALLERY_ROUTES),
+        },
+      ]
+    : []),
 
   // ── Resgate público dinâmico (SSR) · `:codigo/perdido` antes de `:codigo` ──
   {

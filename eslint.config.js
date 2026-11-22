@@ -34,6 +34,23 @@ module.exports = defineConfig([
     },
   },
 
+  // ── Código copiado do ZardUI (zard-cli): seletores com prefixo `z-` ──
+  // Não se edita o código copiado só para agradar regra de estilo (spec 002, T006).
+  {
+    files: [
+      'src/app/shared/core/**/*.ts',
+      'src/app/shared/utils/**/*.ts',
+      'src/app/shared/components/**/*.ts',
+    ],
+    ignores: ['src/app/shared/components/faro/**'],
+    rules: {
+      '@angular-eslint/component-selector': 'off',
+      '@angular-eslint/directive-selector': 'off',
+      '@typescript-eslint/array-type': 'off',
+      '@typescript-eslint/no-unused-vars': 'off',
+    },
+  },
+
   // ── Invariante Rescue-First / two-bundle (constituição I) ──
   // A rota pública (features/public) deve ser enxuta e independente do painel e da
   // assinatura. Ela NÃO pode importar features do painel, auth nem billing.
@@ -46,18 +63,46 @@ module.exports = defineConfig([
           patterns: [
             {
               group: [
-                '**/pets/**',
-                '**/admin/**',
-                '**/health-records/**',
-                '**/subscription/**',
-                '**/reminders/**',
-                '**/auth/**',
-                '**/billing/**',
+                '**/features/auth/**',
+                '**/features/activation/**',
+                '**/features/pets/**',
+                '**/features/scans/**',
+                '**/features/account/**',
+                '**/features/admin/**',
+                '**/features/dev-gallery/**',
                 '**/core/auth/**',
-                '**/core/billing/**',
+                '**/core/theme/**',
+                '**/shells/tutor-shell/**',
+                '**/shells/admin-shell/**',
+                '**/shells/flow-shell/**',
+                '**/shells/screen-header/**',
+                '**/shells/shell-fallback/**',
+                '**/components/alert-dialog/**',
+                '**/components/sonner/**',
+                '**/components/sheet/**',
+                '**/components/dialog/**',
+                '**/components/popover/**',
+                '**/components/dropdown/**',
+                '**/components/select/**',
+                '**/components/tooltip/**',
               ],
               message:
-                'Rescue-First/two-bundle: features/public não pode importar o painel, auth ou billing. A rota pública precisa funcionar mesmo com assinatura inativa.',
+                'Rescue-First: features/public não importa o app autenticado, o tema escuro nem overlays. A página da tag tem de ser pequena e funcionar sozinha.',
+            },
+            // Reforço fora do contrato (registrado no execution-log, T047): o import relativo curto
+            // (`../pets/x`) não contém "features/" e escaparia dos padrões acima.
+            {
+              group: [
+                '../**/auth/**',
+                '../**/activation/**',
+                '../**/pets/**',
+                '../**/scans/**',
+                '../**/account/**',
+                '../**/admin/**',
+                '../**/dev-gallery/**',
+              ],
+              message:
+                'Rescue-First: features/public não importa o app autenticado, o tema escuro nem overlays. A página da tag tem de ser pequena e funcionar sozinha.',
             },
           ],
         },
@@ -115,6 +160,65 @@ module.exports = defineConfig([
     rules: {
       // ── T020d: Proíbe [innerHTML] com binding em templates ──
       '@angular-eslint/template/no-any': 'off', // não relevante aqui
+      // ── T063: texto fixo de interface tem de ser extraível (i18n) ──
+      '@angular-eslint/template/i18n': [
+        'error',
+        {
+          checkId: false,
+          checkText: true,
+          checkAttributes: true,
+          // Atributos técnicos (não são texto para o usuário). Os de texto (`title`, `alt`,
+          // `label`, `placeholder`, `aria-label`, `zTitle`...) continuam exigindo `i18n-<attr>`.
+          ignoreAttributes: [
+            'data-testid',
+            'zType',
+            'zSize',
+            'zId',
+            'zIcon',
+            'rel',
+            'ariaCurrentWhenActive',
+            'tone',
+            'd',
+            'variant',
+            'decoding',
+            'icon',
+            'as',
+            'aria-live',
+            'aria-labelledby',
+            'aria-describedby',
+            'aria-controls',
+            'fill-rule',
+            'clip-rule',
+            'media',
+            'inputmode',
+            'content',
+          ],
+        },
+      ],
+    },
+  },
+
+  // ── T063: a regra de i18n não vale para o código copiado do ZardUI, para a galeria de
+  // desenvolvimento e para a página de resgate (a spec 003 refaz essa tela) ──
+  {
+    files: [
+      'src/app/shared/components/**/*.html',
+      'src/app/shared/core/**/*.html',
+      'src/app/features/dev-gallery/**/*.html',
+      'src/app/features/public/rescue-page/**/*.html',
+    ],
+    ignores: ['src/app/shared/components/faro/**'],
+    rules: {
+      '@angular-eslint/template/i18n': 'off',
+    },
+  },
+
+  // Fixtures de teste (templates inline dos `*.spec.ts`) e o documento HTML raiz (metas, fontes)
+  // não são tela.
+  {
+    files: ['**/*.spec.ts/**', 'src/index.html'],
+    rules: {
+      '@angular-eslint/template/i18n': 'off',
     },
   },
 ]);

@@ -1,1 +1,308 @@
-/* You can add global styles to this file, and also import other style files */
+@layer ng-icon, theme, base, components, utilities;
+@import 'tailwindcss' source('.');
+@import './app/shared/core/css/zard';
+@plugin 'tailwindcss-animate';
+
+@custom-variant dark (&:is(.dark *));
+
+/* Fontes servidas pelo próprio domínio (arquivos em public/fonts). Variáveis: um arquivo cobre todos os pesos. */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('/fonts/inter-latin-ext-wght-normal.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('/fonts/inter-latin-wght-normal.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Outfit';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('/fonts/outfit-latin-ext-wght-normal.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Outfit';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('/fonts/outfit-latin-wght-normal.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+:root {
+  color-scheme: light;
+  --radius: 0.75rem;
+  --background: #F7F8F8;
+  --foreground: #13201E;
+  --card: #FFFFFF;
+  --card-foreground: #13201E;
+  --popover: #FFFFFF;
+  --popover-foreground: #13201E;
+  --primary: #84C32E;
+  --primary-foreground: #13201E;
+  --primary-hover: #76B027;
+  --primary-press: #689B22;
+  --secondary: #EEF0F8;
+  --secondary-foreground: #25337A;
+  --muted: #EEF0F1;
+  --muted-foreground: #5E6C69;
+  --accent: #EEF0F8;
+  --accent-foreground: #25337A;
+  --destructive: #C23A2B;
+  --destructive-foreground: #FFFFFF;
+  --destructive-hover: #A52E22;
+  --border: #E2E5E7;
+  --input: #7F8B88;
+  --ring: #13201E;
+  --ring-gap: #FFFFFF;
+  --chart-1: #25337A;
+  --chart-2: #557F29;
+  --chart-3: #C26A12;
+  --chart-4: #1F6FB2;
+  --chart-5: #8E9ACF;
+  --sidebar: #FFFFFF;
+  --sidebar-foreground: #13201E;
+  --sidebar-primary: #13201E;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #EEF0F8;
+  --sidebar-accent-foreground: #25337A;
+  --sidebar-border: #E2E5E7;
+  --sidebar-ring: #13201E;
+
+  /* Faro: sem equivalente no shadcn */
+  --text: #33403D;
+  --inset: #F7F8F8;
+  --divider: #EEF0F1;
+  --link: #25337A;
+  --ink: #13201E;
+  --ink-foreground: #FFFFFF;
+  --brand: #25337A;
+  --brand-foreground: #FFFFFF;
+  --brand-muted: #DADFF0;
+  --brand-deep: #32418C;
+  --success-soft: #E4F4EA;
+  --success-foreground: #0F5E30;
+  --warning-soft: #FBF1DD;
+  --warning-foreground: #8A4A0C;
+  --danger-soft: #FBE7E4;
+  --danger-foreground: #A52E22;
+  --neutral-soft: #EEF0F1;
+  --neutral-foreground: #33403D;
+  --disabled: #E2E5E7;
+  --disabled-foreground: #5E6C69;
+  --dot: #C23A2B;
+  --amber: #C26A12;
+  --lost: #A85A0E;
+  --lost-foreground: #FFFFFF;
+  --photo: #E8E2D6;
+  --scrim: rgb(19 32 30 / 0.82);
+  --toast: #080B20;
+  --toast-foreground: #FFFFFF;
+}
+
+/* Só o app autenticado do tutor recebe esta classe (na casca, nunca em :root). */
+.dark {
+  color-scheme: dark;
+  --background: #0B0F2A;
+  --foreground: #F3F5FC;
+  --card: #161C4A;
+  --card-foreground: #F3F5FC;
+  --popover: #161C4A;
+  --popover-foreground: #F3F5FC;
+  --secondary: #1F2760;
+  --secondary-foreground: #F3F5FC;
+  --muted: #1F2760;
+  --muted-foreground: #A6ADD0;
+  --accent: #1F2760;
+  --accent-foreground: #F3F5FC;
+  --border: #2B3470;
+  --input: #7C87C4;
+  --ring: #F3F5FC;
+  --ring-gap: #0B0F2A;
+  --sidebar: #161C4A;
+  --sidebar-foreground: #F3F5FC;
+  --sidebar-primary: #F3F5FC;
+  --sidebar-primary-foreground: #0B0F2A;
+  --sidebar-accent: #1F2760;
+  --sidebar-accent-foreground: #F3F5FC;
+  --sidebar-border: #2B3470;
+  --sidebar-ring: #F3F5FC;
+  --text: #D8DCF0;
+  --inset: #1F2760;
+  --divider: #262E66;
+  --link: #B8C0E2;
+  --success-soft: #12392A;
+  --success-foreground: #7BD8A2;
+  --warning-soft: #3B2A10;
+  --warning-foreground: #F2B866;
+  --danger-soft: #4A1C17;
+  --danger-foreground: #F3A297;
+  --neutral-soft: #1F2760;
+  --neutral-foreground: #D8DCF0;
+  --disabled: #1F2760;
+  --disabled-foreground: #A6ADD0;
+  --dot: #F0705F;
+  --photo: #2B3470;
+  /* --primary (lima), --ink, --brand, --lost, --amber, --destructive e --toast não mudam */
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-press: var(--primary-press);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-destructive-hover: var(--destructive-hover);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --color-text: var(--text);
+  --color-inset: var(--inset);
+  --color-divider: var(--divider);
+  --color-link: var(--link);
+  --color-ink: var(--ink);
+  --color-ink-foreground: var(--ink-foreground);
+  --color-brand: var(--brand);
+  --color-brand-foreground: var(--brand-foreground);
+  --color-brand-muted: var(--brand-muted);
+  --color-brand-deep: var(--brand-deep);
+  --color-success-soft: var(--success-soft);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning-soft: var(--warning-soft);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-danger-soft: var(--danger-soft);
+  --color-danger-foreground: var(--danger-foreground);
+  --color-neutral-soft: var(--neutral-soft);
+  --color-neutral-foreground: var(--neutral-foreground);
+  --color-disabled: var(--disabled);
+  --color-disabled-foreground: var(--disabled-foreground);
+  --color-dot: var(--dot);
+  --color-amber: var(--amber);
+  --color-lost: var(--lost);
+  --color-lost-foreground: var(--lost-foreground);
+  --color-photo: var(--photo);
+  --color-scrim: var(--scrim);
+  --color-toast: var(--toast);
+  --color-toast-foreground: var(--toast-foreground);
+
+  /* Escala navy (canônica) */
+  --color-navy-50: #EEF0F8;
+  --color-navy-100: #DADFF0;
+  --color-navy-200: #B8C0E2;
+  --color-navy-300: #8E9ACF;
+  --color-navy-400: #6574B8;
+  --color-navy-500: #44549F;
+  --color-navy-600: #32418C;
+  --color-navy-700: #25337A;
+  --color-navy-800: #1A2459;
+  --color-navy-900: #0E1336;
+  --color-navy-950: #080B20;
+  /* indigo-* vira apelido do navy (docs/decisoes-pivo.md). Não usar em código novo. */
+  --color-indigo-50: #EEF0F8;
+  --color-indigo-100: #DADFF0;
+  --color-indigo-200: #B8C0E2;
+  --color-indigo-300: #8E9ACF;
+  --color-indigo-400: #6574B8;
+  --color-indigo-500: #44549F;
+  --color-indigo-600: #32418C;
+  --color-indigo-700: #25337A;
+  --color-indigo-800: #1A2459;
+  --color-indigo-900: #0E1336;
+  --color-indigo-950: #080B20;
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 12px;
+  --radius-card-sm: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 24px;
+  --radius-3xl: 28px;
+  --radius-4xl: 32px;
+
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-display: 'Outfit', 'Inter', system-ui, sans-serif;
+  --font-mono: ui-monospace, monospace;
+
+  --shadow-pop: 0 12px 34px rgb(19 32 30 / 0.14), 0 3px 10px rgb(19 32 30 / 0.06);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background font-sans text-text antialiased;
+  }
+  h1,
+  h2,
+  h3 {
+    @apply font-display text-foreground;
+  }
+  /* Foco: anel de 2px na cor --ring com folga de 2px. Um único mecanismo, para todo elemento. */
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 2px var(--ring-gap);
+  }
+  /* Alvos de foco programático (painel de diálogo, <main>) não são paradas de tabulação: sem anel. */
+  [tabindex='-1']:focus-visible {
+    outline: none;
+    box-shadow: none;
+  }
+  input[type='number']::-webkit-inner-spin-button,
+  input[type='number']::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type='number'] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    ::before,
+    ::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}

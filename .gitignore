@@ -64,3 +64,7 @@ tools/tag-generator/lote*/
 tools/tag-generator/*.ttf
 
 **/pins.csv
+
+# Artefatos locais do Playwright
+test-results/
+playwright-report/

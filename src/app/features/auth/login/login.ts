@@ -18,15 +18,19 @@ import { Component, OnInit, signal, computed, inject } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 
-// PrimeNG — componentes nativos (sem wrappers custom; decisão do tutor 2026-07-01)
-import { ToastModule } from 'primeng/toast';
-import { MessageService } from 'primeng/api';
-import { InputTextModule } from 'primeng/inputtext';
-import { PasswordModule } from 'primeng/password';
-import { CheckboxModule } from 'primeng/checkbox';
-import { ButtonModule } from 'primeng/button';
-import { MessageModule } from 'primeng/message';
-import { DividerModule } from 'primeng/divider';
+// Componentes do Faro (ZardUI + próprios)
+import { NgIcon } from '@ng-icons/core';
+import { ZardAlertComponent } from '@/shared/components/alert';
+import { ZardButtonComponent } from '@/shared/components/button';
+import { ZardCheckboxComponent } from '@/shared/components/checkbox';
+import { ZardFieldImports } from '@/shared/components/field';
+import { ZardInputComponent } from '@/shared/components/input';
+import { ZardSonnerComponent, ZardSonnerService } from '@/shared/components/sonner';
+import { BRAND_HEADLINE, BRAND_SUB } from '@/shared/components/faro/brand-panel/brand-copy';
+import { BrandPanel } from '@/shared/components/faro/brand-panel/brand-panel';
+import { Focinho } from '@/shared/components/faro/focinho/focinho';
+import { GoogleGlyph } from '@/shared/components/faro/google-glyph/google-glyph';
+import { Logo } from '@/shared/components/faro/logo/logo';
 
 // Core (token nunca lido fora de core/)
 import { AuthService } from '../../../core/auth/auth.service';
@@ -39,24 +43,26 @@ type FormError = 'invalid' | 'rate_limited' | 'unconfirmed' | 'provider_unavaila
   standalone: true,
   imports: [
     ReactiveFormsModule,
-    ToastModule,
-    InputTextModule,
-    PasswordModule,
-    CheckboxModule,
-    ButtonModule,
-    MessageModule,
-    DividerModule,
+    NgIcon,
+    ZardAlertComponent,
+    ZardButtonComponent,
+    ZardCheckboxComponent,
+    ZardFieldImports,
+    ZardInputComponent,
+    ZardSonnerComponent,
+    BrandPanel,
+    Focinho,
+    GoogleGlyph,
+    Logo,
   ],
-  providers: [MessageService],
   templateUrl: './login.html',
-  styleUrl: './login.css',
 })
 export class Login implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
-  private readonly messageService = inject(MessageService);
+  private readonly sonner = inject(ZardSonnerService);
 
   // ── Formulário (Reactive Forms tipado) ──
   readonly form: FormGroup = this.fb.group({
@@ -72,6 +78,13 @@ export class Login implements OnInit {
   readonly isGoogleDisabled = signal(false);
   readonly showSessionExpired = signal(false);
   readonly showLoggedOut = signal(false);
+  readonly showPassword = signal(false);
+
+  // Frase e apoio do painel de marca (desktop) e rótulos do botão de olho
+  protected readonly brandHeadline = BRAND_HEADLINE;
+  protected readonly brandSub = BRAND_SUB;
+  protected readonly showPasswordLabel = $localize`Mostrar senha`;
+  protected readonly hidePasswordLabel = $localize`Ocultar senha`;
 
   // ── Computed: mensagem do banner de erro ──
   readonly errorBannerMessage = computed<string | null>(() => {
@@ -195,30 +208,24 @@ export class Login implements OnInit {
     await this.authService.resendConfirmation(email);
 
     // Toast de confirmação (resposta uniforme — não confirma existência)
-    this.messageService.add({
-      severity: 'success',
-      summary: 'E-mail reenviado',
-      detail: 'E-mail de confirmação reenviado. Verifique sua caixa de entrada.',
-      life: 6000,
+    this.sonner.success('E-mail reenviado', {
+      description: 'E-mail de confirmação reenviado. Verifique sua caixa de entrada.',
+      duration: 6000,
     });
   }
 
   onProvisionalLink(event: Event): void {
     event.preventDefault();
-    this.messageService.add({
-      severity: 'info',
-      summary: 'Em breve',
-      detail: 'Esta função estará disponível em breve.',
-      life: 4000,
+    this.sonner.info('Em breve', {
+      description: 'Esta função estará disponível em breve.',
+      duration: 4000,
     });
   }
 
   private showGoogleCancelledInfo(): void {
-    this.messageService.add({
-      severity: 'info',
-      summary: 'Login não concluído',
-      detail: 'Login com Google não foi concluído. Use e-mail e senha para entrar.',
-      life: 5000,
+    this.sonner.info('Login não concluído', {
+      description: 'Login com Google não foi concluído. Use e-mail e senha para entrar.',
+      duration: 5000,
     });
   }
 
@@ -231,20 +238,9 @@ export class Login implements OnInit {
     return this.form.get('password')!;
   }
 
-  get isErrorBanner(): boolean {
-    const err = this.formError();
-    return err === 'invalid' || err === 'rate_limited' || err === 'network';
-  }
-
-  get isWarnBanner(): boolean {
-    return this.formError() === 'rate_limited' || this.formError() === 'provider_unavailable';
-  }
-
-  get bannerSeverity(): 'error' | 'warn' | 'info' {
-    const err = this.formError();
-    if (err === 'rate_limited' || err === 'provider_unavailable') return 'warn';
-    if (err === 'network') return 'warn';
-    return 'error';
+  /** Tom do aviso de erro (contrato §6.2): só credenciais inválidas é 'danger'. */
+  get bannerType(): 'danger' | 'neutral' {
+    return this.formError() === 'invalid' ? 'danger' : 'neutral';
   }
 
   get submitButtonDisabled(): boolean {

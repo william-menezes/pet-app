@@ -11,7 +11,6 @@ import { provideZonelessChangeDetection } from '@angular/core';
 import { Login } from './login';
 import { AuthService } from '../../../core/auth/auth.service';
 import { AuthStore } from '../../../core/auth/auth.store';
-import { MessageService } from 'primeng/api';
 
 function makeAuthServiceMock() {
   return {
@@ -38,7 +37,6 @@ describe('Login', () => {
         provideZonelessChangeDetection(),
         provideRouter([]),
         AuthStore,
-        MessageService,
         { provide: AuthService, useValue: authServiceMock },
       ],
     }).compileComponents();
@@ -169,5 +167,34 @@ describe('Login', () => {
 
     const btn = fixture.nativeElement.querySelector('[data-testid="login-resend-confirmation"]');
     expect(btn).toBeTruthy();
+  });
+
+  // ── Spec 002: apresentação com ZardUI ──
+
+  it('não deve ter nenhum componente p-* da pilha antiga no DOM', () => {
+    const el: HTMLElement = fixture.nativeElement;
+    for (const tag of ['p-button', 'p-password', 'p-checkbox', 'p-message', 'p-toast']) {
+      expect(el.querySelector(tag)).toBeNull();
+    }
+  });
+
+  it('o h1 deve conter "te ver de novo"', () => {
+    const h1: HTMLElement = fixture.nativeElement.querySelector('h1');
+    expect(h1.textContent).toContain('te ver de novo');
+  });
+
+  it('o botão de olho deve alternar o type da senha entre password e text', () => {
+    const input: HTMLInputElement = fixture.nativeElement.querySelector('[data-testid="login-password"]');
+    const toggle: HTMLButtonElement = fixture.nativeElement.querySelector('[data-testid="login-password-toggle"]');
+    expect(input.type).toBe('password');
+    toggle.click();
+    fixture.detectChanges();
+    expect(input.type).toBe('text');
+  });
+
+  it('o botão do Google deve ter o G com o caminho de cor #4285F4', () => {
+    const svg = fixture.nativeElement.querySelector('[data-testid="login-google"] svg');
+    expect(svg).toBeTruthy();
+    expect(svg.querySelector('path[fill="#4285F4"]')).toBeTruthy();
   });
 });

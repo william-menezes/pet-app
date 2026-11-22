@@ -15,174 +15,53 @@
  */
 import { Component, OnInit, signal, inject, ElementRef, viewChild, AfterViewInit } from '@angular/core';
 import { Router } from '@angular/router';
+import { Logo } from '@/shared/components/faro/logo/logo';
+import { ZardSpinnerComponent } from '@/shared/components/spinner';
 import { AuthService } from '../../../core/auth/auth.service';
 import { roleRedirect } from '../../../core/auth/role-redirect';
 
 @Component({
   selector: 'app-oauth-callback',
   standalone: true,
-  imports: [],
+  imports: [Logo, ZardSpinnerComponent],
   template: `
-    <div class="callback-page">
-      <main class="callback-main">
-        <div class="callback-card">
+    <div class="flex min-h-dvh flex-col bg-background">
+      <main class="flex flex-1 flex-col items-center justify-center px-4 py-6">
+        <div class="flex w-full max-w-[440px] flex-col items-center gap-8">
+          <app-logo tone="on-light" [height]="48" />
 
-          <!-- Marca -->
-          <div class="callback-brand" aria-hidden="true">
-            <span class="callback-brand__name">Faro</span>
-          </div>
-
-          <!-- Container de loading (a11y: role=status, aria-live=polite) -->
+          <!-- Container de status (a11y: role=status, aria-live=polite) -->
           <div
-            class="callback-container"
+            class="flex flex-col items-center gap-4 text-center focus:outline-none"
             role="status"
             aria-live="polite"
             aria-label="Verificando seu acesso"
+            i18n-aria-label
             tabindex="-1"
             #statusContainer
             data-testid="login-callback-container">
-
             @if (!hasError()) {
-              <!-- Spinner de verificação -->
-              <div class="callback-spinner" aria-hidden="true"></div>
-              <h1 class="callback-title">Verificando...</h1>
-              <p class="callback-subtitle">
+              <span aria-hidden="true"><z-spinner class="size-12!" /></span>
+              <h1 class="font-display text-xl font-semibold text-foreground" i18n>Verificando...</h1>
+              <p class="max-w-[28ch] text-sm text-muted-foreground" i18n>
                 Estamos validando seu acesso com o Google. Um momento.
               </p>
             } @else {
-              <!-- Estado de erro com link de fallback -->
-              <div class="callback-error" role="alert" aria-live="assertive">
-                <p class="callback-error__text">{{ errorMessage() }}</p>
-                <a href="/auth/login" class="callback-back-link">
+              <div class="flex flex-col items-center gap-4" role="alert" aria-live="assertive">
+                <p class="text-sm text-text">{{ errorMessage() }}</p>
+                <a
+                  href="/auth/login"
+                  class="inline-flex min-h-11 items-center px-2 text-sm font-medium text-link underline underline-offset-[3px] hover:text-foreground"
+                  i18n>
                   Voltar ao login
                 </a>
               </div>
             }
-
           </div>
-
         </div>
       </main>
     </div>
   `,
-  styles: [`
-    .callback-page {
-      display: flex;
-      flex-direction: column;
-      min-height: 100dvh;
-      background: var(--app, #f7f8f8);
-    }
-
-    .callback-main {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 24px 16px;
-    }
-
-    .callback-card {
-      width: 100%;
-      max-width: 440px;
-      background: var(--surface-0, #ffffff);
-      border-radius: var(--r-lg, 20px);
-      box-shadow: var(--shadow-card, 0 1px 3px rgba(19,32,30,.08), 0 4px 12px rgba(19,32,30,.06));
-      border: 1px solid var(--border, #e2e5e7);
-      padding: 48px 32px;
-    }
-
-    .callback-brand {
-      text-align: center;
-      margin-bottom: 32px;
-    }
-
-    .callback-brand__name {
-      font-family: "Poppins", system-ui, sans-serif;
-      font-weight: 700;
-      font-size: 24px;
-      color: var(--primary, #3a4fd6);
-    }
-
-    .callback-container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 16px;
-      text-align: center;
-    }
-
-    .callback-container:focus {
-      outline: none;
-    }
-
-    .callback-spinner {
-      width: 48px;
-      height: 48px;
-      border-radius: 50%;
-      border: 3px solid var(--indigo-100, #cbd3f5);
-      border-top-color: var(--primary, #3a4fd6);
-      animation: callback-spin 0.8s linear infinite;
-    }
-
-    @keyframes callback-spin {
-      to { transform: rotate(360deg); }
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      .callback-spinner {
-        animation-duration: 2s;
-      }
-    }
-
-    .callback-title {
-      font-family: "Poppins", system-ui, sans-serif;
-      font-weight: 700;
-      font-size: 20px;
-      color: var(--text-strong, #13201e);
-      margin: 0;
-    }
-
-    .callback-subtitle {
-      font-family: "Inter", system-ui, sans-serif;
-      font-size: 14px;
-      color: var(--muted, #5e6c69);
-      margin: 0;
-      max-width: 28ch;
-    }
-
-    .callback-error {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 16px;
-    }
-
-    .callback-error__text {
-      font-family: "Inter", system-ui, sans-serif;
-      font-size: 14px;
-      color: var(--warn, #946005);
-      margin: 0;
-    }
-
-    .callback-back-link {
-      font-family: "Inter", system-ui, sans-serif;
-      font-size: 14px;
-      font-weight: 500;
-      color: var(--primary, #3a4fd6);
-      text-decoration: underline;
-      min-height: 44px;
-      display: inline-flex;
-      align-items: center;
-      padding: 0 8px;
-      border-radius: 4px;
-    }
-
-    .callback-back-link:focus-visible {
-      outline: 2px solid var(--primary, #3a4fd6);
-      outline-offset: 2px;
-    }
-  `],
 })
 export class OAuthCallback implements OnInit, AfterViewInit {
   private readonly authService = inject(AuthService);
