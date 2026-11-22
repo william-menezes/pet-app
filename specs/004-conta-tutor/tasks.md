@@ -279,7 +279,7 @@ navegação do frontend.
   `rpc('my_account')` e converte os nomes para a interface `Account`. **Feito quando**: o teste
   cobre `load` (sucesso e falha), `updateName` com 1, 2, 80 e 81 caracteres, `acceptTerms` enviando
   `TERMS_VERSION` e `logout` chamando `log_logout` **antes** de `AuthService.signOut()`.
-- [ ] T026 [FE] Criar `src/app/core/auth/post-auth-navigation.ts` (`nextStep` e
+- [x] T026 [FE] Criar `src/app/core/auth/post-auth-navigation.ts` (`nextStep` e
   `PostAuthNavigator`) e `post-auth-navigation.spec.ts` conforme
   `contracts/frontend-services.contract.md` §3. **Feito quando**: as 7 linhas da tabela de
   `nextStep` passam; `go()` com serviços falsos limpa o destino só no passo final, ignora
