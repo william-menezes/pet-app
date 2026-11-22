@@ -5,7 +5,7 @@
 #
 # Pre-requisito: `supabase start` ja executado. Roda TODAS as checagens e so no fim sai com erro,
 # para um unico run mostrar tudo que falhou. Nunca imprime chaves, senhas ou tokens: so nomes e
-# resultados. Valores de teste (e-mails @faro.test, senhas de seed) sao descartaveis.
+# resultados. Valores de teste (e-mails @faro.test, senhas) sao descartaveis, do stack local do CI.
 set -uo pipefail
 
 FAILED=0
@@ -15,12 +15,16 @@ check() { # check "descricao" <comando que deve retornar 0>
   local desc="$1"; shift
   if "$@"; then pass "$desc"; else fail "$desc"; fi
 }
+env_value() { # env_value NOME  (le de `supabase status -o env`, com ou sem aspas)
+  printf '%s\n' "$STATUS_ENV" | sed -n "s/^$1=\"\{0,1\}\([^\"]*\)\"\{0,1\}\$/\1/p" | head -1
+}
 
 STATUS_ENV="$(supabase status -o env 2>/dev/null || true)"
-API_URL="$(printf '%s\n' "$STATUS_ENV" | sed -n 's/^API_URL="\{0,1\}\([^"]*\)"\{0,1\}$/\1/p' | head -1)"
-ANON_KEY="$(printf '%s\n' "$STATUS_ENV" | sed -n 's/^ANON_KEY="\{0,1\}\([^"]*\)"\{0,1\}$/\1/p' | head -1)"
-if [ -z "$API_URL" ] || [ -z "$ANON_KEY" ]; then
-  echo "FAIL  nao foi possivel ler API_URL/ANON_KEY de 'supabase status -o env'. Variaveis disponiveis:"
+API_URL="$(env_value API_URL)"
+ANON_KEY="$(env_value ANON_KEY)"
+SERVICE_KEY="$(env_value SERVICE_ROLE_KEY)"
+if [ -z "$API_URL" ] || [ -z "$ANON_KEY" ] || [ -z "$SERVICE_KEY" ]; then
+  echo "FAIL  nao foi possivel ler API_URL, ANON_KEY e SERVICE_ROLE_KEY de 'supabase status -o env'. Variaveis disponiveis:"
   printf '%s\n' "$STATUS_ENV" | cut -d= -f1
   exit 1
 fi
@@ -32,34 +36,55 @@ signup() { # signup <email> <senha> [json-dos-metadados]
     -H "apikey: $ANON_KEY" -H "Content-Type: application/json" \
     -d "{\"email\":\"$1\",\"password\":\"$2\",\"data\":$data}"
 }
+http_code() { printf '%s' "$1" | tail -1; }
+http_body() { printf '%s' "$1" | sed '$d'; }
 
 echo "== T003: configuracao do Auth =="
 OUT="$(signup curta@faro.test 1234567)"
-CODE="$(printf '%s' "$OUT" | tail -1)"; BODY="$(printf '%s' "$OUT" | sed '$d')"
+CODE="$(http_code "$OUT")"; BODY="$(http_body "$OUT")"
 echo "senha de 7 caracteres: HTTP $CODE; corpo: $(printf '%s' "$BODY" | cut -c1-160)"
 check "senha de 7 caracteres e recusada pelo servidor (weak_password)" \
   bash -c '[ "$1" -ge 400 ] && printf "%s" "$2" | grep -q "weak_password"' _ "$CODE" "$BODY"
 
-OUT="$(signup tutor.a@faro.test OutraSenha12345)"
-CODE="$(printf '%s' "$OUT" | tail -1)"; BODY="$(printf '%s' "$OUT" | sed '$d')"
-echo "cadastro repetido: HTTP $CODE"
+# Usuario confirmado criado pela API de admin (so no stack local do CI). Os usuarios do seed.sql nao
+# servem para estas conferencias: ver o diagnostico logo abaixo.
+LOGIN_EMAIL="ci-login-$RANDOM$RANDOM@faro.test"
+CR="$(curl -s -w '\n%{http_code}' -X POST "$API_URL/auth/v1/admin/users" \
+  -H "apikey: $SERVICE_KEY" -H "Authorization: Bearer $SERVICE_KEY" -H "Content-Type: application/json" \
+  -d "{\"email\":\"$LOGIN_EMAIL\",\"password\":\"SenhaDeTeste12345\",\"email_confirm\":true,\"user_metadata\":{\"name\":\"CI Login\",\"terms_version\":\"2026-11\"}}")"
+echo "usuario confirmado criado pela API de admin: HTTP $(http_code "$CR")"
+check "API de admin cria o usuario (200)" test "$(http_code "$CR")" = "200"
+
+OUT="$(signup "$LOGIN_EMAIL" OutraSenha12345)"
+CODE="$(http_code "$OUT")"; BODY="$(http_body "$OUT")"
+echo "cadastro repetido (e-mail ja cadastrado e confirmado): HTTP $CODE"
 check "cadastro repetido responde 200" test "$CODE" = "200"
 check "cadastro repetido nao devolve sessao" bash -c '! printf "%s" "$1" | grep -q "access_token"' _ "$BODY"
 
 echo "== T017: login continua funcionando depois dos gatilhos =="
 LOGIN="$(curl -s -w '\n%{http_code}' -X POST "$API_URL/auth/v1/token?grant_type=password" \
   -H "apikey: $ANON_KEY" -H "Content-Type: application/json" \
-  -d '{"email":"tutor.a@faro.test","password":"TesteSenha123!"}')"
-LCODE="$(printf '%s' "$LOGIN" | tail -1)"; LBODY="$(printf '%s' "$LOGIN" | sed '$d')"
-echo "login do tutor A: HTTP $LCODE"
-check "login do tutor A devolve sessao (200 com access_token)" \
+  -d "{\"email\":\"$LOGIN_EMAIL\",\"password\":\"SenhaDeTeste12345\"}")"
+LCODE="$(http_code "$LOGIN")"; LBODY="$(http_body "$LOGIN")"
+echo "login do usuario criado pela API de admin: HTTP $LCODE"
+check "login devolve sessao (200 com access_token)" \
   bash -c '[ "$1" = "200" ] && printf "%s" "$2" | grep -q "access_token"' _ "$LCODE" "$LBODY"
 if [ "$LCODE" != "200" ]; then echo "corpo do login: $(printf '%s' "$LBODY" | cut -c1-200)"; fi
+
+echo "== Diagnostico (nao reprova): os usuarios do seed.sql entram pelo GoTrue? =="
+SEEDLOGIN="$(curl -s -o /dev/null -w '%{http_code}' -X POST "$API_URL/auth/v1/token?grant_type=password" \
+  -H "apikey: $ANON_KEY" -H "Content-Type: application/json" \
+  -d '{"email":"tutor.a@faro.test","password":"TesteSenha123!"}')"
+echo "login do tutor.a do seed: HTTP $SEEDLOGIN"
+DBC="$(docker ps --filter name=supabase_db_ --format '{{.Names}}' | head -1)"
+if [ -n "$DBC" ]; then
+  docker exec "$DBC" psql -U postgres -At -c "select email, instance_id, confirmation_token is null as conf_null, recovery_token is null as rec_null, email_change is null as chg_null, aud from auth.users where email = 'tutor.a@faro.test' or email = '$LOGIN_EMAIL' order by email" || true
+fi
 
 echo "== T004: e-mail de confirmacao no coletor local =="
 EMAIL="ci-$RANDOM$RANDOM@faro.test"
 OUT="$(signup "$EMAIL" SenhaDeTeste12345 '{"name":"CI Teste","phone":"+5511987654421","terms_version":"2026-11"}')"
-CODE="$(printf '%s' "$OUT" | tail -1)"
+CODE="$(http_code "$OUT")"
 echo "cadastro novo: HTTP $CODE"
 check "cadastro novo responde 200" test "$CODE" = "200"
 
@@ -76,9 +101,6 @@ if [ -z "$MAIL_HTML" ]; then
   echo "coletor sem mensagem. Resposta bruta da API (primeiros 300 caracteres):"
   curl -s "http://127.0.0.1:54324/api/v1/messages" | cut -c1-300
   echo
-  echo "Raiz do coletor (primeiros 200 caracteres):"
-  curl -s "http://127.0.0.1:54324/" | cut -c1-200
-  echo
 fi
 check "o coletor recebeu o e-mail de confirmacao" test -n "$MAIL_HTML"
 check "o link contem /auth/confirmar-email?token_hash=" \
@@ -89,7 +111,10 @@ check "o e-mail nao contem /auth/v1/verify (ConfirmationURL)" \
   bash -c '! printf "%s" "$1" | grep -q "/auth/v1/verify"' _ "$MAIL_HTML"
 
 echo "== T021: CORS do login-guard =="
-mkdir -p supabase
+# No stack local, o Kong responde o preflight (OPTIONS) com 'Access-Control-Allow-Origin: *' ANTES de
+# a funcao ser chamada; so no projeto hospedado o OPTIONS chega na funcao. Por isso a prova de que o
+# CORS da funcao esta ativo e feita numa resposta de POST: os cabecalhos Allow-Headers e Allow-Methods
+# abaixo so existem na resposta real da funcao (o Kong so os envia em preflight, com outro valor).
 cat > supabase/.env.local <<'ENVEOF'
 HASH_SALT=ci-test-salt-0123456789
 ALLOWED_ORIGINS=http://localhost:4200
@@ -99,30 +124,32 @@ supabase functions serve --env-file supabase/.env.local > /tmp/functions-serve.l
 SERVE_PID=$!
 trap 'kill $SERVE_PID 2>/dev/null || true; rm -f supabase/.env.local' EXIT
 
-PRE=""
+post_guard() { # post_guard <origem>
+  curl -s -i -X POST "$API_URL/functions/v1/login-guard" -H "Origin: $1" \
+    -H "apikey: $ANON_KEY" -H "Authorization: Bearer $ANON_KEY" -H "Content-Type: application/json" \
+    -d '{"phase":"pre_attempt","email":"ci-sem-conta@faro.test"}' 2>/dev/null | tr -d '\r'
+}
+POST=""
 for _ in $(seq 1 60); do
-  PRE="$(curl -s -i -X OPTIONS "$API_URL/functions/v1/login-guard" \
-    -H "Origin: http://localhost:4200" -H "Access-Control-Request-Method: POST" \
-    -H "Access-Control-Request-Headers: authorization,content-type,apikey" 2>/dev/null || true)"
-  if printf '%s' "$PRE" | head -1 | grep -qE ' (200|204)'; then break; fi
+  POST="$(post_guard http://localhost:4200 || true)"
+  if printf '%s' "$POST" | head -1 | grep -q ' 200'; then break; fi
   sleep 2
 done
-echo "preflight (cabecalhos, sem corpo):"; printf '%s' "$PRE" | tr -d '\r' | sed -n '1,12p'
-check "OPTIONS devolve 204 ou 200" bash -c 'printf "%s" "$1" | head -1 | grep -qE " (200|204)"' _ "$PRE"
-check "Access-Control-Allow-Origin e http://localhost:4200" \
-  bash -c 'printf "%s" "$1" | tr -d "\r" | grep -qi "^access-control-allow-origin: http://localhost:4200$"' _ "$PRE"
+echo "POST pre_attempt (status e cabecalhos de CORS):"
+printf '%s\n' "$POST" | grep -iE '^(HTTP/|access-control-|vary:)' || true
+printf '%s\n' "$POST" | tail -1
+check "POST ao login-guard responde 200 com a decisao (allow)" \
+  bash -c 'printf "%s" "$1" | head -1 | grep -q " 200" && printf "%s" "$1" | grep -q "\"decision\":\"allow\""' _ "$POST"
+check "a resposta traz o Allow-Headers da funcao (authorization, x-client-info, apikey, content-type)" \
+  bash -c 'printf "%s" "$1" | grep -qi "^access-control-allow-headers: authorization, x-client-info, apikey, content-type$"' _ "$POST"
+check "a resposta traz o Allow-Methods da funcao (POST, OPTIONS)" \
+  bash -c 'printf "%s" "$1" | grep -qi "^access-control-allow-methods: POST, OPTIONS$"' _ "$POST"
 
-EVIL="$(curl -s -i -X OPTIONS "$API_URL/functions/v1/login-guard" -H "Origin: https://evil.example" \
-  -H "Access-Control-Request-Method: POST" 2>/dev/null || true)"
-check "origem fora da lista nao recebe Allow-Origin" \
-  bash -c '! printf "%s" "$1" | grep -qi "^access-control-allow-origin:"' _ "$EVIL"
-
-POST="$(curl -s -i -X POST "$API_URL/functions/v1/login-guard" -H "Origin: http://localhost:4200" \
-  -H "apikey: $ANON_KEY" -H "Authorization: Bearer $ANON_KEY" -H "Content-Type: application/json" \
-  -d '{"phase":"pre_attempt","email":"ci-sem-conta@faro.test"}' 2>/dev/null || true)"
-echo "POST pre_attempt:"; printf '%s' "$POST" | tr -d '\r' | sed -n '1p;$p'
-check "POST ao login-guard segue respondendo a decisao (allow) com CORS" \
-  bash -c 'printf "%s" "$1" | grep -q "\"decision\":\"allow\"" && printf "%s" "$1" | tr -d "\r" | grep -qi "^access-control-allow-origin: http://localhost:4200$"' _ "$POST"
+PREFLIGHT="$(curl -s -i -X OPTIONS "$API_URL/functions/v1/login-guard" \
+  -H "Origin: http://localhost:4200" -H "Access-Control-Request-Method: POST" \
+  -H "Access-Control-Request-Headers: authorization,content-type,apikey" 2>/dev/null | tr -d '\r')"
+echo "preflight local (respondido pelo Kong):"; printf '%s\n' "$PREFLIGHT" | grep -iE '^(HTTP/|access-control-)' || true
+check "OPTIONS devolve 200 ou 204" bash -c 'printf "%s" "$1" | head -1 | grep -qE " (200|204)"' _ "$PREFLIGHT"
 
 if [ "$FAILED" -ne 0 ]; then
   echo "--- ultimas linhas do supabase functions serve ---"

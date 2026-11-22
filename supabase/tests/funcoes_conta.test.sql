@@ -187,7 +187,7 @@ SELECT is((SELECT public.account_auth_facts('00000000-0000-0000-0000-00000000000
   'service_role: terms_accepted verdadeiro apos o aceite de B');
 SELECT is(
   (SELECT count(*)::integer FROM jsonb_object_keys(public.account_auth_facts('00000000-0000-0000-0000-000000000001')) AS k
-    WHERE k ~* 'encrypted|hash|password$'),
+    WHERE k ~* 'encrypted|hash' OR k = 'password'),
   0, 'account_auth_facts nunca devolve hash da senha (so has_password)');
 SELECT throws_ok($$ SELECT public.account_auth_facts('99999999-9999-9999-9999-999999999999') $$,
   'P0001', 'account_not_found', 'conta inexistente => account_not_found');
