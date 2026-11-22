@@ -22,6 +22,9 @@ SELECT plan(14);
 -- anon e authenticated precisam de USAGE para chamar tests.* depois de trocar de papel.
 CREATE SCHEMA IF NOT EXISTS tests;
 GRANT USAGE ON SCHEMA tests TO anon, authenticated;
+-- 0017: funcao criada sem GRANT nao e mais executavel por PUBLIC. Os auxiliares abaixo sao chamados depois de
+-- trocar de papel, entao o schema do teste (so existe nesta transacao) mantem o padrao antigo.
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA tests GRANT EXECUTE ON FUNCTIONS TO PUBLIC;
 
 -- ─────────────────────────────────────────
 -- Helpers (replicados do rls_perfis.test.sql para independência)
@@ -96,9 +99,11 @@ SELECT has_column('public', 'auth_audit_log', 'detalhe',   'auth_audit_log tem d
 
 SELECT tests.set_anon();
 
-SELECT is_empty(
+-- Spec 004 (0017): anon perde todo privilégio nas tabelas de public; a leitura agora dá 42501 (antes: zero linhas).
+SELECT throws_ok(
   $$ SELECT * FROM public.auth_audit_log $$,
-  'anon não lê nenhuma linha de auth_audit_log'
+  '42501', NULL,
+  'anon não lê auth_audit_log (sem privilégio, 42501)'
 );
 
 SELECT throws_ok(
@@ -136,9 +141,10 @@ SELECT throws_ok(
 
 SELECT tests.set_auth_uid('00000000-0000-0000-0000-000000000003'); -- admin
 
-SELECT lives_ok(
-  $$ SELECT COUNT(*) FROM public.auth_audit_log $$,
-  'admin pode SELECT em auth_audit_log (policy audit_admin_select)'
+-- Spec 004 (0017): o SELECT de authenticated em auth_audit_log fica; a prova de que o admin LÊ exige a linha-semente.
+SELECT ok(
+  (SELECT COUNT(*) FROM public.auth_audit_log WHERE ip_hash = 'hash_semente') >= 1,
+  'admin lê a linha-semente de auth_audit_log (policy audit_admin_select)'
 );
 
 -- ─────────────────────────────────────────
@@ -147,9 +153,11 @@ SELECT lives_ok(
 
 SELECT tests.set_auth_uid('00000000-0000-0000-0000-000000000003'); -- até admin é negado
 
-SELECT is_empty(
+-- Spec 004 (0017): authenticated perde todo privilégio em auth_login_attempts; a leitura agora dá 42501 (antes: zero linhas).
+SELECT throws_ok(
   $$ SELECT * FROM public.auth_login_attempts $$,
-  'nem o admin lê nenhuma linha de auth_login_attempts (deny-by-default total)'
+  '42501', NULL,
+  'nem o admin lê auth_login_attempts (sem privilégio, 42501)'
 );
 
 SELECT finish();

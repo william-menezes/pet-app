@@ -557,6 +557,18 @@ C="$(curl -s -o /dev/null -w '%{http_code}' -X POST "$API_URL/functions/v1/passw
   -H "Authorization: Bearer $ANON_KEY" -H "Content-Type: application/json" -d '{"email":"x@y.zz"}')"
 check "sem PHONE_OTP_PEPPER a recuperacao de senha continua funcionando (200)" test "$C" = "200"
 
+echo "== T097: endurecimento de base (migration 0017) pela API =="
+AC="$(curl -s -o /dev/null -w '%{http_code}' "$API_URL/rest/v1/perfis?select=id" -H "apikey: $ANON_KEY" -H "Authorization: Bearer $ANON_KEY")"
+echo "anon lendo perfis pela API: HTTP $AC"
+check "anon lendo perfis recebe 401 ou 403 (sem privilegio), nao 200 com lista vazia" bash -c '[ "$1" = "401" ] || [ "$1" = "403" ]' _ "$AC"
+AB="$(curl -s -o /dev/null -w '%{http_code}' -X POST "$API_URL/rest/v1/rpc/rate_limit_check" -H "apikey: $ANON_KEY" \
+  -H "Authorization: Bearer $ANON_KEY" -H "Content-Type: application/json" -d '{"p_checks":[]}')"
+check "anon chamando rate_limit_check recebe 401 ou 403 ($AB)" bash -c '[ "$1" = "401" ] || [ "$1" = "403" ]' _ "$AB"
+GQ="$(curl -s -o /dev/null -w '%{http_code}' -X POST "$API_URL/graphql/v1" -H "apikey: $ANON_KEY" \
+  -H "Authorization: Bearer $ANON_KEY" -H "Content-Type: application/json" -d '{"query":"{__typename}"}')"
+echo "GraphQL: HTTP $GQ"
+check "o endpoint GraphQL nao responde 200" bash -c '[ "$1" != "200" ]' _ "$GQ"
+
 if [ "$FAILED" -ne 0 ]; then
   echo "--- ultimas linhas do supabase functions serve ---"
   tail -n 30 /tmp/functions-serve.log || true

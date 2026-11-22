@@ -172,10 +172,11 @@ SELECT is(
 SET LOCAL ROLE authenticated;
 SET LOCAL "request.jwt.claim.sub" = '00000000-0000-0000-0000-000000000001';
 
--- A tabela já tem linhas (inseridas acima como dono); RLS sem policy devolve zero linhas.
-SELECT is_empty(
+-- Spec 004 (0017): authenticated perde todo privilégio na tabela; a leitura agora dá 42501 (antes: zero linhas).
+SELECT throws_ok(
   $$ SELECT * FROM public.auth_login_attempts $$,
-  'authenticated não lê nenhuma linha de auth_login_attempts diretamente'
+  '42501', NULL,
+  'authenticated não lê auth_login_attempts diretamente (sem privilégio, 42501)'
 );
 
 RESET ROLE;

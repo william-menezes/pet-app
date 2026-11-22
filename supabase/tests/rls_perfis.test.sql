@@ -26,6 +26,9 @@ SELECT plan(18);
 -- anon e authenticated precisam de USAGE para chamar tests.* depois de trocar de papel.
 CREATE SCHEMA IF NOT EXISTS tests;
 GRANT USAGE ON SCHEMA tests TO anon, authenticated;
+-- 0017: funcao criada sem GRANT nao e mais executavel por PUBLIC. Os auxiliares abaixo sao chamados depois de
+-- trocar de papel, entao o schema do teste (so existe nesta transacao) mantem o padrao antigo.
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA tests GRANT EXECUTE ON FUNCTIONS TO PUBLIC;
 
 -- ─────────────────────────────────────────
 -- Helpers de contexto de sessão (simula auth.uid() para os testes)

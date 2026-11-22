@@ -5,7 +5,9 @@
 [api]
 enabled = true
 port = 54321
-schemas = ["public", "storage", "graphql_public"]
+# Spec 004 (0017): so `public`. Nada no Faro usa GraphQL (pg_graphql removida). max_rows continua em 1000: o limite vale
+# tambem para service_role e cortaria em silencio a geracao de etiquetas e a exportacao de um lote (ate 540 codigos).
+schemas = ["public"]
 extra_search_path = ["public", "extensions"]
 max_rows = 1000
 
