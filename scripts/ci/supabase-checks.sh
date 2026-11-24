@@ -885,7 +885,8 @@ check "corrida: a tag ficou assigned" seed_status_is available3 assigned
 R="$(act_a "{\"p_code\":\"$CODE_AV2\",\"p_pin\":\"$PIN_AV2\",\"p_pet_id\":\"$MEL_ID\"}")"
 check "activate_tag: o PIN de desenvolvimento do segundo codigo confere (a Mel ja tem tag: pet_has_tag, depois do PIN)" has "$R" '"error": "pet_has_tag"'
 # Limpeza: devolve o seed ao estado de antes (vinculo da Mel encerrado, tag available, tentativas zeradas).
-NOW_ISO="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+# +1 minuto: ended_at tem de ser >= started_at, que tem fracao de segundo (a data com segundos inteiros podia ficar antes dele).
+NOW_ISO="$(date -u -d "+1 minute" +%Y-%m-%dT%H:%M:%SZ)"
 rest PATCH "tag_assignments?tag_code=eq.$CODE_AV3&ended_at=is.null" "{\"ended_at\":\"$NOW_ISO\",\"end_reason\":\"admin\"}" > /dev/null
 rest PATCH "tag_codes?code=eq.$CODE_AV3" '{"status":"available","pin_fail_count_24h":0,"pin_fail_window_start":null,"pin_locked_until":null}' > /dev/null
 rest PATCH "tag_codes?code=eq.$CODE_AV2" '{"pin_fail_count_24h":0,"pin_fail_window_start":null,"pin_locked_until":null}' > /dev/null
