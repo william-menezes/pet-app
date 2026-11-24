@@ -104,3 +104,58 @@ Os testes pgTAP geram PINs com `new_activation_pin()` dentro da transação; os 
 - "Alterar um caractere faz o teste de sincronia falhar" (T009): provado pelo comparador (`firstDifference`) sobre cópias
   alteradas dentro do teste; não foi alterado um arquivo de verdade para ver o vermelho no CI.
 - Concorrência (duas ativações simultâneas) e `resolve_tag`: não existem ainda.
+
+## Backend: Phases 3 a 6 (T026 a T028, T036, T038, T039, T050 a T053, T058, T059; 2026-11-22)
+
+Mesmo ambiente da fundação (sem Docker, CLI ou Python locais; verificação no CI, PR nº 5). Nenhum projeto hospedado foi tocado.
+`deno test` e `deno check` rodados localmente antes do push.
+
+### Migrations e funções
+
+| Migration | Conteúdo |
+|---|---|
+| `0028_rpc_resolve_tag.sql` | `resolve_tag(character, text)` (só `service_role`), `url_encode_utf8` |
+| `0029_rpc_ativacao.sql` | `check_tag_for_link`, `activate_tag`, `set/get/clear_pending_activation` (`authenticated`); internas `tag_err`, `rate_retry_after` |
+| `0030_rpc_scans.sql` | `register_scan`, `set_scan_location`, `scan_notices_pending`, `scan_notice_sent`, `scan_notice_info` (só `service_role`) |
+| `0031_rpc_tutor.sql` | `set_lost_mode` (T059); recebe `my_dashboard`, `release_tag` e `request_tag_replacement` nas fases deles |
+| `0032_storage_pet_photos.sql` | bucket privado `pet-photos` e 4 políticas por prefixo `<uid>/` (sem limite de tamanho/tipo: entra na 0035) |
+| `0033_cron.sql` | `pg_cron`, `pg_net`, jobs `faro-resend-scan-notices` (5 min) e `faro-cleanup-tags` (diário) |
+
+Edge Functions: `resolve-tag`, `register-scan` (`handler.ts` testável + `index.ts`), `_shared/email.ts` (porta, `TODO(EMAIL_PROVIDER)`), `_shared/email-templates.ts`.
+
+### Decisões e desvios
+
+1. **PINs de desenvolvimento no seed (decisão do William, 2026-11-22).** A regra "nenhum PIN em arquivo versionado" protege PINs reais. As três tags `available` do `lote-900` (sintético, só banco local e CI) têm PIN fixo derivado por SHA-256, em `e2e/fixtures/seed-codes.json` (`devPins`), gerado por `make-seed.ts`; no banco só o hash. Comentários no seed e no fixture dizem isso. As outras três tags recebem PIN aleatório descartado. O script de CI confere: `devPins` só para as 3 `available`, e nenhum código do lote-900 (nem forma de exibição) nem PIN de desenvolvimento fora de `supabase/seed.sql`, `e2e/`, testes. O vetor `7K3M-Q9XA-C` fica fora da verificação (documentado em todo o repositório). Isto substitui o desvio 1 da fundação.
+2. **`state: "assigned"`, não `rescue`.** O contrato manda `assigned`; o enunciado da execução dizia `rescue`. Vale o contrato.
+3. **`verify_jwt = false` em `resolve-tag` e `register-scan`.** O contrato não diz. O servidor SSR não tem chave do Supabase (só `FARO_SSR_KEY` e `IP_HASH_SECRET`), então o gateway não pode exigir JWT; a autorização é `x-faro-ssr-key` em tempo constante, 401 vazio sem ela. Confirmado no CI: o gateway local aceita a chamada só com a chave.
+4. **Falha da RPC, da entrada ou resposta fora do formato em `resolve-tag`** devolve 200 `{"state":"rate_limited"}` (leva à contingência), nunca `not_found` nem 5xx. Piso de 150 ms nos três estados que não são o resgate, inclusive dígito inválido e falha.
+5. **Pendência para o William: `photo_path` é `<tutor_id>/<pet_id>/…`** e a URL assinada carrega esse caminho. Bate com o contrato, mas expõe ids internos na URL da foto, apesar de "nenhum identificador interno". Não alterado.
+6. **`activate_tag`**: ordem do contrato. No passo 4 o bloqueio só vale para tag `available`, para `locked` nunca revelar tag vinculada, bloqueada ou anulada. PIN fora do formato ou nulo conta como `wrong_pin`; o hash é conferido sempre. Troca (`p_replace`): vínculo anterior `released`, tag anterior volta a `available` mantendo o hash; se a inserção falhar por `unique_violation` depois de uma troca, relança para desfazer. O limite de 30 chamadas em 15 min (`rpc_guard`) é da Phase 12, não feito.
+7. **`get_pending_activation`** devolve `{"ok":true,"code":"…"}` ou `{"ok":true,"code":null}` (13A). **`set_lost_mode`** devolve `{"ok":true}`; só `p_on` nulo lança (erro de programação); recado acima de 280 cai na CHECK da tabela (exceção).
+8. **`register_scan`**: parâmetros separados (`p_viewer`, `p_geo_lat/lng/city/region`) em vez de um objeto `geo`. Deduplica por código + `ip_hash` + mesmo vínculo (scan do vínculo antigo nunca é reaproveitado). Token novo a cada duplicado sem GPS (só o hash fica). A primeira tentativa de aviso é contada no banco; o reenvio reserva (soma tentativa) scans com mais de 2 min, até 3 tentativas, 24 h. Sem provedor de e-mail o reenvio não reserva nada.
+9. **E-mail**: drivers `log` e `stub` só com `FARO_ENV` local/test; `log` escreve só o assunto. Sem provedor o scan é gravado do mesmo jeito. Modelos sem coordenadas, IP ou dado de quem escaneou.
+10. **`0033`**: URL das funções e chave do reenvio vêm do Vault (`faro_functions_url`, `faro_ssr_key`), criados pelo operador; sem eles o job não faz nada. O operador precisa criá-los para o reenvio funcionar em produção.
+11. **T058**: usa as RPCs reais, mas a liberação da tag pela tutora A é escrita direta (o estado que `release_tag` deixa), porque `release_tag` é T087. Trocar quando T087 chegar.
+12. **Teste do storage** não faz DELETE direto em `storage.objects` (versões novas do Storage o bloqueiam por gatilho; não verificado aqui): a política de DELETE é conferida pelo catálogo.
+13. **Concorrência real** não cabe em pgTAP: o script de CI dispara 4 ativações em paralelo da mesma tag (PIN de desenvolvimento): 1 sucesso, 3 `tag_unavailable`.
+
+### Formas de resposta (para o frontend)
+
+- `resolve-tag` (200 sempre que autorizado): `{"state":"assigned","profile":{code, pet:{name, photo_url?}, temperament?[], care_notes?, tutor_first_name?, whatsapp_url?, phone_display?, lost?:{since?, reward?:true, message?}}}` | `{"state":"available","code"}` | `{"state":"not_found"}` | `{"state":"rate_limited"}`. Campo desligado não aparece.
+- `register-scan`: `scan` devolve `{"owner":true}` ou `{"owner":false,"scan_token"?}`; `location` devolve `{"updated":bool}`; `resend` devolve `{"sent":n,"failed":m}`.
+- RPCs do tutor: `{"ok":true,…}` ou `{"ok":false,"error":<código>,"retry_after_seconds"?}`. `check_tag_for_link`: `invalid_code`, `tag_unavailable`, `locked`. `activate_tag`: `invalid_code`, `phone_not_confirmed`, `pet_not_found`, `locked`, `tag_unavailable`, `wrong_pin`, `not_entitled`, `pet_has_tag`; sucesso `{ok, code, pet_id, pet_name, whatsapp_enabled}`. `set_lost_mode`: `pet_not_found`, `no_active_tag`. `locked` por PIN traz 900 s (conta) ou 86400 s (tag).
+
+### Verificação (CI, run 45054880601, commit c456712)
+
+- pgTAP: 23 arquivos, 1094 asserções, PASS (eram 17 e 732). Novos: `rpc_resolve_tag` (53), `rpc_activate_tag` (101), `rpc_register_scan` (100, inclui `cron.job`), `rpc_set_lost_mode` (46), `rls_scans` (39), `storage_pet_photos` (20); `seed_tags` 17 para 20.
+- `deno test`: 302 testes (eram 237); lock inalterado.
+- `supabase-checks.sh`: 242 PASS, 0 FAIL (eram 182). Inclui corrida (1 sucesso e 3 `tag_unavailable`), `rate_limited` na 31ª chamada, cabeçalhos idênticos de bloqueado, anulado e inexistente, e aviso gravado com `notified_at` pelo driver `log`.
+- Job `app`: 641 testes, 1 pulado, verde.
+- Execuções de CI nesta fase: 2 (a primeira falhou em 3 arquivos de teste e 1 verificação do script, corrigidos).
+
+### Não verificado
+
+- URL assinada de foto com Storage real (só teste unitário com falso).
+- E-mail real: não há provedor (`TODO(EMAIL_PROVIDER)`).
+- Job de reenvio chamando a função por `pg_net` com Vault configurado.
+- T057 (e2e de navegador) não é desta execução.

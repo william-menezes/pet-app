@@ -205,13 +205,13 @@ Igual à `004`: a máquina não tem Docker nem a CLI do Supabase. Todo "Feito qu
 **Goal**: `/:code` mostra resgate, não ativada, não encontrada ou contingência.
 **Independent Test**: com o seed, abrir `/7K3M-Q9XA-C` sem login num celular e abrir o WhatsApp.
 
-- [ ] T026 [US1] [BE] `0028_rpc_resolve_tag.sql`: RPC `resolve_tag` conforme o contrato (projeção
+- [x] T026 [US1] [BE] `0028_rpc_resolve_tag.sql`: RPC `resolve_tag` conforme o contrato (projeção
   sem campos desligados, contador de limite por `ip_hash`, `EXECUTE` só para `service_role`).
   **Feito quando**: os quatro estados saem corretos com o seed.
-- [ ] T027 [US1] [BE] Edge Function `supabase/functions/resolve-tag/index.ts`: chave, validação do
+- [x] T027 [US1] [BE] Edge Function `supabase/functions/resolve-tag/index.ts`: chave, validação do
   dígito antes do banco, limite, RPC, URL assinada da foto, piso de 150 ms.
   **Feito quando**: `deno test` cobre os quatro estados e a recusa sem chave.
-- [ ] T028 [P] [US1] [BE] `0032_storage_pet_photos.sql`: bucket privado e políticas.
+- [x] T028 [P] [US1] [BE] `0032_storage_pet_photos.sql`: bucket privado e políticas.
   **Feito quando**: tutor A não lê objeto de tutor B (pgTAP ou teste de integração).
 - [ ] T029 [US1] [FE] `core/tags/public-tag.service.ts`: no servidor chama `resolve-tag` com tempo
   limite de 2,5 s e guarda no `TransferState`; no navegador só lê o estado transferido.
@@ -244,7 +244,7 @@ Igual à `004`: a máquina não tem Docker nem a CLI do Supabase. Todo "Feito qu
 - [ ] T035 [US1] [QA] `e2e/tag-page.spec.ts`: resgate; sem JavaScript (`javaScriptEnabled: false`);
   normalização (`/7k3m q9xa c`); inexistente, bloqueado e anulado com HTML idêntico; contingência
   com a função derrubada. **Feito quando**: passa em Chromium nas três larguras.
-- [ ] T036 [US1] [QA] `supabase/tests/rpc_resolve_tag.test.sql`: anti-enumeração e Rescue-First de
+- [x] T036 [US1] [QA] `supabase/tests/rpc_resolve_tag.test.sql`: anti-enumeração e Rescue-First de
   `contracts/rls-expectations.md`, mais o caso de `contracts/integration-002-004.contract.md` §4.4
   (depois de `end_assignments_for_account`, a tag responde "não ativada"). **Feito quando**: passa.
 - [ ] T037 [US1] [QA] Orçamento da rota pública (LCP, TTFB, JS) e axe nas quatro telas públicas.
@@ -265,10 +265,10 @@ Igual à `004`: a máquina não tem Docker nem a CLI do Supabase. Todo "Feito qu
 **Goal**: da primeira leitura até "Tag ativa!".
 **Independent Test**: com `2FX8-CN73-F` do seed e o PIN de desenvolvimento, ativar para a Mel.
 
-- [ ] T038 [US2] [BE] `0029_rpc_ativacao.sql`: `check_tag_for_link`, `activate_tag`,
+- [x] T038 [US2] [BE] `0029_rpc_ativacao.sql`: `check_tag_for_link`, `activate_tag`,
   `set/get/clear_pending_activation`, na ordem de verificações de `contracts/tutor-rpcs.contract.md`.
   **Feito quando**: ativa com o seed; erros devolvem os códigos do contrato.
-- [ ] T039 [US2] [QA] `supabase/tests/rpc_activate_tag.test.sql`: todos os itens de "Testes
+- [x] T039 [US2] [QA] `supabase/tests/rpc_activate_tag.test.sql`: todos os itens de "Testes
   obrigatórios" do contrato ligados a ativação (PIN, bloqueios, concorrência, mensagem única).
   **Feito quando**: passa. Medir e anotar no PR o tempo de uma verificação de PIN.
 - [ ] T040 [US2] [FE] `core/tags/tag.service.ts`: métodos para as RPCs de ativação, com tradução
@@ -317,18 +317,18 @@ Igual à `004`: a máquina não tem Docker nem a CLI do Supabase. Todo "Feito qu
 
 ## Phase 5: User Story 3 — Aviso de scan e histórico (P2)
 
-- [ ] T050 [US3] [BE] `0030_rpc_scans.sql`: `register_scan`, `set_scan_location` (só `service_role`)
+- [x] T050 [US3] [BE] `0030_rpc_scans.sql`: `register_scan`, `set_scan_location` (só `service_role`)
   com deduplicação de 10 min, token de localização e `status_at_scan`.
   **Feito quando**: pgTAP cobre novo scan, duplicado e dono.
-- [ ] T051 [US3] [BE] Edge Function `supabase/functions/register-scan/index.ts`: ações `scan`,
+- [x] T051 [US3] [BE] Edge Function `supabase/functions/register-scan/index.ts`: ações `scan`,
   `location` e `resend` conforme o contrato; interface `sendEmail` em `_shared/email.ts` com a
   implementação HTTP do provedor (`TODO(EMAIL_PROVIDER)`) e uma implementação de teste em memória.
   **Feito quando**: `deno test` cobre dono (não grava), duplicado (não envia), tag bloqueada (grava
   sem e-mail) e falha de envio (scan fica com `notified_at` nulo).
-- [ ] T052 [P] [US3] [BE] Modelos de e-mail em `supabase/functions/_shared/email-templates.ts`:
+- [x] T052 [P] [US3] [BE] Modelos de e-mail em `supabase/functions/_shared/email-templates.ts`:
   "tag escaneada" e "localização enviada", em PT-BR, sem dados de quem escaneou.
   **Feito quando**: teste de snapshot dos dois modelos.
-- [ ] T053 [US3] [BE] `0033_cron.sql`: `pg_cron` de reenvio (5 min) e limpeza de ativações
+- [x] T053 [US3] [BE] `0033_cron.sql`: `pg_cron` de reenvio (5 min) e limpeza de ativações
   pendentes vencidas (diária). **Feito quando**: os jobs aparecem em `cron.job`.
 - [ ] T054 [US3] [FE] Página de resgate: disparar `POST /api/scan` após hidratar; "Enviar onde estou"
   pede a localização do navegador e envia a `/api/scan/location`; estados de permissão negada e de
@@ -343,14 +343,14 @@ Igual à `004`: a máquina não tem Docker nem a CLI do Supabase. Todo "Feito qu
 - [ ] T057 [US3] [QA] `e2e/scans.spec.ts`: abrir a página gera 1 scan e 1 e-mail (provedor
   simulado); recarregar não duplica; buscar o HTML sem JS não gera; dono não gera; localização
   precisa atualiza o scan. **Feito quando**: passa.
-- [ ] T058 [US3] [QA] `supabase/tests/rls_scans.test.sql`: "Testes de isolamento entre vínculos".
+- [x] T058 [US3] [QA] `supabase/tests/rls_scans.test.sql`: "Testes de isolamento entre vínculos".
   **Feito quando**: passa.
 
 ---
 
 ## Phase 6: User Story 4 — Modo perdido (P2)
 
-- [ ] T059 [US4] [BE] `set_lost_mode` em `0031_rpc_tutor.sql`. **Feito quando**: pgTAP cobre ligar,
+- [x] T059 [US4] [BE] `set_lost_mode` em `0031_rpc_tutor.sql`. **Feito quando**: pgTAP cobre ligar,
   desligar, sem tag ativa e a preservação de `lost_since` ao religar.
 - [ ] T060 [US4] [FE] Tela "Ativar modo perdido" conforme `V2-modo-perdido*.dc.html` (claro e
   escuro): recado com contador de 280, dois interruptores, prévia do alerta em tablet e desktop,

@@ -183,6 +183,21 @@ RESET ROLE;
 SELECT is((SELECT fail_count FROM public.tag_pin_attempts WHERE tag_code = 'ZZZZZZZZ8' AND tutor_id = 'd2d2d2d2-0000-0000-0000-0000000000a1'), 1, 'janela de 15 min vencida: a contagem da conta recomeca em 1');
 SELECT is((SELECT pin_fail_count_24h FROM public.tag_codes WHERE code = 'ZZZZZZZZ8'), 1, 'janela de 24 h vencida: a contagem da tag recomeca em 1');
 
+-- Medida pedida por T039: tempo de uma verificacao de PIN (bcrypt custo 12), media de 5. Aparece no log do CI.
+DO $m$
+DECLARE
+  t0 timestamptz := clock_timestamp();
+  h  text := (SELECT hash FROM t_hash);
+  i  integer;
+BEGIN
+  FOR i IN 1..5 LOOP
+    PERFORM extensions.crypt(current_setting('tests.pin'), h);
+  END LOOP;
+  PERFORM set_config('tests.pin_ms', round(extract(epoch FROM (clock_timestamp() - t0)) * 1000 / 5)::text, true);
+END
+$m$;
+SELECT diag('tempo de uma verificacao de PIN (bcrypt custo 12), media de 5: ' || current_setting('tests.pin_ms') || ' ms');
+
 -- ═══════════════ Ativacao feliz ═══════════════
 
 SELECT tests.set_auth_uid('d2d2d2d2-0000-0000-0000-0000000000a1');
