@@ -38,6 +38,7 @@ const RPCS = [
   'register_scan',
   'set_scan_location',
   'admin_insert_batch',
+  'admin_hash_pins',
   'end_assignments_for_account',
   'export_tutor_tag_data',
   'activate_tag',
@@ -89,7 +90,7 @@ test.describe('anon: nenhuma tabela e nenhuma funcao', () => {
 });
 
 test.describe('funcoes so de servidor: tutor e admin tambem sao negados', () => {
-  const serverOnly = ['resolve_tag', 'register_scan', 'set_scan_location', 'admin_insert_batch', 'end_assignments_for_account', 'export_tutor_tag_data', 'new_activation_pin', 'rate_limit_hit', 'audit', 'can_link_tag'];
+  const serverOnly = ['resolve_tag', 'register_scan', 'set_scan_location', 'admin_insert_batch', 'admin_hash_pins', 'end_assignments_for_account', 'export_tutor_tag_data', 'new_activation_pin', 'rate_limit_hit', 'audit', 'can_link_tag'];
   test('tutor (e admin) recebem permissao negada', async () => {
     const t = await newTutor();
     const admin = await seedTutor('tutorA'); // tutor do seed; o admin real e conferido abaixo com o token do admin

@@ -1,6 +1,6 @@
 -- pgTAP: rpc_admin.test.sql
 -- Spec 003-tag-qr, T075 e T086 (feito quando: pgTAP cobre `forbidden` para tutor e as transicoes de situacao) e o que o contrato
--- de admin manda testar no banco. Migration 0034 (admin_*), com 0035 (limites). Regra 13A: erro de negocio e RETORNO
+-- de admin manda testar no banco. Migration 0034 (admin_*), com 0035 (limites) e 0036 (hash do PIN fora da gravacao). Regra 13A: erro de negocio e RETORNO
 -- ({"ok":false,"error":...}), conferido com `->> 'error'`.
 --
 -- Cenario (criado aqui, desfeito no ROLLBACK final; PINs gerados na transacao, so no GUC `tests.pin`):
@@ -10,7 +10,7 @@
 
 BEGIN;
 
-SELECT plan(128);
+SELECT plan(141);
 
 CREATE SCHEMA IF NOT EXISTS tests;
 GRANT USAGE ON SCHEMA tests TO anon, authenticated, service_role;
@@ -104,6 +104,8 @@ SELECT is(
   'tutor comum chamando qualquer admin_*: forbidden (as 11)');
 SELECT is(tests.denied($$ SELECT public.admin_insert_batch('f8f8f8f8-0000-0000-0000-0000000000ad', 1, NULL, '[]'::jsonb) $$), true, 'authenticated nao executa admin_insert_batch (so service_role)');
 SELECT is(tests.denied($$ SELECT public.admin_mark_package_downloaded('lote-909', NULL) $$), true, 'authenticated nao executa admin_mark_package_downloaded');
+SELECT is(tests.denied($$ SELECT public.admin_hash_pins(ARRAY['ABCDEF']) $$), true, 'authenticated nao executa admin_hash_pins (so service_role)');
+SELECT is(has_function_privilege('anon', 'public.admin_hash_pins(text[])', 'EXECUTE') OR has_function_privilege('authenticated', 'public.admin_hash_pins(text[])', 'EXECUTE') OR NOT has_function_privilege('service_role', 'public.admin_hash_pins(text[])', 'EXECUTE'), false, 'admin_hash_pins: EXECUTE so para service_role');
 SELECT is(tests.denied($$ SELECT public.global_rate_hit('x', 1, 60) $$), true, 'authenticated nao executa global_rate_hit');
 SELECT is(tests.denied($$ SELECT public.admin_rate_hit('f8f8f8f8-0000-0000-0000-0000000000ad', 'x', 1, 60) $$), true, 'authenticated nao executa admin_rate_hit');
 RESET ROLE;
@@ -293,23 +295,41 @@ RESET ROLE;
 SELECT set_config('tests.pin_a', public.new_activation_pin(), true);
 SELECT set_config('tests.pin_b', public.new_activation_pin(), true);
 SELECT tests.set_service();
+-- Os hashes vem de admin_hash_pins (service_role), na mesma ordem dos PINs; admin_insert_batch so recebe hash.
+SELECT set_config('tests.hash_a', (public.admin_hash_pins(ARRAY[current_setting('tests.pin_a'), current_setting('tests.pin_b')]))[1], true);
+SELECT set_config('tests.hash_b', (public.admin_hash_pins(ARRAY[current_setting('tests.pin_a'), current_setting('tests.pin_b')]))[2], true);
+-- admin_hash_pins: validacao e limite (excecao 22023 sem o valor na mensagem).
+SELECT throws_ok($$ SELECT public.admin_hash_pins(array_fill('AAAAAA'::text, ARRAY[11])) $$, '22023', 'invalid_input', 'hash: mais de 10 PINs por chamada e recusado');
+SELECT throws_ok($$ SELECT public.admin_hash_pins(ARRAY['abc']) $$, '22023', 'invalid_input', 'hash: PIN curto e recusado');
+SELECT throws_ok($$ SELECT public.admin_hash_pins(ARRAY['abcdef']) $$, '22023', 'invalid_input', 'hash: PIN em minusculas e recusado');
+SELECT throws_ok($$ SELECT public.admin_hash_pins(ARRAY['ABCDEO']) $$, '22023', 'invalid_input', 'hash: PIN com letra fora do alfabeto Crockford (O) e recusado');
+SELECT throws_ok($$ SELECT public.admin_hash_pins(NULL) $$, '22023', 'invalid_input', 'hash: lista nula e recusada');
+SELECT throws_ok($$ SELECT public.admin_hash_pins(ARRAY[]::text[]) $$, '22023', 'invalid_input', 'hash: lista vazia e recusada');
+SELECT throws_ok($$ SELECT public.admin_hash_pins(ARRAY['ABCDEF', NULL]) $$, '22023', 'invalid_input', 'hash: elemento nulo e recusado');
 SELECT is(public.admin_insert_batch('f8f8f8f8-0000-0000-0000-0000000000ad', 3, NULL, '[]'::jsonb) ->> 'error', 'invalid_input', 'lote: quantidade diferente do numero de itens: invalid_input');
 SELECT is(public.admin_insert_batch('f8f8f8f8-0000-0000-0000-0000000000ad', 0, NULL, '[]'::jsonb) ->> 'error', 'invalid_input', 'lote: quantidade 0: invalid_input');
-SELECT is(public.admin_insert_batch('f8f8f8f8-0000-0000-0000-0000000000ad', 1, NULL, format('[{"code":"7K3MQ9XAD","pin":"%s","qr_mask":0}]', current_setting('tests.pin_a'))::jsonb) ->> 'error', 'invalid_input', 'lote: codigo com digito invalido: invalid_input');
-SELECT is(public.admin_insert_batch('f8f8f8f8-0000-0000-0000-0000000000ad', 1, NULL, '[{"code":"10000000Z","pin":"abc","qr_mask":0}]'::jsonb) ->> 'error', 'invalid_input', 'lote: PIN fora do formato: invalid_input');
-SELECT is(public.admin_insert_batch('f8f8f8f8-0000-0000-0000-0000000000ad', 1, NULL, format('[{"code":"10000000Z","pin":"%s","qr_mask":8}]', current_setting('tests.pin_a'))::jsonb) ->> 'error', 'invalid_input', 'lote: mascara fora de 0 a 7: invalid_input');
-SELECT is(public.admin_insert_batch('f8f8f8f8-0000-0000-0000-0000000000ad', 1, NULL, format('[{"code":"abcdefghv","pin":"%s","qr_mask":0}]', current_setting('tests.pin_a'))::jsonb) ->> 'error', 'invalid_input', 'lote: codigo fora da forma canonica (minusculas): invalid_input');
+SELECT is(public.admin_insert_batch('f8f8f8f8-0000-0000-0000-0000000000ad', 1, NULL, format('[{"code":"7K3MQ9XAD","pin_hash":"%s","qr_mask":0}]', current_setting('tests.hash_a'))::jsonb) ->> 'error', 'invalid_input', 'lote: codigo com digito invalido: invalid_input');
+SELECT is(public.admin_insert_batch('f8f8f8f8-0000-0000-0000-0000000000ad', 1, NULL, '[{"code":"10000000Z","pin_hash":"abc","qr_mask":0}]'::jsonb) ->> 'error', 'invalid_input', 'lote: pin_hash malformado: invalid_input');
+SELECT is(public.admin_insert_batch('f8f8f8f8-0000-0000-0000-0000000000ad', 1, NULL, format('[{"code":"10000000Z","pin_hash":"%s","qr_mask":0}]', '$2a$10$' || repeat('a', 53))::jsonb) ->> 'error', 'invalid_input', 'lote: bcrypt de custo diferente de 12: invalid_input');
+SELECT is(public.admin_insert_batch('f8f8f8f8-0000-0000-0000-0000000000ad', 1, NULL, format('[{"code":"10000000Z","pin":"%s","pin_hash":"%s","qr_mask":0}]', current_setting('tests.pin_a'), current_setting('tests.hash_a'))::jsonb) ->> 'error', 'invalid_input', 'lote: item com pin em claro (mesmo com pin_hash): invalid_input');
+SELECT is(public.admin_insert_batch('f8f8f8f8-0000-0000-0000-0000000000ad', 1, NULL, format('[{"code":"10000000Z","pin":"%s","qr_mask":0}]', current_setting('tests.pin_a'))::jsonb) ->> 'error', 'invalid_input', 'lote: so pin em claro, sem pin_hash (formato antigo): invalid_input');
+SELECT is(public.admin_insert_batch('f8f8f8f8-0000-0000-0000-0000000000ad', 1, NULL, format('[{"code":"10000000Z","pin_hash":"%s","qr_mask":8}]', current_setting('tests.hash_a'))::jsonb) ->> 'error', 'invalid_input', 'lote: mascara fora de 0 a 7: invalid_input');
+SELECT is(public.admin_insert_batch('f8f8f8f8-0000-0000-0000-0000000000ad', 1, NULL, format('[{"code":"abcdefghv","pin_hash":"%s","qr_mask":0}]', current_setting('tests.hash_a'))::jsonb) ->> 'error', 'invalid_input', 'lote: codigo fora da forma canonica (minusculas): invalid_input');
 INSERT INTO t_res VALUES ('collision', public.admin_insert_batch('f8f8f8f8-0000-0000-0000-0000000000ad', 2, NULL,
-  format('[{"code":"ABCDEFGHV","pin":"%1$s","qr_mask":0},{"code":"10000000Z","pin":"%1$s","qr_mask":0}]', current_setting('tests.pin_a'))::jsonb));
+  format('[{"code":"ABCDEFGHV","pin_hash":"%1$s","qr_mask":0},{"code":"10000000Z","pin_hash":"%1$s","qr_mask":0}]', current_setting('tests.hash_a'))::jsonb));
 INSERT INTO t_res VALUES ('dup', public.admin_insert_batch('f8f8f8f8-0000-0000-0000-0000000000ad', 2, NULL,
-  format('[{"code":"10000000Z","pin":"%1$s","qr_mask":0},{"code":"10000000Z","pin":"%1$s","qr_mask":1}]', current_setting('tests.pin_a'))::jsonb));
+  format('[{"code":"10000000Z","pin_hash":"%1$s","qr_mask":0},{"code":"10000000Z","pin_hash":"%1$s","qr_mask":1}]', current_setting('tests.hash_a'))::jsonb));
 INSERT INTO t_res VALUES ('batch1', public.admin_insert_batch('f8f8f8f8-0000-0000-0000-0000000000ad', 3, 'lote de teste',
-  format('[{"code":"10000000Z","pin":"%1$s","qr_mask":5},{"code":"00000001Y","pin":"%2$s","qr_mask":0},{"code":"H8ZWE5XGH","pin":"%1$s","qr_mask":7}]',
-         current_setting('tests.pin_a'), current_setting('tests.pin_b'))::jsonb));
+  format('[{"code":"10000000Z","pin_hash":"%1$s","qr_mask":5},{"code":"00000001Y","pin_hash":"%2$s","qr_mask":0},{"code":"H8ZWE5XGH","pin_hash":"%1$s","qr_mask":7}]',
+         current_setting('tests.hash_a'), current_setting('tests.hash_b'))::jsonb));
 INSERT INTO t_res VALUES ('batch2', public.admin_insert_batch('f8f8f8f8-0000-0000-0000-0000000000ad', 1, NULL,
-  format('[{"code":"W030F52J1","pin":"%s","qr_mask":2}]', current_setting('tests.pin_a'))::jsonb));
+  format('[{"code":"W030F52J1","pin_hash":"%s","qr_mask":2}]', current_setting('tests.hash_a'))::jsonb));
 RESET ROLE;
 
+SELECT ok(extensions.crypt(current_setting('tests.pin_a'), current_setting('tests.hash_a')) = current_setting('tests.hash_a')
+          AND extensions.crypt(current_setting('tests.pin_b'), current_setting('tests.hash_b')) = current_setting('tests.hash_b')
+          AND current_setting('tests.hash_a') <> current_setting('tests.hash_b')
+          AND current_setting('tests.hash_a') ~ '^\$2[aby]\$12\$[./A-Za-z0-9]{53}$', 'hash: devolve bcrypt custo 12 de cada PIN, na mesma ordem, com sal proprio');
 SELECT is((SELECT r ->> 'error' || ':' || (r -> 'codes')::text FROM t_res WHERE k = 'collision'), 'code_collision:["ABCDEFGHV"]', 'lote: codigo que ja existe: code_collision com o codigo (a funcao troca so ele)');
 SELECT is((SELECT r ->> 'error' || ':' || (r -> 'codes')::text FROM t_res WHERE k = 'dup'), 'code_collision:["10000000Z"]', 'lote: codigo repetido nos itens: code_collision');
 SELECT is((SELECT count(*)::integer FROM public.tag_codes WHERE code IN ('10000000Z', '00000001Y', 'H8ZWE5XGH') AND batch_id <> 'lote-002'), 0, 'colisao e itens invalidos nao gravaram nada');
@@ -337,17 +357,17 @@ SELECT is((SELECT count(*)::integer FROM public.audit_log WHERE event = 'batch_p
 -- Faixa de producao esgotada (999 nao e produzido; ids de 900 em diante sao reservados).
 INSERT INTO public.tag_batches (id, quantity) VALUES ('lote-899', 1);
 SELECT tests.set_service();
-SELECT is(public.admin_insert_batch('f8f8f8f8-0000-0000-0000-0000000000ad', 1, NULL, format('[{"code":"BZCH5NVX1","pin":"%s","qr_mask":0}]', current_setting('tests.pin_a'))::jsonb) ->> 'error', 'code_collision', 'faixa: codigo que ja existe continua colisao, mesmo com a faixa esgotada');
-SELECT is(public.admin_insert_batch('f8f8f8f8-0000-0000-0000-0000000000ad', 1, NULL, format('[{"code":"T6EVBXPYW","pin":"%s","qr_mask":0}]', current_setting('tests.pin_a'))::jsonb) ->> 'error', 'batch_range_exhausted', 'faixa: depois do lote-899 nao ha proximo lote de producao (batch_range_exhausted)');
+SELECT is(public.admin_insert_batch('f8f8f8f8-0000-0000-0000-0000000000ad', 1, NULL, format('[{"code":"BZCH5NVX1","pin_hash":"%s","qr_mask":0}]', current_setting('tests.hash_a'))::jsonb) ->> 'error', 'code_collision', 'faixa: codigo que ja existe continua colisao, mesmo com a faixa esgotada');
+SELECT is(public.admin_insert_batch('f8f8f8f8-0000-0000-0000-0000000000ad', 1, NULL, format('[{"code":"T6EVBXPYW","pin_hash":"%s","qr_mask":0}]', current_setting('tests.hash_a'))::jsonb) ->> 'error', 'batch_range_exhausted', 'faixa: depois do lote-899 nao ha proximo lote de producao (batch_range_exhausted)');
 RESET ROLE;
 
 -- ═══════════════ Estrutura ═══════════════
 
 SELECT is((SELECT bool_and(prosecdef AND proconfig @> ARRAY['search_path=public, pg_temp']) FROM pg_proc WHERE proname LIKE 'admin\_%'), true, 'toda admin_* e security definer com search_path fixo');
-SELECT is((SELECT count(*)::integer FROM pg_proc WHERE proname LIKE 'admin\_%' AND prosrc !~ 'is_admin\(\)' AND proname NOT IN ('admin_insert_batch', 'admin_mark_package_downloaded', 'admin_rate_hit')), 0, 'estrutural: toda admin_* de tela confere is_admin() DENTRO da funcao');
+SELECT is((SELECT count(*)::integer FROM pg_proc WHERE proname LIKE 'admin\_%' AND prosrc !~ 'is_admin\(\)' AND proname NOT IN ('admin_insert_batch', 'admin_mark_package_downloaded', 'admin_rate_hit', 'admin_hash_pins')), 0, 'estrutural: toda admin_* de tela confere is_admin() DENTRO da funcao');
 SELECT is((SELECT count(*)::integer FROM pg_proc WHERE proname LIKE 'admin\_%' AND has_function_privilege('anon', oid, 'EXECUTE')), 0, 'estrutural: anon nao executa nenhuma admin_*');
 SELECT is(has_column_privilege('authenticated', 'public.tag_codes', 'activation_pin_hash', 'SELECT'), false, 'authenticated nao tem SELECT na coluna do hash do PIN');
-SELECT is((SELECT count(*)::integer FROM pg_proc WHERE proname LIKE 'admin\_%' AND proname NOT IN ('admin_insert_batch', 'admin_mark_package_downloaded', 'admin_rate_hit') AND prosrc ~ 'new_pin' AND proname NOT IN ('admin_reissue_pin', 'admin_end_assignment')), 0, 'estrutural: so admin_reissue_pin e admin_end_assignment devolvem new_pin');
+SELECT is((SELECT count(*)::integer FROM pg_proc WHERE proname LIKE 'admin\_%' AND proname NOT IN ('admin_insert_batch', 'admin_mark_package_downloaded', 'admin_rate_hit', 'admin_hash_pins') AND prosrc ~ 'new_pin' AND proname NOT IN ('admin_reissue_pin', 'admin_end_assignment')), 0, 'estrutural: so admin_reissue_pin e admin_end_assignment devolvem new_pin');
 
 SELECT * FROM finish();
 ROLLBACK;

@@ -84,10 +84,10 @@ export async function createBatchViaFunction(
 }
 
 /**
- * O pool sai em lotes pequenos: `admin_insert_batch` gasta ~0,2 s de bcrypt por codigo e o PostgREST cancela a chamada em 8 s
- * (`authenticator.statement_timeout`), entao um lote de ~40 ou mais volta 500 (DEF-003-01, provado em `admin.spec.ts`).
+ * O pool sai de um lote so, como o do admin (DEF-003-01 corrigido na migration 0036: a Edge Function calcula os hashes dos PINs
+ * em fatias, entao o tamanho do lote nao estoura mais os 8 s do PostgREST).
  */
-export async function createPool(total: number, perBatch = 24): Promise<void> {
+export async function createPool(total: number, perBatch = 500): Promise<void> {
   const tags: PoolTag[] = [];
   let batchId = '';
   for (let left = total; left > 0; left -= perBatch) {

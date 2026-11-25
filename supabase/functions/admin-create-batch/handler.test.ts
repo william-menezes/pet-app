@@ -14,16 +14,30 @@ const ok = (data: unknown): Reply => ({ data, error: null });
 
 interface Item {
   code: string;
-  pin: string;
+  pin_hash: string;
   qr_mask: number;
 }
+
+/** Hash falso com a forma do bcrypt custo 12 (o banco confere a forma); deterministico por PIN. */
+const fakeHash = (pin: string) => "$2a$12$" + pin.padEnd(53, "x");
 
 /** Fonte aleatoria de teste: criptografica de verdade (o contrato exige `crypto.getRandomValues` em producao). */
 const random = (n: number) => crypto.getRandomValues(new Uint8Array(n));
 
-function setup(opts: { origins?: string[]; isAdmin?: boolean; replies?: Record<string, Reply>; insert?: (items: Item[], call: number) => Reply } = {}) {
+function setup(
+  opts: {
+    origins?: string[];
+    isAdmin?: boolean;
+    replies?: Record<string, Reply>;
+    insert?: (items: Item[], call: number) => Reply;
+    hash?: (pins: string[], call: number) => Reply;
+  } = {},
+) {
   const calls: Array<{ fn: string; args: Record<string, unknown> }> = [];
   let insertCalls = 0;
+  let hashCalls = 0;
+  let inFlight = 0;
+  const stats = { maxInFlight: 0 };
   const admin: AdminDeps = {
     getCaller: (req) => Promise.resolve(req.headers.get("authorization") ? { id: ADMIN_ID } : null),
     isAdmin: () => Promise.resolve(opts.isAdmin ?? true),
@@ -33,8 +47,19 @@ function setup(opts: { origins?: string[]; isAdmin?: boolean; replies?: Record<s
     random,
     now: () => new Date(Date.UTC(2026, 10, 24, 12, 0, 0)),
     allowedOrigins: () => opts.origins ?? [],
-    rpc: (fn, args) => {
+    rpc: async (fn, args) => {
       calls.push({ fn, args });
+      if (fn === "admin_hash_pins") {
+        hashCalls++;
+        inFlight++;
+        stats.maxInFlight = Math.max(stats.maxInFlight, inFlight);
+        await new Promise((r) => setTimeout(r, 1)); // deixa as fatias se sobreporem, como no banco
+        inFlight--;
+        const pins = args.p_pins as string[];
+        const h: Reply = opts.hash ? opts.hash(pins, hashCalls) : ok(pins.map(fakeHash));
+        if (h === "throw") throw new Error("banco fora do ar");
+        return h;
+      }
       let r: Reply | undefined = opts.replies?.[fn];
       if (fn === "admin_insert_batch") {
         insertCalls++;
@@ -42,10 +67,11 @@ function setup(opts: { origins?: string[]; isAdmin?: boolean; replies?: Record<s
       }
       if (fn === "admin_rate_hit") r = r ?? ok(false);
       r = r ?? ok({ ok: true });
-      return r === "throw" ? Promise.reject(new Error("banco fora do ar")) : Promise.resolve(r);
+      if (r === "throw") throw new Error("banco fora do ar");
+      return r;
     },
   };
-  return { handler: createBatchHandler(deps), calls };
+  return { handler: createBatchHandler(deps), calls, stats };
 }
 
 /** Le o arquivo `pins.csv` de dentro do ZIP de um unico arquivo. */
@@ -116,24 +142,32 @@ Deno.test("lote de 54: codigos distintos e validos, mascara de 0 a 7 calculada, 
   for (const it of items) {
     assert(isValid(it.code), "codigo valido (digito Luhn mod 32)");
     assertEquals(it.code.length, 9);
-    assert(/^[0-9A-HJKMNP-TV-Z]{6}$/.test(it.pin));
+    assert(/^\$2a\$12\$.{53}$/.test(it.pin_hash));
+    assertFalse("pin" in it, "o banco nunca recebe PIN em claro");
     assert(Number.isInteger(it.qr_mask) && it.qr_mask >= 0 && it.qr_mask <= 7);
     assertEquals(it.qr_mask, chooseMask(tagUrl(it.code)));
   }
+
+  // Os PINs sairam so nas chamadas de hash (na ordem dos itens) e valem o hash gravado.
+  const pins = t.calls.filter((c) => c.fn === "admin_hash_pins").flatMap((c) => c.args.p_pins as string[]);
+  assertEquals(pins.length, 54);
+  for (const p of pins) assert(/^[0-9A-HJKMNP-TV-Z]{6}$/.test(p));
+  assertEquals(items.map((i) => i.pin_hash), pins.map(fakeHash));
 
   const { text, crcOk } = readCsv(new Uint8Array(await res.arrayBuffer()));
   assert(crcOk);
   const lines = text.trim().split("\n");
   assertEquals(lines[0], "code,pin");
   assertEquals(lines.length, 55);
-  assertEquals(lines.slice(1), items.map((i) => `${format(i.code)},${i.pin}`));
+  assertEquals(lines.slice(1), items.map((i, n) => `${format(i.code)},${pins[n]}`));
 
-  // Marcou o pacote como baixado, uma vez, e nenhum PIN apareceu em log nem em auditoria/RPC alem do envio ao banco.
+  // Marcou o pacote como baixado, uma vez, e nenhum PIN apareceu em log nem em chamada que nao seja o pedido de hash.
   assertEquals(t.calls.filter((c) => c.fn === "admin_mark_package_downloaded").length, 1);
+  assertEquals(t.calls.filter((c) => c.fn === "admin_rate_hit").length, 1);
   assertEquals(logs.length, 0);
-  for (const it of items) assertFalse(logs.join("\n").includes(it.pin));
-  for (const c of t.calls.filter((c) => c.fn !== "admin_insert_batch")) {
-    for (const it of items) assertFalse(JSON.stringify(c.args).includes(it.pin));
+  for (const p of pins) assertFalse(logs.join("\n").includes(p));
+  for (const c of t.calls.filter((c) => c.fn !== "admin_hash_pins")) {
+    for (const p of pins) assertFalse(JSON.stringify(c.args).includes(p));
   }
 });
 
@@ -167,6 +201,15 @@ Deno.test("colisao de codigo: troca so os codigos que colidiram e repete", async
   assert(second[0].code !== firstItems[0].code && second[3].code !== firstItems[3].code);
   assertEquals([second[1], second[2], second[4], second[5]], [firstItems[1], firstItems[2], firstItems[4], firstItems[5]]);
   assertEquals(new Set(second.map((i) => i.code)).size, 6);
+
+  // Hash: uma fatia de 6 na primeira rodada; na segunda, so os 2 itens trocados (PIN novo => hash novo); os outros 4 reaproveitam.
+  const hashCalls = t.calls.filter((c) => c.fn === "admin_hash_pins");
+  assertEquals(hashCalls.map((c) => (c.args.p_pins as string[]).length), [6, 2]);
+  const newPins = hashCalls[1].args.p_pins as string[];
+  assertEquals([second[0].pin_hash, second[3].pin_hash], newPins.map(fakeHash));
+  assert(second[0].pin_hash !== firstItems[0].pin_hash && second[3].pin_hash !== firstItems[3].pin_hash);
+  // O limite de lotes por hora e tocado uma vez so, mesmo com a rodada de colisao.
+  assertEquals(t.calls.filter((c) => c.fn === "admin_rate_hit").length, 1);
 });
 
 Deno.test("colisao sem fim: desiste depois das rodadas e devolve erro sem pacote", async () => {
@@ -175,6 +218,59 @@ Deno.test("colisao sem fim: desiste depois das rodadas e devolve erro sem pacote
   assertEquals(res.status, 500);
   assertEquals(t.calls.filter((c) => c.fn === "admin_insert_batch").length, 6);
   assertEquals(t.calls.filter((c) => c.fn === "admin_mark_package_downloaded").length, 0);
+});
+
+Deno.test("hash em fatias de 10 com 3 em voo: 500 codigos = 50 fatias; todos os itens vao com hash, um unico insert", async () => {
+  const t = setup();
+  const res = await t.handler(postJson({ quantity: 500 }, H));
+  assertEquals(res.status, 200);
+  const hashCalls = t.calls.filter((c) => c.fn === "admin_hash_pins");
+  assertEquals(hashCalls.length, 50);
+  for (const c of hashCalls) assertEquals((c.args.p_pins as string[]).length, 10);
+  assertEquals(t.stats.maxInFlight, 3);
+  const inserts = t.calls.filter((c) => c.fn === "admin_insert_batch");
+  assertEquals(inserts.length, 1);
+  const items = inserts[0].args.p_items as Item[];
+  assertEquals(items.length, 500);
+  assert(items.every((i) => i.pin_hash.startsWith("$2a$12$")));
+  assertEquals(t.calls.filter((c) => c.fn === "admin_rate_hit").length, 1);
+});
+
+Deno.test("quantidade que nao divide por 10: a ultima fatia leva o resto (54 = 5x10 + 4)", async () => {
+  const t = setup();
+  assertEquals((await t.handler(postJson({ quantity: 54 }, H))).status, 200);
+  assertEquals(t.calls.filter((c) => c.fn === "admin_hash_pins").map((c) => (c.args.p_pins as string[]).length), [10, 10, 10, 10, 10, 4]);
+});
+
+Deno.test("fatia de hash falha (erro, excecao ou resposta torta): 500, nada gravado, limite tocado uma vez, sem detalhe", async () => {
+  const variantes: Array<(pins: string[], call: number) => Reply> = [
+    (p, call) => (call === 3 ? { data: null, error: { message: "segredo interno" } } : ok(p.map(fakeHash))),
+    (p, call) => (call === 2 ? "throw" : ok(p.map(fakeHash))),
+    (p, call) => (call === 4 ? ok(p.slice(1).map(fakeHash)) : ok(p.map(fakeHash))), // menos hashes que PINs
+    (p, call) => (call === 1 ? ok("nao e lista") : ok(p.map(fakeHash))),
+  ];
+  for (const hash of variantes) {
+    const t = setup({ hash });
+    const res = await t.handler(postJson({ quantity: 54 }, H));
+    assertEquals(res.status, 500);
+    assertFalse((await res.text()).includes("segredo"));
+    assert(!(res.headers.get("content-type") ?? "").includes("zip"));
+    assertEquals(t.calls.filter((c) => c.fn === "admin_insert_batch").length, 0);
+    assertEquals(t.calls.filter((c) => c.fn === "admin_mark_package_downloaded").length, 0);
+    assertEquals(t.calls.filter((c) => c.fn === "admin_rate_hit").length, 1);
+  }
+});
+
+Deno.test("hash falha na rodada de colisao: 500 e nao tenta gravar de novo", async () => {
+  const t = setup({
+    insert: (items) => ok({ ok: false, error: "code_collision", codes: [items[0].code] }),
+    hash: (pins, call) => (call === 2 ? { data: null, error: { message: "x" } } : ok(pins.map(fakeHash))),
+  });
+  const res = await t.handler(postJson({ quantity: 3 }, H));
+  assertEquals(res.status, 500);
+  assertEquals(t.calls.filter((c) => c.fn === "admin_insert_batch").length, 1);
+  assertEquals(t.calls.filter((c) => c.fn === "admin_mark_package_downloaded").length, 0);
+  assertEquals(t.calls.filter((c) => c.fn === "admin_rate_hit").length, 1);
 });
 
 Deno.test("segundo pedido do pacote (banco recusa a marcacao): erro, nenhum corpo com PIN", async () => {
@@ -194,6 +290,11 @@ Deno.test("falha do banco em qualquer passo: 500 sem detalhe", async () => {
   }
   const thrown = setup({ replies: { admin_rate_hit: "throw" } });
   assertEquals((await thrown.handler(postJson({ quantity: 3 }, H))).status, 500);
+  // Falha do insert: o limite foi tocado uma vez e nada mais (sem pacote).
+  const ins = setup({ replies: { admin_insert_batch: { data: null, error: { message: "x" } } } });
+  assertEquals((await ins.handler(postJson({ quantity: 3 }, H))).status, 500);
+  assertEquals(ins.calls.filter((c) => c.fn === "admin_rate_hit").length, 1);
+  assertEquals(ins.calls.filter((c) => c.fn === "admin_mark_package_downloaded").length, 0);
 });
 
 Deno.test("newPin: 6 caracteres do alfabeto, uniforme em 5000 amostras (sem caractere ausente)", () => {

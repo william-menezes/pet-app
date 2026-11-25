@@ -7,7 +7,7 @@
 
 BEGIN;
 
-SELECT plan(41);
+SELECT plan(48);
 
 CREATE SCHEMA IF NOT EXISTS tests;
 GRANT USAGE ON SCHEMA tests TO anon, authenticated, service_role;
@@ -164,12 +164,20 @@ SELECT tests.set_anon();
 SELECT is(tests.denied($$ SELECT count(*) FROM public.my_scans $$), true, 'anon nao le my_scans');
 SELECT is(tests.denied($$ SELECT count(*) FROM public.scan_events $$), true, 'anon nao le scan_events');
 SELECT is(tests.denied($$ SELECT count(*) FROM public.tag_assignments $$), true, 'anon nao le tag_assignments');
+-- my_scans e somente leitura: escrita responde permissao negada (42501), nunca "view nao atualizavel" (500 no PostgREST).
+SELECT is(tests.denied($$ INSERT INTO public.my_scans (id) VALUES (gen_random_uuid()) $$), true, 'anon: INSERT em my_scans e permissao negada');
+SELECT is(tests.denied($$ UPDATE public.my_scans SET city = 'x' $$), true, 'anon: UPDATE em my_scans e permissao negada');
+SELECT is(tests.denied($$ DELETE FROM public.my_scans $$), true, 'anon: DELETE em my_scans e permissao negada');
 RESET ROLE;
 SELECT tests.set_auth_uid('a5a5a5a5-0000-0000-0000-0000000000a1');
 SELECT is(tests.denied($$ INSERT INTO public.scan_events (tag_code, status_at_scan, ip_hash, geo_method) VALUES ('ABCDEFGHV', 'assigned', 'x', 'none') $$), true, 'o tutor nao grava scan direto (so register_scan)');
 SELECT is(tests.denied($$ UPDATE public.scan_events SET lat = 0 $$), true, 'o tutor nao altera scan direto');
 SELECT is(tests.denied($$ DELETE FROM public.scan_events $$), true, 'o tutor nao apaga scan');
+SELECT is(tests.denied($$ INSERT INTO public.my_scans (id) VALUES (gen_random_uuid()) $$), true, 'tutor: INSERT em my_scans e permissao negada');
+SELECT is(tests.denied($$ UPDATE public.my_scans SET city = 'x' $$), true, 'tutor: UPDATE em my_scans e permissao negada');
+SELECT is(tests.denied($$ DELETE FROM public.my_scans $$), true, 'tutor: DELETE em my_scans e permissao negada');
 RESET ROLE;
+SELECT is(has_table_privilege('service_role', 'public.my_scans', 'INSERT') OR has_table_privilege('service_role', 'public.my_scans', 'UPDATE') OR has_table_privilege('service_role', 'public.my_scans', 'DELETE') OR has_table_privilege('anon', 'public.my_scans', 'SELECT'), false, 'my_scans: sem escrita para service_role e sem SELECT para anon');
 
 -- my_scans nao tem coluna sensivel.
 SELECT is((SELECT count(*)::integer FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'my_scans'

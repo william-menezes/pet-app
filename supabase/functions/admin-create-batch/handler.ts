@@ -7,8 +7,9 @@
  *
  * Fluxo: JWT de admin e `is_admin()` conferidos AQUI (`requireAdmin`); limite de 10 lotes por hora por admin (estouro: 429 e
  * evento de auditoria no banco); gera codigos (`newCode`) e PINs com fonte criptografica, calcula a mascara do QR de cada
- * codigo; `admin_insert_batch` grava tudo numa transacao (so hashes bcrypt custo 12); colisao de codigo: troca so os codigos
- * que colidiram e repete, ate 5 rodadas; `admin_mark_package_downloaded` recusa o segundo pedido; responde o pacote em ZIP
+ * codigo; `admin_hash_pins` calcula os hashes bcrypt custo 12 em fatias de 10 (3 em voo), sem gravar nada; `admin_insert_batch`
+ * grava tudo numa transacao (so recebe hashes); colisao de codigo: troca so os codigos que colidiram (PIN e hash novos so para
+ * eles) e repete, ate 5 rodadas; `admin_mark_package_downloaded` recusa o segundo pedido; responde o pacote em ZIP
  * (`Cache-Control: no-store`). Enquanto a etiqueta (T084) nao existe, o pacote tem so `pins.csv` (`codigo,pin`).
  *
  * Os PINs em claro existem so na memoria desta execucao e no corpo da resposta. Esta funcao NAO escreve log, e nada de PIN
@@ -26,6 +27,10 @@ export const BATCH_MAX_QUANTITY = 500;
 export const BATCH_HOURLY_LIMIT = 10;
 /** Rodadas de nova tentativa por colisao de codigo (contrato: ate 5 por codigo). */
 export const COLLISION_ROUNDS = 5;
+/** PINs por chamada de `admin_hash_pins` (o banco aceita ate 10; ~0,2 s cada, bem abaixo dos 8 s do PostgREST). */
+export const HASH_SLICE = 10;
+/** Fatias de hash em voo ao mesmo tempo. */
+export const HASH_CONCURRENCY = 3;
 
 export interface BatchDeps {
   admin: AdminDeps;
@@ -45,6 +50,8 @@ type Rec = Record<string, unknown>;
 interface Item {
   code: string;
   pin: string;
+  /** bcrypt custo 12 de `pin`, calculado por `admin_hash_pins`. */
+  pin_hash: string;
   qr_mask: number;
 }
 
@@ -63,7 +70,35 @@ export function newPin(random: (n: number) => Uint8Array): string {
 
 function newItem(random: (n: number) => Uint8Array): Item {
   const code = newCode(random);
-  return { code, pin: newPin(random), qr_mask: chooseMask(tagUrl(code)) };
+  return { code, pin: newPin(random), pin_hash: "", qr_mask: chooseMask(tagUrl(code)) };
+}
+
+/** Pede os hashes bcrypt em fatias de `HASH_SLICE`, `HASH_CONCURRENCY` ao mesmo tempo. false = alguma fatia falhou. */
+async function hashItems(deps: BatchDeps, items: Item[]): Promise<boolean> {
+  const slices: Item[][] = [];
+  for (let i = 0; i < items.length; i += HASH_SLICE) slices.push(items.slice(i, i + HASH_SLICE));
+  let next = 0;
+  let failed = false;
+  const worker = async () => {
+    while (!failed) {
+      const slice = slices[next++];
+      if (!slice) return;
+      try {
+        const res = await deps.rpc("admin_hash_pins", { p_pins: slice.map((it) => it.pin) });
+        const hashes = res.data;
+        if (res.error || !Array.isArray(hashes) || hashes.length !== slice.length || !hashes.every((h) => typeof h === "string" && h !== "")) {
+          failed = true;
+          return;
+        }
+        slice.forEach((it, i) => (it.pin_hash = hashes[i] as string));
+      } catch {
+        failed = true;
+        return;
+      }
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(HASH_CONCURRENCY, slices.length) }, worker));
+  return !failed;
 }
 
 function fail(status: number, error: string): Response {
@@ -131,19 +166,24 @@ function batchCore(deps: BatchDeps): (req: Request) => Promise<Response> {
         items.push(it);
       }
 
+      // O bcrypt custo 12 (~0,2 s por PIN) sai da gravacao: hashes em fatias pequenas, antes de qualquer escrita.
+      // Falha em qualquer fatia: 500 sem gravar nada.
+      if (!(await hashItems(deps, items))) return internalError();
+
       let batchId: string | null = null;
       for (let round = 0; round <= COLLISION_ROUNDS && batchId === null; round++) {
         const res = await deps.rpc("admin_insert_batch", {
           p_admin: auth.userId,
           p_quantity: quantity,
           p_notes: notes,
-          p_items: items,
+          p_items: items.map((it) => ({ code: it.code, pin_hash: it.pin_hash, qr_mask: it.qr_mask })),
         });
         if (res.error || !isRec(res.data)) return internalError();
         if (res.data.ok === true && typeof res.data.batch_id === "string") {
           batchId = res.data.batch_id;
         } else if (res.data.error === "code_collision" && Array.isArray(res.data.codes)) {
           const bad = new Set(res.data.codes.filter((c): c is string => typeof c === "string"));
+          const replaced: Item[] = [];
           for (let i = 0; i < items.length; i++) {
             if (!bad.has(items[i].code)) continue;
             seen.delete(items[i].code);
@@ -151,7 +191,10 @@ function batchCore(deps: BatchDeps): (req: Request) => Promise<Response> {
             while (seen.has(it.code)) it = newItem(deps.random);
             seen.add(it.code);
             items[i] = it;
+            replaced.push(it);
           }
+          // So os itens trocados (PIN novo) precisam de hash novo; os demais reaproveitam o que ja foi calculado.
+          if (!(await hashItems(deps, replaced))) return internalError();
         } else if (res.data.error === "batch_range_exhausted") {
           return fail(409, "batch_range_exhausted");
         } else {

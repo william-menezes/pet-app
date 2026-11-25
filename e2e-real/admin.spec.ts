@@ -169,10 +169,20 @@ test('tutor comum nao entra no admin: a tela recusa e toda RPC admin_* devolve f
   expect([401, 403]).toContain(anon.status);
 });
 
-// DEF-003-01: um lote de 54 codigos (o tamanho real) estoura os 8 s do PostgREST (`authenticator.statement_timeout`) e volta 500.
-test.fail('DEF-003-01: criar um lote de 54 codigos (o lote real) funciona', async () => {
-  test.setTimeout(120_000);
-  const session = await adminSession();
-  const r = await createBatchViaFunction(54, session.access_token);
-  expect(r.status).toBe(200);
-});
+// DEF-003-01 (corrigido na migration 0036): o bcrypt custo 12 dos PINs saiu do insert; a Edge Function pede os hashes em
+// fatias de 10 (admin_hash_pins) e grava tudo de uma vez. 54 e 500 (o maximo do contrato) criam o lote inteiro.
+for (const quantity of [54, 500]) {
+  test(`DEF-003-01: criar um lote de ${quantity} codigos funciona (pacote com ${quantity} pares valido)`, async () => {
+    test.setTimeout(180_000);
+    const session = await adminSession();
+    const t0 = Date.now();
+    const r = await createBatchViaFunction(quantity, session.access_token);
+    const ms = Date.now() - t0;
+    console.log(`DEF-003-01: lote de ${quantity} codigos em ${ms} ms`);
+    expect(r.status).toBe(200);
+    expect(r.batchId).toMatch(/^lote-[0-9]{3}$/);
+    expect(r.tags).toHaveLength(quantity);
+    expect(new Set(r.tags.map((t) => t.code)).size).toBe(quantity);
+    for (const t of r.tags) expect(t.pin).toMatch(/^[0-9A-HJKMNP-TV-Z]{6}$/);
+  });
+}
