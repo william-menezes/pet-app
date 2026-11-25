@@ -3,20 +3,17 @@
   A região aria-live existe sempre (vazia) para que o leitor aprenda o erro quando ele entra.
 -->
 <app-flow-shell
-  barTitle="Ativar tag"
-  i18n-barTitle
+  [barTitle]="barTitle()"
   [back]="'back'"
   [step]="{ current: 2, total: 2 }"
   [headline]="headline"
   [sub]="sub"
   (backClick)="changePet.emit()">
   <div [attr.aria-busy]="submitting()">
-    <h1 tabindex="-1" class="font-display text-[32px] leading-[1.04] font-bold tracking-[-0.03em] text-foreground md:text-[42px]" i18n>
-      Agora, o PIN do cartão
+    <h1 tabindex="-1" class="font-display text-[32px] leading-[1.04] font-bold tracking-[-0.03em] text-foreground md:text-[42px]">
+      {{ title() }}
     </h1>
-    <p class="mt-2.5 text-base leading-[1.45] text-text" i18n>
-      São 6 caracteres impressos no cartão que veio com a tag. O PIN vale uma vez só.
-    </p>
+    <p class="mt-2.5 text-base leading-[1.45] text-text">{{ intro() }}</p>
   </div>
 
   <form id="activation-pin-form" (submit)="$event.preventDefault(); onSubmit()" novalidate>
@@ -40,7 +37,7 @@
     <app-pet-avatar [photoUrl]="pet().photoUrl" />
     <span class="flex min-w-0 flex-1 flex-col">
       <span class="truncate font-display text-[17px] font-semibold text-foreground">{{ pet().name }}</span>
-      <span class="text-sm text-muted-foreground"><span i18n>Tag</span> {{ code() }} · <span i18n>lida pelo QR</span></span>
+      <span class="text-sm text-muted-foreground" data-testid="activation-summary-code">{{ summaryLine() }}</span>
     </span>
     <button
       type="button"

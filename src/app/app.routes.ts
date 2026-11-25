@@ -281,8 +281,7 @@ export const routes: Routes = [
   {
     path: 'vincular/:petId',
     canMatch: [authGuard, termsGuard, phoneConfirmedGuard],
-    loadComponent: shellFallback,
-    data: { home: '/app' },
+    loadComponent: () => import('./features/pets/link-tag/link-tag').then((m) => m.LinkTag),
     title: $localize`Vincular tag — Faro`,
   },
 

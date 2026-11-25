@@ -61,6 +61,12 @@ export class PinStep {
   readonly pet = input.required<PetOption>();
   /** Código na forma de exibição, `XXXX-XXXX-X`. */
   readonly code = input.required<string>();
+  /**
+   * `activate` (`/ativar/:code`, a tag foi lida do QR) ou `link` (`/vincular/:petId`, o tutor escolheu a tag pelo app: T073,
+   * referência `V2-vincular-pin*.dc.html`). Mudam só a barra, o título, o apoio e a linha do resumo; o PIN, o WhatsApp
+   * (marcado, com o aviso: as duas telas do PIN foram desenhadas assim) e os erros são os mesmos.
+   */
+  readonly variant = input<'activate' | 'link'>('activate');
   readonly submitting = input(false);
   readonly problem = input<PinProblem | null>(null);
 
@@ -92,6 +98,17 @@ export class PinStep {
       );
     });
   }
+
+  protected readonly barTitle = computed(() => (this.variant() === 'link' ? $localize`Vincular tag` : $localize`Ativar tag`));
+  protected readonly title = computed(() => (this.variant() === 'link' ? $localize`Digite o PIN do cartão` : $localize`Agora, o PIN do cartão`));
+  protected readonly intro = computed(() =>
+    this.variant() === 'link'
+      ? $localize`São 6 caracteres e vêm no cartão dentro da embalagem. O PIN vale uma vez só.`
+      : $localize`São 6 caracteres impressos no cartão que veio com a tag. O PIN vale uma vez só.`,
+  );
+  protected readonly summaryLine = computed(() =>
+    this.variant() === 'link' ? $localize`Tag ${this.code()}:code:` : $localize`Tag ${this.code()}:code: · lida pelo QR`,
+  );
 
   protected readonly canSubmit = computed(() => this.pinLength() === 6 && !this.submitting());
   protected readonly pinInvalid = computed(() => this.problem()?.error === 'wrong_pin');

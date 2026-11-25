@@ -30,6 +30,9 @@ const FORBIDDEN_IN_PUBLIC = [
   /src\/app\/core\/(pets|scans)\//,
   /src\/app\/core\/tags\/(tag\.service|activation)/,
   /node_modules\/leaflet\//,
+  // 003 (T072): a leitura do QR por câmera (e a biblioteca de reserva) é só de "Vincular tag", baixada sob demanda.
+  /node_modules\/jsqr\//,
+  /src\/app\/core\/tag-code\/qr-payload/,
 ];
 const GALLERY = /src\/app\/features\/dev-gallery\//;
 

@@ -1,0 +1,187 @@
+<!--
+  Vincular tag pelo app. Referência: design/telas-v2/V2-vincular-codigo{,-tablet,-desktop}.dc.html e V2-vincular-pin*.dc.html.
+  Cada elemento projetado em [footer] fica num bloco de raiz única (regra da projeção com @if).
+-->
+@switch (view()) {
+  @case ('loading') {
+    <app-flow-shell barTitle="Vincular tag" i18n-barTitle [back]="'close'" [backLink]="closeLink()" [headline]="headline" [sub]="sub">
+      <p class="py-6 text-center text-text" role="status" aria-busy="true" data-testid="link-loading" i18n>Um instante…</p>
+    </app-flow-shell>
+  }
+  @case ('error') {
+    <app-flow-shell barTitle="Vincular tag" i18n-barTitle [back]="'close'" [backLink]="closeLink()" [headline]="headline" [sub]="sub">
+      <div class="flex flex-col items-start gap-3" data-testid="link-error">
+        <z-alert
+          class="w-full"
+          zType="danger"
+          [zRole]="'status'"
+          zDescription="Não conseguimos carregar seus pets. Verifique sua conexão e tente de novo."
+          i18n-zDescription />
+        <button type="button" z-button zType="outline" (click)="load()" data-testid="link-retry" i18n>Tentar de novo</button>
+      </div>
+    </app-flow-shell>
+  }
+  @case ('missing') {
+    <app-flow-shell barTitle="Vincular tag" i18n-barTitle [back]="'close'" [backLink]="'/app/pets'" [headline]="headline" [sub]="sub">
+      <div class="flex flex-col items-start gap-3" data-testid="link-missing">
+        <h1 tabindex="-1" class="font-display text-[32px] leading-[1.04] font-bold tracking-[-0.03em] text-foreground md:text-[42px]" i18n>
+          Não encontramos este pet
+        </h1>
+        <a z-button zType="outline" routerLink="/app/pets" data-testid="link-missing-pets" i18n>Ver meus pets</a>
+      </div>
+    </app-flow-shell>
+  }
+  @case ('taken') {
+    <app-flow-shell barTitle="Vincular tag" i18n-barTitle [back]="'close'" [backLink]="closeLink()" [headline]="headline" [sub]="sub">
+      <div class="flex flex-col items-start gap-3" data-testid="link-taken">
+        <h1 tabindex="-1" class="font-display text-[32px] leading-[1.04] font-bold tracking-[-0.03em] text-foreground md:text-[42px]" i18n>
+          Este pet já tem uma tag
+        </h1>
+        @if (takenCode(); as code) {
+          <p class="text-base leading-[1.45] text-text" i18n>A tag {{ code }} já está vinculada a este pet. Para trocar de tag, use "Gerenciar tag".</p>
+        }
+        <a z-button zType="outline" [routerLink]="['/app/pets', petId(), 'tag']" data-testid="link-taken-manage" i18n>Gerenciar tag</a>
+      </div>
+    </app-flow-shell>
+  }
+  @case ('code') {
+    <app-flow-shell
+      barTitle="Vincular tag"
+      i18n-barTitle
+      [back]="'close'"
+      [backLink]="closeLink()"
+      [step]="{ current: 1, total: 2 }"
+      [headline]="headline"
+      [sub]="sub">
+      <div>
+        <h1 tabindex="-1" class="font-display text-[32px] leading-[1.04] font-bold tracking-[-0.03em] text-foreground md:text-[42px]" i18n>
+          Qual tag você vai usar?
+        </h1>
+        <p class="mt-2.5 text-base leading-[1.45] text-text" i18n>O código fica impresso embaixo do QR, na própria tag.</p>
+      </div>
+
+      <z-toggle-group
+        [zMode]="'single'"
+        zAriaLabel="Como informar a tag"
+        i18n-zAriaLabel
+        [zItems]="tabItems"
+        [zValue]="tab()"
+        (valueChange)="onTab($event)"
+        data-testid="link-tabs" />
+
+      <div aria-live="polite">
+        @if (notice(); as text) {
+          <z-alert zType="neutral" [zRole]="'status'" [zDescription]="text" data-testid="link-notice" />
+        }
+      </div>
+
+      @if (tab() === 'scan') {
+        <app-qr-scanner (detected)="onScanned($event)" (failed)="onCameraFailed($event)" data-testid="link-scanner" />
+      } @else {
+        <div z-field>
+          <label z-field-label for="link-code-input" i18n>Código da tag</label>
+          <input
+            z-input
+            id="link-code-input"
+            type="text"
+            autocomplete="off"
+            [attr.autocapitalize]="'characters'"
+            spellcheck="false"
+            [value]="typed()"
+            [attr.aria-invalid]="check().kind === 'problem' ? 'true' : null"
+            [attr.aria-describedby]="'link-code-status'"
+            (input)="onType($event)"
+            data-testid="link-code" />
+          <div id="link-code-status" aria-live="polite" data-testid="link-code-status">
+            @switch (check().kind) {
+              @case ('checking') {
+                <p class="text-[13px] text-muted-foreground" i18n>Conferindo o código…</p>
+              }
+              @case ('ok') {
+                <p class="flex items-center gap-1.5 text-[13px] font-semibold text-success-foreground" data-testid="link-code-ok">
+                  <ng-icon name="checkCircle" size="16" aria-hidden="true" />
+                  <span>{{ validText }}</span>
+                </p>
+              }
+            }
+            @if (check(); as state) {
+              @if (state.kind === 'problem') {
+                <p class="text-[13px] font-semibold text-destructive" data-testid="link-code-problem">{{ state.message }}</p>
+              }
+            }
+          </div>
+        </div>
+      }
+
+      <div class="flex flex-col gap-2.5">
+        <span id="link-pets-label" class="text-sm font-semibold text-foreground" i18n>Para qual pet?</span>
+        <fieldset class="m-0 border-0 p-0" aria-labelledby="link-pets-label">
+          <div class="flex flex-col gap-2.5" data-testid="link-pets">
+            @for (pet of available(); track pet.id) {
+              <label
+                class="flex min-h-[72px] cursor-pointer items-center gap-3 rounded-xl border-2 bg-card p-3 has-checked:border-foreground has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-ring"
+                [class.border-transparent]="selectedId() !== pet.id"
+                [attr.data-testid]="'link-pet-' + pet.id">
+                <input
+                  type="radio"
+                  class="sr-only"
+                  name="link-pet"
+                  [value]="pet.id"
+                  [checked]="selectedId() === pet.id"
+                  (change)="onPet(pet.id)" />
+                <app-pet-avatar [photoUrl]="pet.photoUrl" />
+                <span class="flex min-w-0 flex-1 flex-col">
+                  <span class="truncate font-display text-[17px] font-semibold text-foreground">{{ pet.name }}</span>
+                  <span class="text-sm text-muted-foreground">{{ petSub(pet) }}</span>
+                </span>
+                <span
+                  class="flex size-6 shrink-0 items-center justify-center rounded-full border-2 border-border"
+                  [class.border-foreground]="selectedId() === pet.id"
+                  [class.bg-ink]="selectedId() === pet.id"
+                  aria-hidden="true">
+                  @if (selectedId() === pet.id) {
+                    <ng-icon name="check" size="14" class="text-ink-foreground" />
+                  }
+                </span>
+              </label>
+            }
+          </div>
+        </fieldset>
+      </div>
+
+      <button
+        footer
+        type="button"
+        z-button
+        zSize="lg"
+        class="w-full text-lg"
+        [zDisabled]="!canContinue()"
+        (click)="onContinue()"
+        data-testid="link-continue"
+        i18n>
+        Continuar
+      </button>
+    </app-flow-shell>
+  }
+  @case ('pin') {
+    @if (chosen(); as pet) {
+      <app-activation-pin-step
+        [variant]="'link'"
+        [pet]="pet"
+        [code]="display()"
+        [submitting]="submitting()"
+        [problem]="problem()"
+        (submitted)="onSubmit($event)"
+        (changePet)="onChangeCode()" />
+    }
+  }
+  @case ('done') {
+    @if (result(); as done) {
+      <app-activation-done-step
+        [petName]="done.petName"
+        [petId]="done.petId"
+        [code]="done.code"
+        [whatsappEnabled]="done.whatsappEnabled" />
+    }
+  }
+}

@@ -395,11 +395,11 @@ Igual à `004`: a máquina não tem Docker nem a CLI do Supabase. Todo "Feito qu
   três estados da tag.
 - [x] T071 [P] [US6] [FE] Editar dados do pet (reutiliza os formulários do novo pet) e remover pet,
   com a confirmação de liberar a tag. **Feito quando**: teste de componente.
-- [ ] T072 [US6] [FE] Vincular tag, passo 1, conforme `V2-vincular-codigo*.dc.html`: abas "Escanear
+- [x] T072 [US6] [FE] Vincular tag, passo 1, conforme `V2-vincular-codigo*.dc.html`: abas "Escanear
   QR" e "Digitar código"; leitura com `BarcodeDetector` e reserva `jsQR` sob demanda; falha de
   câmera cai em "Digitar código"; `check_tag_for_link` mostra "Código válido · tag disponível".
   **Feito quando**: teste cobre câmera indisponível e código inválido.
-- [ ] T073 [US6] [FE] Vincular tag, passo 2 (PIN), conforme `V2-vincular-pin*.dc.html`,
+- [x] T073 [US6] [FE] Vincular tag, passo 2 (PIN), conforme `V2-vincular-pin*.dc.html`,
   reutilizando o componente de PIN de T046. **Feito quando**: vincula com o seed em teste de integração.
 - [ ] T074 [US6] [QA] e2e: entrar, abrir a Mel, vincular `2FX8-CN73-F` digitando código e PIN;
   conferir as três larguras e o tema escuro com axe. **Feito quando**: passa sem violações AA.
