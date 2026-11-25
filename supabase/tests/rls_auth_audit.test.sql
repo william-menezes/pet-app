@@ -18,6 +18,14 @@ BEGIN;
 
 SELECT plan(14);
 
+-- Schema de apoio do teste: criado dentro da transação (some no ROLLBACK).
+-- anon e authenticated precisam de USAGE para chamar tests.* depois de trocar de papel.
+CREATE SCHEMA IF NOT EXISTS tests;
+GRANT USAGE ON SCHEMA tests TO anon, authenticated;
+-- 0017: funcao criada sem GRANT nao e mais executavel por PUBLIC. Os auxiliares abaixo sao chamados depois de
+-- trocar de papel, entao o schema do teste (so existe nesta transacao) mantem o padrao antigo.
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA tests GRANT EXECUTE ON FUNCTIONS TO PUBLIC;
+
 -- ─────────────────────────────────────────
 -- Helpers (replicados do rls_perfis.test.sql para independência)
 -- ─────────────────────────────────────────
@@ -41,6 +49,13 @@ AS $$
     set_config('request.jwt.claim.sub', '', true),
     set_config('role', 'anon', true);
 $$;
+
+-- Linhas-semente (como dono das tabelas, antes de trocar de papel): sem elas, "zero linhas"
+-- poderia ser só tabela vazia e o teste de leitura negada não provaria nada.
+INSERT INTO public.auth_audit_log(evento, ip_hash, user_agent, detalhe)
+VALUES ('login_sucesso', 'hash_semente', 'ua', '{}');
+INSERT INTO public.auth_login_attempts(identity_hash, ip_hash, sucesso)
+VALUES ('test_semente', 'test_ip_semente', false);
 
 -- ─────────────────────────────────────────
 -- Snapshot de minimização (guardião de schema — FR-021)
@@ -84,9 +99,11 @@ SELECT has_column('public', 'auth_audit_log', 'detalhe',   'auth_audit_log tem d
 
 SELECT tests.set_anon();
 
+-- Spec 004 (0017): anon perde todo privilégio nas tabelas de public; a leitura agora dá 42501 (antes: zero linhas).
 SELECT throws_ok(
-  $$ SELECT * FROM public.auth_audit_log LIMIT 1 $$,
-  'anon não pode SELECT em auth_audit_log'
+  $$ SELECT * FROM public.auth_audit_log $$,
+  '42501', NULL,
+  'anon não lê auth_audit_log (sem privilégio, 42501)'
 );
 
 SELECT throws_ok(
@@ -94,6 +111,7 @@ SELECT throws_ok(
     INSERT INTO public.auth_audit_log(evento, ip_hash, user_agent, detalhe)
     VALUES ('login_sucesso', 'hash_fake', 'ua', '{}')
   $$,
+  '42501', NULL,
   'anon não pode INSERT em auth_audit_log'
 );
 
@@ -103,9 +121,9 @@ SELECT throws_ok(
 
 SELECT tests.set_auth_uid('00000000-0000-0000-0000-000000000001'); -- tutor A
 
-SELECT throws_ok(
-  $$ SELECT * FROM public.auth_audit_log LIMIT 1 $$,
-  'tutor (authenticated, não-admin) não pode SELECT em auth_audit_log'
+SELECT is_empty(
+  $$ SELECT * FROM public.auth_audit_log $$,
+  'tutor (authenticated, não-admin) não lê nenhuma linha de auth_audit_log'
 );
 
 SELECT throws_ok(
@@ -113,6 +131,7 @@ SELECT throws_ok(
     INSERT INTO public.auth_audit_log(evento, ip_hash, user_agent, detalhe)
     VALUES ('login_sucesso', 'hash_fake', 'ua', '{}')
   $$,
+  '42501', NULL,
   'tutor não pode INSERT em auth_audit_log (somente service_role via log_auth_event)'
 );
 
@@ -122,9 +141,10 @@ SELECT throws_ok(
 
 SELECT tests.set_auth_uid('00000000-0000-0000-0000-000000000003'); -- admin
 
-SELECT lives_ok(
-  $$ SELECT COUNT(*) FROM public.auth_audit_log $$,
-  'admin pode SELECT em auth_audit_log (policy audit_admin_select)'
+-- Spec 004 (0017): o SELECT de authenticated em auth_audit_log fica; a prova de que o admin LÊ exige a linha-semente.
+SELECT ok(
+  (SELECT COUNT(*) FROM public.auth_audit_log WHERE ip_hash = 'hash_semente') >= 1,
+  'admin lê a linha-semente de auth_audit_log (policy audit_admin_select)'
 );
 
 -- ─────────────────────────────────────────
@@ -133,9 +153,11 @@ SELECT lives_ok(
 
 SELECT tests.set_auth_uid('00000000-0000-0000-0000-000000000003'); -- até admin é negado
 
+-- Spec 004 (0017): authenticated perde todo privilégio em auth_login_attempts; a leitura agora dá 42501 (antes: zero linhas).
 SELECT throws_ok(
-  $$ SELECT * FROM public.auth_login_attempts LIMIT 1 $$,
-  'nem o admin pode SELECT em auth_login_attempts (deny-by-default total)'
+  $$ SELECT * FROM public.auth_login_attempts $$,
+  '42501', NULL,
+  'nem o admin lê auth_login_attempts (sem privilégio, 42501)'
 );
 
 SELECT finish();

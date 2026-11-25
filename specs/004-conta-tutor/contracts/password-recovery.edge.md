@@ -10,7 +10,8 @@ Convenção de resposta, módulos e variáveis: `shared-edge.contract.md`.
 
 ## Quem pode chamar
 
-Qualquer visitante (chave anônima no `Authorization`, como o `functions.invoke` já envia).
+Qualquer visitante (chave pública no `Authorization` ou nenhum token, como o `functions.invoke` envia). `verify_jwt = false`:
+nenhum token no `Authorization` é tratado como identidade; a função não lê usuário.
 
 ## Entrada
 

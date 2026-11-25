@@ -142,7 +142,7 @@ fundo lima, sem uso no código); os arquivos `.css` vazios `src/app/app.css`,
 
 **Objetivo**: saber de onde se parte e tirar o que é roadmap.
 
-- [ ] T001 Conferir o ponto de partida e medir a linha de base; criar `specs/002-ui-zardui/execution-log.md`
+- [x] T001 Conferir o ponto de partida e medir a linha de base; criar `specs/002-ui-zardui/execution-log.md`
   - **Faça**:
     1. `git branch --show-current`. Se a resposta for `master`, `homolog` ou `develop`: **PARE e
        reporte**. A branch esperada é `002-ui-zardui` (ou a que o William deixou preparada).
@@ -160,7 +160,7 @@ fundo lima, sem uso no código); os arquivos `.css` vazios `src/app/app.css`,
   - **Feito quando**: o arquivo existe, os quatro comandos estão registrados como aprovados e a
     tabela de tamanhos está preenchida.
 
-- [ ] T002 [P] Remover os stubs do roadmap: `src/app/features/health-records/index.ts`, `src/app/features/reminders/index.ts`, `src/app/features/subscription/index.ts`, `src/app/shared/index.ts`
+- [x] T002 [P] Remover os stubs do roadmap: `src/app/features/health-records/index.ts`, `src/app/features/reminders/index.ts`, `src/app/features/subscription/index.ts`, `src/app/shared/index.ts`
   - **Faça**: apague os quatro arquivos (e as três pastas de feature, que ficam vazias). Em
     `src/app/models/index.ts`, troque o comentário para
     `// models/ — tipos e DTOs do domínio (Pet, TagCode, TagAssignment, RescueProfile, ScanEvent).`
@@ -181,7 +181,7 @@ fundo lima, sem uso no código); os arquivos `.css` vazios `src/app/app.css`,
 
 **⚠️ CRÍTICO**: nenhuma história começa antes do checkpoint desta fase.
 
-- [ ] T003 **Spike de compatibilidade ZardUI × Angular 21, numa cópia de trabalho separada. Tem condição de PARADA.**
+- [x] T003 **Spike de compatibilidade ZardUI × Angular 21, numa cópia de trabalho separada. Tem condição de PARADA.**
   - **Referência**: `research.md` §R1 e §R2.
   - **Faça** (um comando por linha; a pasta `../faro-spike-002` fica **fora** do repositório; se
     ela já existir, PARE e reporte):
@@ -242,7 +242,7 @@ fundo lima, sem uso no código); os arquivos `.css` vazios `src/app/app.css`,
   - **Feito quando**: a seção `## Spike` do log termina com `Resultado: APROVADO` e os oito itens
     preenchidos, e `git worktree list` mostra só a pasta principal.
 
-- [ ] T004 Inicializar o ZardUI e o Tailwind na branch de trabalho (`components.json`, `.postcssrc.json`, `tsconfig.json`, `src/app/app.config.ts`, `src/styles.css`, `src/app/shared/core/`, `src/app/shared/utils/`)
+- [x] T004 Inicializar o ZardUI e o Tailwind na branch de trabalho (`components.json`, `.postcssrc.json`, `tsconfig.json`, `src/app/app.config.ts`, `src/styles.css`, `src/app/shared/core/`, `src/app/shared/utils/`)
   - **Faça**:
     ```bash
     npx zard-cli@1.12.0 init --yes --type angular --css src/styles.css --app-config src/app/app.config.ts --base-color neutral --no-rtl
@@ -255,7 +255,7 @@ fundo lima, sem uso no código); os arquivos `.css` vazios `src/app/app.css`,
     arquivos da lista da condição de parada 5 da T003; `npm run build` e
     `npm test -- --watch=false` passam.
 
-- [ ] T005 Copiar os componentes do ZardUI para `src/app/shared/components/` e revisar o que entrou
+- [x] T005 Copiar os componentes do ZardUI para `src/app/shared/components/` e revisar o que entrou
   - **Referência**: `contracts/shared-components.contract.md` §3; `research.md` §R2 (risco do
     registro remoto).
   - **Faça**:
@@ -273,7 +273,7 @@ fundo lima, sem uso no código); os arquivos `.css` vazios `src/app/app.css`,
     `sonner`, `spinner`, `skeleton` e `input-otp` em `src/app/shared/components/`; a lista de
     pacotes importados está no log; `npm run build` passa.
 
-- [ ] T006 Exceção de ESLint para o código copiado do ZardUI em `eslint.config.js`
+- [x] T006 Exceção de ESLint para o código copiado do ZardUI em `eslint.config.js`
   - **Faça**: logo depois do primeiro bloco `files: ['**/*.ts']`, acrescente um bloco com
     `files: ['src/app/shared/core/**/*.ts', 'src/app/shared/utils/**/*.ts', 'src/app/shared/components/**/*.ts']`,
     `ignores: ['src/app/shared/components/faro/**']` e as regras
@@ -291,7 +291,7 @@ fundo lima, sem uso no código); os arquivos `.css` vazios `src/app/app.css`,
     para satisfazer regra de estilo.
   - **Feito quando**: `npm run lint` passa.
 
-- [ ] T007 Escrever o tema do Faro em `src/styles.css`
+- [x] T007 Escrever o tema do Faro em `src/styles.css`
   - **Referência**: `contracts/design-tokens.contract.md` §3 (o bloco é o arquivo inteiro).
   - **Faça**: substitua o conteúdo de `src/styles.css` pelo bloco do contrato. **Mantenha a linha
     `@import` do `zard.css` exatamente como o `init` escreveu** (se o caminho for diferente do
@@ -304,7 +304,7 @@ fundo lima, sem uso no código); os arquivos `.css` vazios `src/app/app.css`,
     imprime `ok`:
     `node -e "const fs=require('fs');const d='dist/faro/browser/';const c=fs.readdirSync(d).filter(f=>f.endsWith('.css')).map(f=>fs.readFileSync(d+f,'utf8')).join('');if(!/#84c32e/i.test(c))throw new Error('lima ausente');if(/0FA12E/i.test(c))throw new Error('Tailwind varreu fora de src');console.log('ok')"`
 
-- [ ] T008 Criar a checagem de tokens `scripts/ui-checks/tokens.mjs` e os scripts `check:tokens` e `check:ui` em `package.json`
+- [x] T008 Criar a checagem de tokens `scripts/ui-checks/tokens.mjs` e os scripts `check:tokens` e `check:ui` em `package.json`
   - **Referência**: `contracts/design-tokens.contract.md` §2 (valores) e §5 (pares).
   - **Faça**: script de Node sem dependências que:
     1. lê `src/styles.css` e extrai as declarações `--nome: valor;` do bloco `:root { … }` e do
@@ -324,7 +324,7 @@ fundo lima, sem uso no código); os arquivos `.css` vazios `src/app/app.css`,
   - **Feito quando**: `npm run check:tokens` sai com código 0 e os números impressos batem com a
     tabela da §5 (diferença de até 0,02).
 
-- [ ] T009 Fontes no próprio domínio: `public/fonts/` e `src/index.html`
+- [x] T009 Fontes no próprio domínio: `public/fonts/` e `src/index.html`
   - **Referência**: `research.md` §R7; `contracts/design-tokens.contract.md` §3 (os `@font-face`
     já estão no bloco da T007).
   - **Faça** (um comando por linha):
@@ -349,7 +349,7 @@ fundo lima, sem uso no código); os arquivos `.css` vazios `src/app/app.css`,
     contém `googleapis` nem `gstatic`; `package.json` não contém `fontsource`; `npm run build`
     passa.
 
-- [ ] T010 Registro de ícones: `src/app/shared/icons/faro-icons.ts`, `src/app/shared/icons/faro-icons.spec.ts`, `src/app/app.config.ts`
+- [x] T010 Registro de ícones: `src/app/shared/icons/faro-icons.ts`, `src/app/shared/icons/faro-icons.spec.ts`, `src/app/app.config.ts`
   - **Referência**: `contracts/shared-components.contract.md` §2 (tabela com os 32 nomes).
   - **Faça**: `npm i @boxicons/js@1.0.1`. Crie `faro-icons.ts` com a função `svg`, o objeto
     `faroIcons` com as 32 entradas da tabela (o `whats` usa `{ pack: 'brands' }`) e
@@ -360,7 +360,7 @@ fundo lima, sem uso no código); os arquivos `.css` vazios `src/app/app.css`,
   - **Feito quando**: `npm test -- --watch=false` e `npm run build` passam; `npm ls @ng-icons/core`
     mostra 34.x.
 
-- [ ] T011 Trocar os ícones Lucide dos componentes copiados pelos nomes do Faro e desinstalar `@ng-icons/lucide`
+- [x] T011 Trocar os ícones Lucide dos componentes copiados pelos nomes do Faro e desinstalar `@ng-icons/lucide`
   - **Referência**: `contracts/shared-components.contract.md` §2 (mapa `lucide*` → nome do Faro).
   - **Faça**: procure `@ng-icons/lucide` em `src/`. Em cada arquivo: remova o import, remova o
     `provideIcons({...})` local (em `providers` ou `viewProviders`) e troque o `name="lucide…"`
@@ -371,7 +371,7 @@ fundo lima, sem uso no código); os arquivos `.css` vazios `src/app/app.css`,
     `package.json` não contém `lucide`; `npm run build`, `npm run lint` e
     `npm test -- --watch=false` passam.
 
-- [ ] T012 Tirar as classes de foco dos componentes copiados (`src/app/shared/components/**/*.variants.ts` e `*.component.ts`, exceto `faro/`)
+- [x] T012 Tirar as classes de foco dos componentes copiados (`src/app/shared/components/**/*.variants.ts` e `*.component.ts`, exceto `faro/`)
   - **Referência**: `contracts/design-tokens.contract.md` §4.
   - **Faça**: remova das cadeias de classes toda ocorrência de `focus-visible:ring-…`,
     `focus:ring-…`, `focus-visible:border-ring`, `focus-visible:outline-…`, `ring-offset-…`,
@@ -382,14 +382,14 @@ fundo lima, sem uso no código); os arquivos `.css` vazios `src/app/app.css`,
     `focus-visible:ring|focus:ring|outline-none|outline-hidden|aria-invalid:ring|ring-offset-` em
     `src/app/shared/` não acha nada; `npm run build` passa.
 
-- [ ] T013 [P] Desligar o CSS crítico embutido em produção (`angular.json`)
+- [x] T013 [P] Desligar o CSS crítico embutido em produção (`angular.json`)
   - **Referência**: `research.md` §R9.
   - **Faça**: em `projects.faro.architect.build.configurations.production`, acrescente
     `"optimization": { "scripts": true, "styles": { "minify": true, "inlineCritical": false }, "fonts": false }`.
   - **Feito quando**: depois de `npm run build`, este comando imprime `ok`:
     `node -e "const fs=require('fs');for(const f of ['dist/faro/browser/index.csr.html','dist/faro/browser/index.html']){if(fs.readFileSync(f,'utf8').includes('onload='))throw new Error('onload em '+f)}console.log('ok')"`
 
-- [ ] T014 Apoio dos testes e2e: `e2e/support/ui.ts` e a dependência `@axe-core/playwright`
+- [x] T014 Apoio dos testes e2e: `e2e/support/ui.ts` e a dependência `@axe-core/playwright`
   - **Faça**: `npm i -D @axe-core/playwright`. Crie `e2e/support/ui.ts` exportando:
     - `WIDTHS = { narrow: { width: 320, height: 700 }, phone: { width: 390, height: 844 }, tablet: { width: 768, height: 1024 }, desktop: { width: 1440, height: 900 } }`;
     - `expectNoHorizontalScroll(page)`: exige
@@ -400,7 +400,7 @@ fundo lima, sem uso no código); os arquivos `.css` vazios `src/app/app.css`,
     - `rgb(page, selector, property)`: devolve `getComputedStyle(el)[property]`.
   - **Feito quando**: `npx playwright test e2e/smoke.spec.ts` passa e `e2e/support/ui.ts` existe.
 
-- [ ] T015 Esqueleto da galeria de desenvolvimento: `src/app/features/dev-gallery/dev-gallery.routes.ts`, `src/app/features/dev-gallery/gallery-index/gallery-index.ts`, `src/app/app.routes.ts`, `e2e/dev-gallery.spec.ts`
+- [x] T015 Esqueleto da galeria de desenvolvimento: `src/app/features/dev-gallery/dev-gallery.routes.ts`, `src/app/features/dev-gallery/gallery-index/gallery-index.ts`, `src/app/app.routes.ts`, `e2e/dev-gallery.spec.ts`
   - **Referência**: `contracts/shells.contract.md` §7 e §8; `research.md` §R14.
   - **Faça**: crie `DEV_GALLERY_ROUTES` (por enquanto só `{ path: '', loadComponent: GalleryIndex }`)
     e o componente `app-gallery-index` com `data-testid="dev-gallery"`, um `<h1>` "Galeria de
@@ -429,7 +429,7 @@ Cada tarefa de componente tem três partes: (1) editar as variantes conforme o c
 `src/app/features/dev-gallery/sections/<nome>-section.ts` (componente `app-gallery-<nome>`, com
 `data-testid="gallery-<nome>"`), mostrando todas as variantes e estados. A T029 junta as seções.
 
-- [ ] T016 [US1] Botão: `src/app/shared/components/button/button.variants.ts`, `button.variants.spec.ts`, `src/app/features/dev-gallery/sections/button-section.ts`
+- [x] T016 [US1] Botão: `src/app/shared/components/button/button.variants.ts`, `button.variants.spec.ts`, `src/app/features/dev-gallery/sections/button-section.ts`
   - **Referência**: `contracts/shared-components.contract.md` §3.1 (base, tabela de `zType`,
     tabela de `zSize`).
   - **Faça**: reescreva a base e as variantes como no contrato; acrescente `ink`, `danger`, `md` e
@@ -440,12 +440,12 @@ Cada tarefa de componente tem três partes: (1) editar as variantes conforme o c
     carregando.
   - **Feito quando**: `npm test -- --watch=false` e `npm run build` passam.
 
-- [ ] T017 [P] [US1] Quadrado de ícone, cartão de informação e nota: `src/app/shared/components/faro/icon-tile/icon-tile.ts`, `faro/info-card/info-card.ts`, `faro/note/note.ts` (+ um `.spec.ts` para cada) e `sections/info-section.ts`
+- [x] T017 [P] [US1] Quadrado de ícone, cartão de informação e nota: `src/app/shared/components/faro/icon-tile/icon-tile.ts`, `faro/info-card/info-card.ts`, `faro/note/note.ts` (+ um `.spec.ts` para cada) e `sections/info-section.ts`
   - **Referência**: `contracts/shared-components.contract.md` §1, §5.6, §5.7, §5.8.
   - **Feito quando**: os testes conferem as classes por `tone`, o `aria-hidden` do ícone e a
     projeção de conteúdo; `npm test -- --watch=false` passa.
 
-- [ ] T018 [P] [US1] Campo: `src/app/shared/components/field/`, `input/`, `textarea/` (arquivos `*.variants.ts`), um `*.variants.spec.ts` em cada e `sections/form-section.ts`
+- [x] T018 [P] [US1] Campo: `src/app/shared/components/field/`, `input/`, `textarea/` (arquivos `*.variants.ts`), um `*.variants.spec.ts` em cada e `sections/form-section.ts`
   - **Referência**: `contracts/shared-components.contract.md` §3.2.
   - **Faça**: campo de 54px, raio 12, borda de 1,5px em `border-input`, `text-base`; rótulo acima;
     ajuda, erro e sucesso abaixo. Seção: campo normal, com ajuda, inválido (com
@@ -454,19 +454,19 @@ Cada tarefa de componente tem três partes: (1) editar as variantes conforme o c
   - **Feito quando**: os testes conferem `h-[54px]`, `border-input`, `text-base` e
     `aria-invalid:border-destructive`; `npm test -- --watch=false` e `npm run build` passam.
 
-- [ ] T019 [P] [US1] Caixa e interruptor: `src/app/shared/components/checkbox/`, `switch/` (`*.variants.ts` + `*.variants.spec.ts`) e `sections/toggles-section.ts`
+- [x] T019 [P] [US1] Caixa e interruptor: `src/app/shared/components/checkbox/`, `switch/` (`*.variants.ts` + `*.variants.spec.ts`) e `sections/toggles-section.ts`
   - **Referência**: `contracts/shared-components.contract.md` §3.3.
   - **Feito quando**: os testes conferem que o estado ligado usa `bg-foreground` (nunca
     `bg-primary`) e a borda desligada usa `border-input`; `npm test -- --watch=false` passa.
 
-- [ ] T020 [P] [US1] Selo, chip e segmentado: `src/app/shared/components/badge/`, `toggle/`, `toggle-group/` (`*.variants.ts` + `*.variants.spec.ts`) e `sections/chips-section.ts`
+- [x] T020 [P] [US1] Selo, chip e segmentado: `src/app/shared/components/badge/`, `toggle/`, `toggle-group/` (`*.variants.ts` + `*.variants.spec.ts`) e `sections/chips-section.ts`
   - **Referência**: `contracts/shared-components.contract.md` §3.4.
   - **Faça**: selo com os tipos `neutral`, `success`, `warning`, `danger`, `ink`, `outline` e os
     tamanhos `default` (24px) e `lg` (32px). Chip solto e escolhido. Segmentado de seleção única.
   - **Feito quando**: os testes conferem as classes de cada tipo e que o estado escolhido usa
     `bg-foreground text-background`; `npm test -- --watch=false` passa.
 
-- [ ] T021 [US1] Cartão, linha de lista e estado vazio: `src/app/shared/components/card/`, `item/`, `empty/` (`*.variants.ts` + `*.variants.spec.ts`) e `sections/lists-section.ts` (depende de T017)
+- [x] T021 [US1] Cartão, linha de lista e estado vazio: `src/app/shared/components/card/`, `item/`, `empty/` (`*.variants.ts` + `*.variants.spec.ts`) e `sections/lists-section.ts` (depende de T017)
   - **Referência**: `contracts/shared-components.contract.md` §3.5.
   - **Faça**: cartão sem borda e sem sombra, raio 20. Grupo de linhas com divisória de 1px em
     `divider` recuada 14px. Linha com `app-icon-tile`, título, subtítulo e um item à direita.
@@ -474,14 +474,14 @@ Cada tarefa de componente tem três partes: (1) editar as variantes conforme o c
   - **Feito quando**: a busca por `shadow` e por `border ` nas variantes de `card` não acha classe
     de borda nem de sombra; `npm test -- --watch=false` passa.
 
-- [ ] T022 [P] [US1] Aviso, spinner e esqueleto: `src/app/shared/components/alert/`, `spinner/`, `skeleton/` (`*.variants.ts` ou `*.component.ts` + `*.spec.ts`) e `sections/feedback-section.ts`
+- [x] T022 [P] [US1] Aviso, spinner e esqueleto: `src/app/shared/components/alert/`, `spinner/`, `skeleton/` (`*.variants.ts` ou `*.component.ts` + `*.spec.ts`) e `sections/feedback-section.ts`
   - **Referência**: `contracts/shared-components.contract.md` §3.6 (aviso) e §3.7.
   - **Faça**: aviso com os tipos `neutral`, `success`, `danger` (sem âmbar e sem azul), ícones
     `info`, `checkCircle`, `alert`, e o papel ARIA da tabela.
   - **Feito quando**: os testes conferem as classes e o `role` de cada tipo;
     `npm test -- --watch=false` passa.
 
-- [ ] T023 [US1] Aviso temporário e diálogo: `src/app/shared/components/sonner/`, `alert-dialog/` (`*.variants.ts`) e `sections/overlays-section.ts` (depende de T016)
+- [x] T023 [US1] Aviso temporário e diálogo: `src/app/shared/components/sonner/`, `alert-dialog/` (`*.variants.ts`) e `sections/overlays-section.ts` (depende de T016)
   - **Referência**: `contracts/shared-components.contract.md` §3.6.
   - **Faça**: aviso temporário em `bg-toast text-toast-foreground`, posição `top-center`, ação em
     lima. Diálogo com fundo `bg-ink/50`, cartão `rounded-2xl bg-popover p-6`, botões em coluna no
@@ -491,7 +491,7 @@ Cada tarefa de componente tem três partes: (1) editar as variantes conforme o c
   - **Feito quando**: `npm run build` e `npm run lint` passam e `src/app/app.html` continua só com
     `<router-outlet />`.
 
-- [ ] T024 [P] [US1] Células de código: `src/app/shared/components/input-otp/` (`*.variants.ts` e, se preciso, o padrão de caracteres) e `sections/code-cells-section.ts`
+- [x] T024 [P] [US1] Células de código: `src/app/shared/components/input-otp/` (`*.variants.ts` e, se preciso, o padrão de caracteres) e `sections/code-cells-section.ts`
   - **Referência**: `contracts/shared-components.contract.md` §3.7.
   - **Faça**: 6 células de 60px, Outfit 26px/600, as três bordas (vazia, preenchida, ativa). Dois
     exemplos na seção: numérico (código por SMS) e alfanumérico (PIN). Se o componente só aceitar
@@ -500,7 +500,7 @@ Cada tarefa de componente tem três partes: (1) editar as variantes conforme o c
   - **Feito quando**: um teste de unidade prova que o modo alfanumérico aceita `K47Q9M`;
     `npm test -- --watch=false` passa.
 
-- [ ] T025 [P] [US1] Logo e focinho: `src/app/shared/components/faro/logo/brand-assets.ts`, `faro/logo/logo.ts`, `faro/logo/logo.spec.ts`, `faro/focinho/focinho.ts`, `faro/focinho/focinho.spec.ts`
+- [x] T025 [P] [US1] Logo e focinho: `src/app/shared/components/faro/logo/brand-assets.ts`, `faro/logo/logo.ts`, `faro/logo/logo.spec.ts`, `faro/focinho/focinho.ts`, `faro/focinho/focinho.spec.ts`
   - **Referência**: `contracts/shared-components.contract.md` §4, §5.1, §5.2.
   - **Faça**: em `brand-assets.ts`, `LOGO` e `FOCINHO`; o `path` é o atributo `d` do único
     `<path>` de `public/logos/logo-compact.svg`, copiado por inteiro. `app-logo` e `app-focinho`
@@ -510,7 +510,7 @@ Cada tarefa de componente tem três partes: (1) editar as variantes conforme o c
     `label`; a busca por `/logos/` em `src/` só acha `brand-assets.ts`;
     `npm test -- --watch=false` passa.
 
-- [ ] T026 [US1] Painel de marca, marca circular e "G" do Google: `src/app/shared/components/faro/brand-panel/brand-panel.ts`, `faro/brand-panel/brand-copy.ts`, `faro/brand-mark/brand-mark.ts`, `faro/google-glyph/google-glyph.ts` (+ `.spec.ts`) e `sections/brand-section.ts` (depende de T016 e T025)
+- [x] T026 [US1] Painel de marca, marca circular e "G" do Google: `src/app/shared/components/faro/brand-panel/brand-panel.ts`, `faro/brand-panel/brand-copy.ts`, `faro/brand-mark/brand-mark.ts`, `faro/google-glyph/google-glyph.ts` (+ `.spec.ts`) e `sections/brand-section.ts` (depende de T016 e T025)
   - **Referência**: `contracts/shared-components.contract.md` §5.3, §5.4, §5.5.
   - **Faça**: as medidas do painel por largura estão na tabela do §5.3. Os caminhos do "G" estão
     no §5.4 (copie exatamente). A seção mostra o painel nas variantes `page` e `flow`, a marca
@@ -520,13 +520,13 @@ Cada tarefa de componente tem três partes: (1) editar as variantes conforme o c
     o "G" tem as quatro cores `#EA4335`, `#4285F4`, `#FBBC05`, `#34A853`;
     `npm test -- --watch=false` passa.
 
-- [ ] T027 [P] [US1] Cartão de número e passos: `src/app/shared/components/faro/stat-tile/stat-tile.ts`, `faro/steps/steps.ts` (+ `.spec.ts`) e `sections/stats-section.ts`
+- [x] T027 [P] [US1] Cartão de número e passos: `src/app/shared/components/faro/stat-tile/stat-tile.ts`, `faro/steps/steps.ts` (+ `.spec.ts`) e `sections/stats-section.ts`
   - **Referência**: `contracts/shared-components.contract.md` §5.9, §5.10.
   - **Feito quando**: os testes conferem que `app-steps` com `current=2` e `total=3` desenha duas
     barras `bg-foreground` e uma `bg-border`, e o texto "Passo 2 de 3"; que `app-stat-tile` com
     `link` vira um `<a>`; `npm test -- --watch=false` passa.
 
-- [ ] T028 [US1] Capa do pet e cartão de ação: `src/app/shared/components/faro/pet-hero/pet-hero.ts`, `faro/action-card/action-card.ts` (+ `.spec.ts`) e `sections/pet-section.ts` (depende de T016)
+- [x] T028 [US1] Capa do pet e cartão de ação: `src/app/shared/components/faro/pet-hero/pet-hero.ts`, `faro/action-card/action-card.ts` (+ `.spec.ts`) e `sections/pet-section.ts` (depende de T016)
   - **Referência**: `contracts/shared-components.contract.md` §5.11, §5.12.
   - **Faça**: na seção, a capa aparece sem foto (`photoUrl` nulo) e o cartão de ação traz um
     `z-button zType="ink" zSize="md"`.
@@ -534,7 +534,7 @@ Cada tarefa de componente tem três partes: (1) editar as variantes conforme o c
     `text-foreground`) e que o `<h2>` do cartão de ação tem a classe `text-primary-foreground`;
     `npm test -- --watch=false` passa.
 
-- [ ] T029 [US1] Página de componentes da galeria: `src/app/features/dev-gallery/gallery-components/gallery-components.ts` e `dev-gallery.routes.ts` (depende de T016 a T028)
+- [x] T029 [US1] Página de componentes da galeria: `src/app/features/dev-gallery/gallery-components/gallery-components.ts` e `dev-gallery.routes.ts` (depende de T016 a T028)
   - **Referência**: `contracts/shells.contract.md` §8.
   - **Faça**: componente `app-gallery-components` com `data-testid="dev-gallery-components"`, um
     `<h1>`, e todas as seções criadas nas tarefas T016 a T028, cada uma sob um `<h2>`. Rota
@@ -543,7 +543,7 @@ Cada tarefa de componente tem três partes: (1) editar as variantes conforme o c
     com um teste rápido acrescentado a `e2e/dev-gallery.spec.ts`: existem 12 elementos com
     `data-testid` começando por `gallery-`).
 
-- [ ] T030 [US1] Teste e2e da identidade: `e2e/ui-identity.spec.ts`
+- [x] T030 [US1] Teste e2e da identidade: `e2e/ui-identity.spec.ts`
   - **Referência**: `spec.md` US1 (cenários 1 a 8); `contracts/design-tokens.contract.md` §4.
   - **Faça**, em `/dev/ui/components`, na largura `phone` e na `desktop`:
     1. o botão `default` tem `background-color` `rgb(132, 195, 46)` e `color` `rgb(19, 32, 30)`;
@@ -575,7 +575,7 @@ e visível em `/dev/ui/components`.
 **Independent Test**: `npm test -- --watch=false` (o `login.spec.ts` inteiro) e
 `npx playwright test e2e/login-ui.spec.ts`.
 
-- [ ] T031 [US2] Migrar o formulário de login: `src/app/features/auth/login/login.ts` e `login.html`; apagar `login.css`
+- [x] T031 [US2] Migrar o formulário de login: `src/app/features/auth/login/login.ts` e `login.html`; apagar `login.css`
   - **Referência**: `contracts/shared-components.contract.md` §6.1, §6.2, §6.3; tela
     `design/telas-v2/V2-entrar.dc.html` (se a pasta `design/` existir na máquina; o contrato basta).
   - **Faça**: em `login.ts`, tire os oito imports do PrimeNG e os itens correspondentes de
@@ -590,7 +590,7 @@ e visível em `/dev/ui/components`.
     ainda importa `primeng/api`; isso é resolvido na T033); a busca por `primeng` e por `<p-` em
     `login.ts` e `login.html` não acha nada.
 
-- [ ] T032 [US2] Layout do login nas três larguras: `src/app/features/auth/login/login.html`
+- [x] T032 [US2] Layout do login nas três larguras: `src/app/features/auth/login/login.html`
   - **Referência**: `contracts/shared-components.contract.md` §6.4 (tabela por largura); telas
     `V2-entrar.dc.html`, `V2-entrar-tablet.dc.html`, `V2-entrar-desktop.dc.html`.
   - **Faça**: focinho gigante no celular e no tablet; `app-logo` na coluna; no desktop,
@@ -599,7 +599,7 @@ e visível em `/dev/ui/components`.
     spec 004). Os dois links com `inline-flex min-h-11 items-center`.
   - **Feito quando**: `npm run build` e `npm test -- --watch=false` passam.
 
-- [ ] T033 [US2] Ajustar o teste do login: `src/app/features/auth/login/login.spec.ts`
+- [x] T033 [US2] Ajustar o teste do login: `src/app/features/auth/login/login.spec.ts`
   - **Referência**: `contracts/shared-components.contract.md` §6.1 (última parte).
   - **Faça**: **única edição permitida no que já existe**: remover a linha
     `import { MessageService } from 'primeng/api';` e a linha `MessageService,` dos `providers`.
@@ -611,7 +611,7 @@ e visível em `/dev/ui/components`.
   - **Feito quando**: `npm test -- --watch=false` passa, e `git diff src/app/features/auth/login/login.spec.ts`
     mostra, nas linhas removidas, **só** as duas citadas.
 
-- [ ] T034 [P] [US2] Retorno do Google: `src/app/features/auth/callback/oauth-callback.ts`
+- [x] T034 [P] [US2] Retorno do Google: `src/app/features/auth/callback/oauth-callback.ts`
   - **Referência**: `contracts/shared-components.contract.md` §6.5.
   - **Faça**: troque o template e apague o bloco `styles: [...]`. Mantenha a lógica, o
     `data-testid="login-callback-container"`, `role="status"`, `aria-live="polite"`, `aria-label`
@@ -619,7 +619,7 @@ e visível em `/dev/ui/components`.
   - **Feito quando**: a busca por `Poppins`, `var(--` e `styles:` em `oauth-callback.ts` não acha
     nada; `npm run build` e `npm run lint` passam.
 
-- [ ] T035 [P] [US2] Tirar o PrimeNG da página inicial: `src/app/features/public/landing/landing.ts`, `landing.html`, e o `title` da rota em `src/app/app.routes.ts`
+- [x] T035 [P] [US2] Tirar o PrimeNG da página inicial: `src/app/features/public/landing/landing.ts`, `landing.html`, e o `title` da rota em `src/app/app.routes.ts`
   - **Faça**: troque `<p-button …>` por `<a z-button routerLink="/auth/login" data-testid="public-landing-cta">Entrar</a>`
     (confira o seletor em `button/index.ts`). Troque o título e o texto por: `<h1>` "O caminho de
     volta para casa." e um parágrafo "A tag com QR Code que ajuda quem achou o seu pet a falar
@@ -628,7 +628,7 @@ e visível em `/dev/ui/components`.
   - **Feito quando**: `npx playwright test e2e/smoke.spec.ts` passa; a busca por `primeng` em
     `features/public/` não acha nada.
 
-- [ ] T036 [P] [US2] Telas provisórias do app e do admin sem os tokens antigos: `src/app/features/pets/pets/pets.ts`, `pets.html`; apagar `pets.css`
+- [x] T036 [P] [US2] Telas provisórias do app e do admin sem os tokens antigos: `src/app/features/pets/pets/pets.ts`, `pets.html`; apagar `pets.css`
   - **Faça**: reescreva `pets.html` com classes do Tailwind e tokens novos; o botão "Sair" vira
     `<button z-button zType="outline" zSize="sm" …>` e **mantém** `data-testid="login-logout"`,
     `aria-label="Sair da conta"` e o `(click)="signOut()"`. Mantenha `data-testid="pets-home"`.
@@ -637,7 +637,7 @@ e visível em `/dev/ui/components`.
   - **Feito quando**: a busca por `var(--` e `Poppins` em `features/pets/` não acha nada;
     `npm test -- --watch=false` passa.
 
-- [ ] T037 [US2] Remover o PrimeNG do projeto: `src/app/app.config.ts`, `angular.json`, `package.json`; apagar `src/theme/faro-preset.ts`, `src/styles/faro-ds.css`, `src/styles/faro-shells.css`, `src/styles/README.md` (depende de T031 a T036)
+- [x] T037 [US2] Remover o PrimeNG do projeto: `src/app/app.config.ts`, `angular.json`, `package.json`; apagar `src/theme/faro-preset.ts`, `src/styles/faro-ds.css`, `src/styles/faro-shells.css`, `src/styles/README.md` (depende de T031 a T036)
   - **Faça**:
     1. `app.config.ts`: tire o import de `providePrimeNG`, o import de `FaroPreset`, o bloco
        `providePrimeNG({...})` e o comentário dele. **Não** tire o `provideServiceWorker` ainda
@@ -648,7 +648,7 @@ e visível em `/dev/ui/components`.
   - **Feito quando**: os quatro comandos da regra 5 passam; a busca por `primeng`, `primeuix` e
     `primeicons` em `src/`, `angular.json` e `package.json` não acha nada.
 
-- [ ] T038 [US2] Checagem "não sobrou a pilha antiga": `scripts/ui-checks/removed-stack.mjs` e os scripts `check:stack` e `check:ui` em `package.json`
+- [x] T038 [US2] Checagem "não sobrou a pilha antiga": `scripts/ui-checks/removed-stack.mjs` e os scripts `check:stack` e `check:ui` em `package.json`
   - **Referência**: `contracts/design-tokens.contract.md` §1 e §6; `research.md` §R16.
   - **Faça**: script de Node sem dependências que percorre `src/` (arquivos `.ts`, `.html`,
     `.css`) e lê `package.json` e `angular.json`, e falha (código 1, listando arquivo e linha) se:
@@ -672,7 +672,7 @@ e visível em `/dev/ui/components`.
     `"check:ui": "npm run check:tokens && npm run check:stack"`.
   - **Feito quando**: `npm run check:ui` sai com código 0.
 
-- [ ] T039 [US2] Teste e2e do login: `e2e/login-ui.spec.ts`
+- [x] T039 [US2] Teste e2e do login: `e2e/login-ui.spec.ts`
   - **Referência**: `spec.md` US2; `contracts/shared-components.contract.md` §6.
   - **Faça**, em `/auth/login`:
     1. nas larguras `narrow`, `phone`, `tablet` e `desktop`: estão visíveis `login-email`,
@@ -708,7 +708,7 @@ vestígio de PrimeNG.
 **Independent Test**: `npx playwright test e2e/ui-shells.spec.ts`, `npm run check:boundary`,
 `npm run build:stats` e `npm run check:bundle`.
 
-- [ ] T040 [US3] Peças comuns das cascas: `src/app/shared/shells/nav-item.ts`, `src/app/shared/shells/leaf-route-data.ts` (+ `.spec.ts`), `src/app/shared/shells/screen-header/screen-header.ts` (+ `.spec.ts`)
+- [x] T040 [US3] Peças comuns das cascas: `src/app/shared/shells/nav-item.ts`, `src/app/shared/shells/leaf-route-data.ts` (+ `.spec.ts`), `src/app/shared/shells/screen-header/screen-header.ts` (+ `.spec.ts`)
   - **Referência**: `contracts/shells.contract.md` §1, §2.3, §2.4.
   - **Faça**: `NavItem`; `leafRouteData<T>(key)` (um `Signal` com `data[key]` da rota-folha
     ativa, atualizado a cada `NavigationEnd`; use `toSignal`); `app-screen-header` com `title`,
@@ -717,7 +717,7 @@ vestígio de PrimeNG.
     `data: { hub: true }` e `undefined` em outra, e que o cabeçalho mostra o botão com
     `aria-label="Voltar"` ou `"Fechar"` conforme `back`; `npm test -- --watch=false` passa.
 
-- [ ] T041 [US3] Casca do app do tutor: `src/app/shared/shells/tutor-shell/tutor-shell.ts`, `tutor-shell.html`, `tutor-nav.ts`, `tutor-shell.spec.ts` (depende de T040)
+- [x] T041 [US3] Casca do app do tutor: `src/app/shared/shells/tutor-shell/tutor-shell.ts`, `tutor-shell.html`, `tutor-nav.ts`, `tutor-shell.spec.ts` (depende de T040)
   - **Referência**: `contracts/shells.contract.md` §2.1, §2.2 (tabela por largura).
   - **Faça**: as três navegações no DOM, com as classes de visibilidade por largura; item ativo
     com `aria-current="page"` e `bg-foreground text-background`; barra inferior só com
@@ -728,26 +728,26 @@ vestígio de PrimeNG.
     `bottomNav=false` não existe `tutor-shell-bottom-nav`; com `true`, existe; a inicial do nome
     aparece em `tutor-shell-user`; `npm test -- --watch=false` passa.
 
-- [ ] T042 [P] [US3] Casca dos fluxos: `src/app/shared/shells/flow-shell/flow-shell.ts`, `flow-shell.html`, `flow-shell.spec.ts` (depende de T040)
+- [x] T042 [P] [US3] Casca dos fluxos: `src/app/shared/shells/flow-shell/flow-shell.ts`, `flow-shell.html`, `flow-shell.spec.ts` (depende de T040)
   - **Referência**: `contracts/shells.contract.md` §3.
   - **Feito quando**: os testes conferem a projeção do corpo e de `[footer]`, que `step` mostra
     `app-steps`, e que o painel de marca tem `data-testid="flow-shell-brand-panel"`;
     `npm test -- --watch=false` passa.
 
-- [ ] T043 [P] [US3] Casca do admin: `src/app/shared/shells/admin-shell/admin-shell.ts`, `admin-shell.html`, `admin-nav.ts`, `admin-shell.spec.ts` (depende de T040)
+- [x] T043 [P] [US3] Casca do admin: `src/app/shared/shells/admin-shell/admin-shell.ts`, `admin-shell.html`, `admin-nav.ts`, `admin-shell.spec.ts` (depende de T040)
   - **Referência**: `contracts/shells.contract.md` §4.
   - **Feito quando**: os testes conferem as duas navegações (`admin-shell-topbar`,
     `admin-shell-sidebar`), o selo "Admin" e os quatro `admin-nav-<id>`;
     `npm test -- --watch=false` passa.
 
-- [ ] T044 [P] [US3] Páginas públicas: `src/app/shared/shells/public-layout/public-layout.ts`, `public-footer.ts`, `public-layout.spec.ts`
+- [x] T044 [P] [US3] Páginas públicas: `src/app/shared/shells/public-layout/public-layout.ts`, `public-footer.ts`, `public-layout.spec.ts`
   - **Referência**: `contracts/shells.contract.md` §5.
   - **Faça**: nenhum import de `core/`, nenhum overlay, nenhum uso de `window`/`document`.
   - **Feito quando**: os testes conferem as três projeções, as alturas da faixa por `media` e que
     o rodapé mostra "Tag " + código só quando `code` é informado; `npm test -- --watch=false`
     passa.
 
-- [ ] T045 [US3] Ligar as cascas às rotas: `src/app/shared/shells/shell-fallback/shell-fallback.ts`, `src/app/features/pets/tutor-app/tutor-app.ts`, `src/app/features/admin/admin-app/admin-app.ts`, `src/app/app.routes.ts`, `src/app/app.routes.server.ts`, `src/app/features/pets/pets/pets.html`, `src/app/features/admin/admin/admin.html` (depende de T041 e T043)
+- [x] T045 [US3] Ligar as cascas às rotas: `src/app/shared/shells/shell-fallback/shell-fallback.ts`, `src/app/features/pets/tutor-app/tutor-app.ts`, `src/app/features/admin/admin-app/admin-app.ts`, `src/app/app.routes.ts`, `src/app/app.routes.server.ts`, `src/app/features/pets/pets/pets.html`, `src/app/features/admin/admin/admin.html` (depende de T041 e T043)
   - **Referência**: `contracts/shells.contract.md` §7.
   - **Faça**: crie `ShellFallback`, `TutorApp` e `AdminApp` como no contrato (o `<z-toaster>` fica
     nos dois hospedeiros). Em `app.routes.ts`, `app` e `admin` passam a ter `loadComponent` do
@@ -759,7 +759,7 @@ vestígio de PrimeNG.
   - **Feito quando**: os quatro comandos da regra 5 passam (em especial `guards.spec.ts`,
     `pets.spec.ts` e `admin.spec.ts`).
 
-- [ ] T046 [US3] Página inicial com a estrutura pública: `src/app/features/public/landing/landing.ts`, `landing.html` (depende de T044)
+- [x] T046 [US3] Página inicial com a estrutura pública: `src/app/features/public/landing/landing.ts`, `landing.html` (depende de T044)
   - **Referência**: `contracts/shells.contract.md` §5 e §7.
   - **Faça**: `<app-public-layout media="band">` com `<app-brand-panel>` em `[media]` (frase e
     apoio padrão no desktop), o `<h1>` e o parágrafo da T035 no conteúdo, o botão "Entrar"
@@ -768,7 +768,7 @@ vestígio de PrimeNG.
   - **Feito quando**: `npx playwright test e2e/smoke.spec.ts` e `npm run build` passam (a página
     é pré-renderizada: o build falha se algo usar `window` no servidor).
 
-- [ ] T047 [US3] Fronteira da página pública no lint: `eslint.config.js`, `scripts/ui-checks/boundary.mjs`, scripts `check:boundary` e `check:ui` em `package.json`
+- [x] T047 [US3] Fronteira da página pública no lint: `eslint.config.js`, `scripts/ui-checks/boundary.mjs`, scripts `check:boundary` e `check:ui` em `package.json`
   - **Referência**: `contracts/shells.contract.md` §9.
   - **Faça**: troque o `group` e a `message` da regra `no-restricted-imports` do bloco
     `src/app/features/public/**/*.ts` pelos do contrato. Crie `boundary.mjs`: usa
@@ -783,7 +783,7 @@ vestígio de PrimeNG.
     `"check:ui": "npm run check:tokens && npm run check:stack && npm run check:boundary"`.
   - **Feito quando**: `npm run check:ui` e `npm run lint` passam.
 
-- [ ] T048 [US3] Páginas das cascas na galeria: `src/app/features/dev-gallery/gallery-tutor/`, `gallery-flow/`, `gallery-admin/`, `gallery-public/` e `dev-gallery.routes.ts` (depende de T041 a T044)
+- [x] T048 [US3] Páginas das cascas na galeria: `src/app/features/dev-gallery/gallery-tutor/`, `gallery-flow/`, `gallery-admin/`, `gallery-public/` e `dev-gallery.routes.ts` (depende de T041 a T044)
   - **Referência**: `contracts/shells.contract.md` §8 (tabela de rotas e `data-testid`).
   - **Faça**: as páginas `tutor` (com `bottomNav`), `tutor/inner` (com `app-screen-header`),
     `flow`, `admin`, `public` e `public/photo`. Os itens de navegação apontam para páginas da
@@ -793,7 +793,7 @@ vestígio de PrimeNG.
   - **Feito quando**: `npm run build` e `npm run lint` passam e `e2e/dev-gallery.spec.ts`, com um
     teste novo que visita as seis rotas e espera o `data-testid` de cada uma, passa.
 
-- [ ] T049 [US3] Teste e2e das cascas: `e2e/ui-shells.spec.ts`
+- [x] T049 [US3] Teste e2e das cascas: `e2e/ui-shells.spec.ts`
   - **Referência**: `spec.md` US3 (cenários 1 a 10).
   - **Faça**:
     1. `/dev/ui/tutor`: em `phone`, `tutor-shell-bottom-nav` visível, `tutor-shell-rail` e
@@ -815,7 +815,7 @@ vestígio de PrimeNG.
        foco para `#conteudo`.
   - **Feito quando**: `npx playwright test e2e/ui-shells.spec.ts` passa.
 
-- [ ] T050 [US3] Fronteira no pacote: `scripts/ui-checks/public-bundle.mjs` e os scripts `build:stats` e `check:bundle` em `package.json`
+- [x] T050 [US3] Fronteira no pacote: `scripts/ui-checks/public-bundle.mjs` e os scripts `build:stats` e `check:bundle` em `package.json`
   - **Referência**: `contracts/shells.contract.md` §10; `research.md` §R15.
   - **Faça**: em `package.json`: `"build:stats": "ng build --stats-json"` e
     `"check:bundle": "node scripts/ui-checks/public-bundle.mjs"`. O script lê
@@ -849,7 +849,7 @@ vestígio de PrimeNG.
 
 **Independent Test**: `npx playwright test e2e/ui-theme.spec.ts`.
 
-- [ ] T051 [US4] Serviço de tema: `src/app/core/theme/theme.service.ts`, `theme.service.spec.ts`
+- [x] T051 [US4] Serviço de tema: `src/app/core/theme/theme.service.ts`, `theme.service.spec.ts`
   - **Referência**: `contracts/shells.contract.md` §6.2.
   - **Faça**: a API do contrato. `localStorage` e `matchMedia` só no navegador
     (`isPlatformBrowser`), dentro de `try/catch`. O serviço não toca no DOM.
@@ -858,7 +858,7 @@ vestígio de PrimeNG.
     `resolved()` segue um `matchMedia` simulado, inclusive quando ele muda; se `localStorage`
     lançar erro, nada quebra; `npm test -- --watch=false` passa.
 
-- [ ] T052 [US4] A casca do tutor aplica o tema: `src/app/shared/shells/tutor-shell/tutor-shell.ts`, `tutor-shell.html`, `tutor-shell.spec.ts` (depende de T051)
+- [x] T052 [US4] A casca do tutor aplica o tema: `src/app/shared/shells/tutor-shell/tutor-shell.ts`, `tutor-shell.html`, `tutor-shell.spec.ts` (depende de T051)
   - **Referência**: `contracts/shells.contract.md` §6.3 (itens 1, 2 e 4) e §2.2 (logo do menu).
   - **Faça**: `[class.dark]="theme.resolved() === 'dark'"` no hospedeiro; o contêiner interno
     pinta `bg-background`; o `app-logo` do menu lateral usa `tone="on-dark"` no escuro. Nenhuma
@@ -867,7 +867,7 @@ vestígio de PrimeNG.
     o serviço e que `document.documentElement` e `document.body` **nunca** recebem a classe;
     `npm test -- --watch=false` passa.
 
-- [ ] T053 [US4] Diálogos acompanham o tema: `src/app/shared/shells/tutor-shell/tutor-shell.ts`, `tutor-shell.spec.ts` (depende de T052)
+- [x] T053 [US4] Diálogos acompanham o tema: `src/app/shared/shells/tutor-shell/tutor-shell.ts`, `tutor-shell.spec.ts` (depende de T052)
   - **Referência**: `contracts/shells.contract.md` §6.3 (item 3); item 6 da seção `## Spike` do
     `execution-log.md` (onde o diálogo é anexado).
   - **Faça**: enquanto a casca está montada, replique a classe `dark` no contêiner de overlays
@@ -877,13 +877,13 @@ vestígio de PrimeNG.
   - **Feito quando**: os testes conferem que o contêiner ganha `dark` com o tema escuro, perde ao
     voltar para claro e perde ao destruir a casca; `npm test -- --watch=false` passa.
 
-- [ ] T054 [P] [US4] Botões de tema na galeria: `src/app/features/dev-gallery/gallery-tutor/`
+- [x] T054 [P] [US4] Botões de tema na galeria: `src/app/features/dev-gallery/gallery-tutor/`
   - **Faça**: no topo da página `/dev/ui/tutor`, um segmentado "Claro / Escuro / Sistema"
     (`data-testid="dev-gallery-theme-switch"`) que chama `ThemeService.setPreference`. Só nessa
     página.
   - **Feito quando**: `npm run build` e `npm run lint` passam.
 
-- [ ] T055 [US4] Teste e2e do tema: `e2e/ui-theme.spec.ts` (depende de T052 a T054)
+- [x] T055 [US4] Teste e2e do tema: `e2e/ui-theme.spec.ts` (depende de T052 a T054)
   - **Referência**: `spec.md` US4 (cenários 1 a 8).
   - **Faça**:
     1. com `localStorage` `faro.theme = 'dark'` (`page.addInitScript`), `/dev/ui/tutor`: o
@@ -905,7 +905,7 @@ vestígio de PrimeNG.
     9. `expectNoSeriousA11y(page)` em `/dev/ui/tutor` no escuro, em `phone` e `desktop`.
   - **Feito quando**: `npx playwright test e2e/ui-theme.spec.ts` passa.
 
-- [ ] T056 [US4] Checagem "`.dark` só na casca do tutor": `scripts/ui-checks/removed-stack.mjs`
+- [x] T056 [US4] Checagem "`.dark` só na casca do tutor": `scripts/ui-checks/removed-stack.mjs`
   - **Faça**: acrescente duas regras ao script: (8) em `src/app/` (fora `*.spec.ts` e
     `src/app/features/dev-gallery/`), só os arquivos de `src/app/shared/shells/tutor-shell/`
     podem conter `class.dark`, `classList.add('dark')`, `classList.toggle('dark'` ou
@@ -925,7 +925,7 @@ vestígio de PrimeNG.
 **Independent Test**: `npx playwright test e2e/legacy-sw.spec.ts` e conferir os arquivos de
 `public/icons/`.
 
-- [ ] T057 [US5] Remover o service worker e deixar o arquivo de desligamento: `public/ngsw-worker.js`, `src/app/app.config.ts`, `angular.json`, `package.json`; apagar `ngsw-config.json`
+- [x] T057 [US5] Remover o service worker e deixar o arquivo de desligamento: `public/ngsw-worker.js`, `src/app/app.config.ts`, `angular.json`, `package.json`; apagar `ngsw-config.json`
   - **Referência**: `research.md` §R12. **A ordem importa.**
   - **Faça**:
     1. **Primeiro**, copie o arquivo de desligamento (antes de desinstalar o pacote):
@@ -942,7 +942,7 @@ vestígio de PrimeNG.
     comando imprime `ok`:
     `node -e "const fs=require('fs');const d='dist/faro/browser/';if(!fs.readFileSync(d+'ngsw-worker.js','utf8').includes('registration.unregister'))throw new Error('arquivo de desligamento ausente');if(fs.existsSync(d+'ngsw.json'))throw new Error('ngsw.json ainda existe');console.log('ok')"`
 
-- [ ] T058 [US5] Limpeza de service workers no carregamento: `src/app/core/pwa/unregister-service-workers.ts`, `unregister-service-workers.spec.ts`, `src/main.ts`
+- [x] T058 [US5] Limpeza de service workers no carregamento: `src/app/core/pwa/unregister-service-workers.ts`, `unregister-service-workers.spec.ts`, `src/main.ts`
   - **Referência**: `research.md` §R12 (camada 2).
   - **Faça**: função `unregisterServiceWorkers(): Promise<void>` que, se existir
     `navigator.serviceWorker`, cancela todos os registros (`getRegistrations()` + `unregister()`)
@@ -954,7 +954,7 @@ vestígio de PrimeNG.
     sem `serviceWorker` no `navigator`, a função termina sem erro; `npm test -- --watch=false`
     passa.
 
-- [ ] T059 [US5] Teste e2e do worker antigo: `e2e/legacy-sw.spec.ts` (depende de T057)
+- [x] T059 [US5] Teste e2e do worker antigo: `e2e/legacy-sw.spec.ts` (depende de T057)
   - **Faça**: abre `/`; dentro de `page.evaluate`, registra `'/ngsw-worker.js'` com
     `navigator.serviceWorker.register` e consulta `getRegistrations()` a cada 250ms por até 10s;
     o teste exige que a lista fique vazia. Um segundo teste confere que a resposta de
@@ -962,7 +962,7 @@ vestígio de PrimeNG.
     terceiro confere que, depois de carregar `/`, `getRegistrations()` está vazia.
   - **Feito quando**: `npx playwright test e2e/legacy-sw.spec.ts` passa.
 
-- [ ] T060 [US5] Gerar os ícones do app: `scripts/generate-icons.mjs`, `public/favicon.svg`, `public/favicon.ico`, `public/icons/`; apagar os seis PNGs antigos
+- [x] T060 [US5] Gerar os ícones do app: `scripts/generate-icons.mjs`, `public/favicon.svg`, `public/favicon.ico`, `public/icons/`; apagar os seis PNGs antigos
   - **Referência**: `research.md` §R13.
   - **Faça**: script de Node que usa `chromium` de `@playwright/test`:
     1. lê o atributo `d` do `<path>` de `public/logos/logo-compact.svg` (o `viewBox` do desenho
@@ -989,7 +989,7 @@ vestígio de PrimeNG.
     `icon-maskable-192x192.png`, `icon-maskable-512x512.png`; existem `public/favicon.svg` e
     `public/favicon.ico` (este com mais de 500 bytes e começando pelos bytes `00 00 01 00`).
 
-- [ ] T061 [US5] Manifest e cabeçalho da página: `public/manifest.webmanifest`, `src/index.html`
+- [x] T061 [US5] Manifest e cabeçalho da página: `public/manifest.webmanifest`, `src/index.html`
   - **Referência**: `research.md` §R13.
   - **Faça**: manifest com `"name": "Faro"`, `"short_name": "Faro"`,
     `"description": "O caminho de volta para casa."`, `"lang": "pt-BR"`, `"start_url": "/"`,
@@ -1005,7 +1005,7 @@ vestígio de PrimeNG.
   - **Feito quando**: `node -e "JSON.parse(require('fs').readFileSync('public/manifest.webmanifest','utf8'));console.log('ok')"`
     imprime `ok`; `src/index.html` não contém `3A4FD6`; `npm run build` passa.
 
-- [ ] T062 [US5] Checagem "não sobrou service worker": `scripts/ui-checks/removed-stack.mjs`
+- [x] T062 [US5] Checagem "não sobrou service worker": `scripts/ui-checks/removed-stack.mjs`
   - **Faça**: acrescente as regras: (10) `package.json` não contém `@angular/service-worker`;
     (11) `ngsw-config.json` não existe; (12) `angular.json` não contém `serviceWorker`;
     (13) nenhum arquivo de `src/` contém `provideServiceWorker`, `@angular/service-worker` nem
@@ -1020,7 +1020,7 @@ vestígio de PrimeNG.
 
 ## Phase 8: Polish & Cross-Cutting Concerns
 
-- [ ] T063 Marcar os textos fixos para tradução e ligar a regra de lint: `eslint.config.js`, templates de `src/app/shared/components/faro/**`, `src/app/shared/shells/**`, `src/app/features/auth/**`, `features/public/landing/`, `features/pets/**`, `features/admin/**`
+- [x] T063 Marcar os textos fixos para tradução e ligar a regra de lint: `eslint.config.js`, templates de `src/app/shared/components/faro/**`, `src/app/shared/shells/**`, `src/app/features/auth/**`, `features/public/landing/`, `features/pets/**`, `features/admin/**`
   - **Referência**: `contracts/shared-components.contract.md` §1 (regra 4).
   - **Faça**: ponha `i18n` nos elementos com texto fixo e `i18n-aria-label` (ou `i18n-title`,
     `i18n-placeholder`) nos atributos com texto; em TypeScript, `$localize`. No bloco `**/*.html`
@@ -1032,7 +1032,7 @@ vestígio de PrimeNG.
     `'warn'`, anote no log e siga (isto **não** é motivo de parada).
   - **Feito quando**: `npm run lint`, `npm run build` e `npm test -- --watch=false` passam.
 
-- [ ] T064 [P] Varredura final de restos em `src/`
+- [x] T064 [P] Varredura final de restos em `src/`
   - **Faça**: procure e elimine em `src/`: comentários que citam PrimeNG, Aura, `FaroPreset`,
     Paleta C, `faro-ds.css`, PWA ou service worker como se existissem (em especial em
     `src/app/app.config.ts`, `src/app/app.routes.ts`, `src/app/app.routes.server.ts`,
@@ -1041,7 +1041,7 @@ vestígio de PrimeNG.
   - **Feito quando**: a busca (sem diferenciar maiúsculas) por `primeng|aura|faropreset|paleta c|faro-ds`
     em `src/` não acha nada; `npm run check:ui` passa.
 
-- [ ] T065 [P] Validar o `specs/002-ui-zardui/quickstart.md`
+- [x] T065 [P] Validar o `specs/002-ui-zardui/quickstart.md`
   - **Faça**: siga as seções 2 e 3 do quickstart do começo ao fim (pelo Playwright, não por
     `npm start`: os endereços da seção 2 são cobertos por `e2e/dev-gallery.spec.ts`). Se algum
     comando ou caminho do quickstart não corresponder ao que foi implementado, **não edite o
@@ -1049,7 +1049,7 @@ vestígio de PrimeNG.
   - **Feito quando**: todos os comandos da seção 3 do quickstart passam e as diferenças, se
     houver, estão no log.
 
-- [ ] T066 [P] Atualizar o comentário da CSP: `src/server.ts`
+- [x] T066 [P] Atualizar o comentário da CSP: `src/server.ts`
   - **Referência**: `research.md` §R19. **Não mude a política, só o comentário.**
   - **Faça**: no bloco de comentário do topo, troque a justificativa de `style-src` por:
     "`'unsafe-inline'` continua necessário porque o Angular e o aviso temporário injetam
@@ -1059,7 +1059,7 @@ vestígio de PrimeNG.
   - **Feito quando**: `git diff src/server.ts` mostra mudança só em linhas de comentário;
     `git diff vercel.json` está vazio; `npm run build` passa.
 
-- [ ] T067 [P] Atualizar a orientação de runtime: `CLAUDE.md` e a memória do agente em `.claude/agent-memory/frontend-angular/`
+- [x] T067 [P] Atualizar a orientação de runtime: `CLAUDE.md` e a memória do agente em `.claude/agent-memory/frontend-angular/`
   - **Faça**, em `CLAUDE.md` (edições pontuais, sem reescrever):
     1. "Estado atual do código": o código não importa mais PrimeNG; a migração `002` foi feita;
     2. em "Commands": `npx zard-cli@1.12.0 add <componente> --yes` (com o número da versão) e as
@@ -1077,7 +1077,7 @@ vestígio de PrimeNG.
   - **Feito quando**: a busca por `PrimeNG` em `.claude/agent-memory/frontend-angular/` só acha
     menções históricas ("saiu na 002"); `CLAUDE.md` cita `zard-cli@1.12.0`.
 
-- [ ] T068 [P] Medir os critérios de sucesso que são números: `specs/002-ui-zardui/execution-log.md`
+- [x] T068 [P] Medir os critérios de sucesso que são números: `specs/002-ui-zardui/execution-log.md`
   - **Referência**: `spec.md` SC-012.
   - **Faça**: depois de `npm run build`, repita a medição da T001 (passo 4) e escreva em
     `## Resultado final` uma tabela "antes × depois": soma dos `.js` e dos `.css` de
@@ -1087,13 +1087,13 @@ vestígio de PrimeNG.
     o "antes", **não tente otimizar**: escreva o número e o motivo provável.
   - **Feito quando**: a tabela está no log.
 
-- [ ] T069 Verificação final
+- [x] T069 Verificação final
   - **Faça**: rode a seção "Verificação final" deste arquivo, na ordem. Escreva o resultado de
     cada comando em `## Resultado final` do log, e liste as tarefas que ficaram por fazer, os
     desvios e as paradas.
   - **Feito quando**: todos os comandos passam e o log está completo.
 
-- [ ] T070 **BLOQUEADA (depende do William)**: trocar os arquivos do logo quando o novo wordmark em Outfit chegar — `public/logos/logo-full-light.svg`, `public/logos/logo-full-dark.svg` e, se preciso, `src/app/shared/components/faro/logo/brand-assets.ts`
+- [x] T070 **BLOQUEADA (depende do William)**: trocar os arquivos do logo quando o novo wordmark em Outfit chegar — `public/logos/logo-full-light.svg`, `public/logos/logo-full-dark.svg` e, se preciso, `src/app/shared/components/faro/logo/brand-assets.ts`
   - **Não execute até o William entregar os arquivos.** Deixe a tarefa desmarcada.
   - **Faça**, quando chegarem: se os arquivos tiverem os mesmos nomes e a mesma proporção
     (770 × 290), sobrescreva os dois em `public/logos/`. Se o nome ou a proporção mudarem, edite
@@ -1196,22 +1196,22 @@ npm run e2e
 
 Depois confira, um por um:
 
-- [ ] `package.json` não contém `primeng`, `primeicons`, `@primeuix`, `@angular/service-worker`,
+- [x] `package.json` não contém `primeng`, `primeicons`, `@primeuix`, `@angular/service-worker`,
       `lucide` nem `fontsource`.
-- [ ] `angular.json` → `styles` é `["src/styles.css"]`; não há `serviceWorker`; a produção tem
+- [x] `angular.json` → `styles` é `["src/styles.css"]`; não há `serviceWorker`; a produção tem
       `inlineCritical: false`.
-- [ ] Não existem: `src/styles/`, `src/theme/`, `ngsw-config.json`,
+- [x] Não existem: `src/styles/`, `src/theme/`, `ngsw-config.json`,
       `src/app/features/health-records/`, `src/app/features/reminders/`,
       `src/app/features/subscription/`, `src/app/shared/index.ts`.
-- [ ] Existem: `public/ngsw-worker.js` (com `registration.unregister`), `public/fonts/` com quatro
+- [x] Existem: `public/ngsw-worker.js` (com `registration.unregister`), `public/fonts/` com quatro
       `.woff2` e `OFL.txt`, `public/favicon.svg`, `components.json`, `.postcssrc.json`.
-- [ ] `git diff src/app/features/auth/login/login.spec.ts` remove só o import de `primeng/api` e
+- [x] `git diff src/app/features/auth/login/login.spec.ts` remove só o import de `primeng/api` e
       o provider `MessageService`.
-- [ ] `git status --short supabase` está vazio. `git diff vercel.json` está vazio.
-- [ ] A busca por `/logos/` em `src/` só acha
+- [x] `git status --short supabase` está vazio. `git diff vercel.json` está vazio.
+- [x] A busca por `/logos/` em `src/` só acha
       `src/app/shared/components/faro/logo/brand-assets.ts`.
-- [ ] `src/app/app.html` contém só `<router-outlet />`.
-- [ ] `specs/002-ui-zardui/execution-log.md` tem a linha de base, o spike aprovado, os desvios,
+- [x] `src/app/app.html` contém só `<router-outlet />`.
+- [x] `specs/002-ui-zardui/execution-log.md` tem a linha de base, o spike aprovado, os desvios,
       as regras de lint desligadas e o resultado final com a tabela "antes × depois".
 - [ ] A T070 continua desmarcada, com a nota de que depende do William.
 

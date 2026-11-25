@@ -1,0 +1,143 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [develop, homolog, master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  app:
+    name: app
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test -- --watch=false
+      - run: npm run build:stats
+      # Spec 004, T106/T107: checagens do repositorio. check:prod-config NAO entra ainda: reprova de proposito ate a chave
+      # real do Turnstile existir (conta Cloudflare). Ver execution-log da spec 004.
+      - run: npm run check:ui
+      - run: npm run check:bundle
+      - run: npm run check:headers
+      - name: Cabecalhos no servidor construido (arquivo estatico, HTTP e HTTPS)
+        run: |
+          PORT=4010 node dist/faro/server/server.mjs > /tmp/ssr.log 2>&1 &
+          for i in $(seq 1 30); do curl -sf -o /dev/null http://localhost:4010/favicon.ico && break; sleep 1; done
+          h=$(curl -sI http://localhost:4010/favicon.ico); echo "$h"
+          for k in x-content-type-options content-security-policy referrer-policy permissions-policy cross-origin-resource-policy cross-origin-opener-policy; do
+            echo "$h" | grep -qi "^$k:" || { echo "::error::arquivo estatico sem $k"; exit 1; }
+          done
+          hs=$(curl -sI -H "x-forwarded-proto: https" http://localhost:4010/favicon.ico)
+          echo "$hs" | grep -qi "^strict-transport-security: max-age=63072000; includeSubDomains" || { echo "::error::sem HSTS por HTTPS"; exit 1; }
+          if echo "$h" | grep -qi "^strict-transport-security"; then echo "::error::HSTS em HTTP"; exit 1; fi
+          kill %1 || true
+      - run: npm run check:secrets
+      - run: npm run check:templates
+      - run: npm run test:scripts
+      - run: npm run check:audit
+
+  supabase:
+    name: supabase
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: supabase/setup-cli@689adcfb80d947100a1eab127289b97d1fb07b13 # v3.2.0
+        with:
+          version: 3.2.0
+      - name: Subir o Supabase local
+        run: supabase start
+      - name: Testes de banco (pgTAP)
+        run: supabase test db
+      # Spec 004: conferencias que o pgTAP nao alcanca (config do Auth, e-mail no coletor, login, CORS).
+      # Roda mesmo se o pgTAP falhar, para um unico run mostrar tudo que esta vermelho.
+      - name: Conferencias de integracao (Auth, e-mail, CORS)
+        if: ${{ !cancelled() }}
+        run: bash scripts/ci/supabase-checks.sh
+      - uses: denoland/setup-deno@22d081ff2d3a40755e97629de92e3bcbfa7cf2ed # v2.0.5
+        if: ${{ !cancelled() }}
+        with:
+          deno-version: v2.x
+      - name: Testes das Edge Functions (deno test)
+        if: ${{ !cancelled() }}
+        run: |
+          files=$(find supabase/functions -name '*.test.ts' -not -path '*/node_modules/*')
+          if [ -z "$files" ]; then echo "Nenhum teste de Edge Function."; exit 0; fi
+          # Os testes atuais sao de logica pura: sem permissoes (nem rede, nem env, nem disco).
+          # deno.json (mapa de importacao, versoes exatas) e deno.lock versionados; se a execucao mudar o lock, reprova.
+          deno test --config supabase/functions/deno.json --lock=supabase/functions/deno.lock $files
+          git diff --exit-code -- supabase/functions/deno.lock
+      - name: Dependencias das Edge Functions fixadas
+        if: ${{ !cancelled() }}
+        run: bash scripts/ci/edge-deps-check.sh
+      - name: Parar o Supabase local
+        if: always()
+        run: supabase stop --no-backup || true
+
+  # Spec 004: E2E com backend REAL (Supabase local + Edge Functions + navegador). Aponta o app para o stack local sem
+  # alterar os ambientes versionados: environment.e2e.ts e gerado aqui, no runner (fora do git).
+  e2e:
+    name: e2e
+    runs-on: ubuntu-24.04 # Playwright 1.60 nao suporta o ubuntu-latest (26.04)
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - uses: supabase/setup-cli@689adcfb80d947100a1eab127289b97d1fb07b13 # v3.2.0
+        with:
+          version: 3.2.0
+      - name: Subir o Supabase local
+        run: supabase start
+      - name: Preparar ambiente do app e Edge Functions (modo teste)
+        run: bash scripts/ci/e2e-prepare.sh
+      - name: Instalar o Chromium do Playwright
+        run: npx playwright install --with-deps chromium
+      - name: E2E com backend real
+        run: npx playwright test -c playwright.e2e-real.config.ts
+      # Gate (T094/T108): senha e codigo de SMS nunca no log das Edge Functions. Valores de teste obvios, sem segredo real.
+      - name: Segredos no log das Edge Functions
+        if: ${{ always() }}
+        run: |
+          if grep -nE '424242|SenhaDeTeste12345|SenhaErrada00000|TesteSenha123!' /tmp/functions-serve.log; then
+            echo "::error::senha ou codigo de SMS apareceu no log das Edge Functions"; exit 1
+          fi
+          echo "log das Edge Functions sem senha nem codigo de SMS"
+      - name: Relatorio do Playwright
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: playwright-report-real
+          path: |
+            playwright-report-real
+            test-results-real
+          retention-days: 7
+      - name: Log das Edge Functions
+        if: ${{ failure() }}
+        run: tail -n 200 /tmp/functions-serve.log || true
+      - name: Parar o Supabase local
+        if: always()
+        run: supabase stop --no-backup || true

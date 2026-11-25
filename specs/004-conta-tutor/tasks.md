@@ -126,7 +126,7 @@ função que não precisam de banco podem rodar localmente.
 
 **Objetivo**: conferir os pré-requisitos e preparar configuração e pastas.
 
-- [ ] T001 [QA] Criar a branch `004-conta-tutor` a partir de `develop` e conferir os
+- [x] T001 [QA] Criar a branch `004-conta-tutor` a partir de `develop` e conferir os
   pré-requisitos da `002`: existem `src/app/shared/shells/flow-shell/flow-shell.ts`,
   `src/app/shared/shells/screen-header/screen-header.ts`, `src/app/features/pets/tutor-app/tutor-app.ts`,
   `src/app/core/theme/theme.service.ts`, `src/app/shared/icons/faro-icons.ts`, as pastas
@@ -136,31 +136,31 @@ função que não precisam de banco podem rodar localmente.
   `src/app/shared/components/faro/`; a rota `app` em `src/app/app.routes.ts` tem `children`.
   **Feito quando**: todos os caminhos existem, `grep -ril primeng src package.json` não devolve
   nada e `npm run build` passa. Se faltar qualquer item: **pare e relate a lista do que falta**.
-- [ ] T002 [P] [BE] Acrescentar a `supabase/.env.local.example` as variáveis `SUPABASE_ANON_KEY`,
+- [x] T002 [P] [BE] Acrescentar a `supabase/.env.local.example` as variáveis `SUPABASE_ANON_KEY`,
   `PHONE_OTP_PEPPER`, `FARO_ENV`, `SMS_DRIVER`, `SMS_STUB_CODE`, `SMS_DAILY_CAP`,
   `ALLOWED_ORIGINS`, `SITE_URL`, com um comentário de uma linha cada e os valores de exemplo de
   `quickstart.md` §1 (nenhum segredo real). **Feito quando**: o arquivo lista as oito e
   `git check-ignore supabase/.env.local` confirma que o arquivo real é ignorado.
-- [ ] T003 [BE] Ajustar `supabase/config.toml` exatamente como em
+- [x] T003 [BE] Ajustar `supabase/config.toml` exatamente como em
   `contracts/auth-config.contract.md` ("valores exigidos"), **sem** as seções de modelo de e-mail
   (T004): remover a linha `enable_confirmations` de `[auth]`; definir `minimum_password_length`,
   `password_requirements`, `[auth.rate_limit]`, `[auth.email]` e `[auth.sms]`. Se a CLI recusar o
   nome de alguma chave, pare e relate. **Feito quando**: `supabase start` sobe sem erro de
   configuração e os dois primeiros `curl` da seção "Conferência" do contrato dão o resultado
   esperado (senha de 7 caracteres recusada; cadastro repetido responde 200 sem sessão).
-- [ ] T004 [P] [BE] Criar `supabase/templates/confirmation.html` e `supabase/templates/recovery.html`
+- [x] T004 [P] [BE] Criar `supabase/templates/confirmation.html` e `supabase/templates/recovery.html`
   conforme `contracts/auth-config.contract.md` ("Modelos de e-mail"), com os links **exatos**, e
   registrar os dois em `supabase/config.toml` (`[auth.email.template.confirmation]` e
   `[auth.email.template.recovery]`). **Feito quando**: depois de `supabase stop && supabase start`,
   um cadastro por `curl` gera no coletor local (`http://localhost:54324`) um e-mail cujo link
   contém `/auth/confirmar-email?token_hash=` e `type=email`; `grep -c "ConfirmationURL\|\.Token }}" supabase/templates/*.html`
   devolve `0` para os dois arquivos.
-- [ ] T005 [P] [FE] Em `eslint.config.js`, no bloco `files: ['src/app/features/public/**/*.ts']`
+- [x] T005 [P] [FE] Em `eslint.config.js`, no bloco `files: ['src/app/features/public/**/*.ts']`
   criado pela `002`, acrescentar ao `group` de `no-restricted-imports` os padrões
   `'**/core/account/**'` e `'**/features/legal/**'`. Não alterar outras regras. **Feito quando**:
   `npm run lint` passa e, criando temporariamente em `src/app/features/public/` um arquivo que
   importa `../../core/account/terms`, o lint falha (apague o arquivo depois).
-- [ ] T006 [P] [FE] Criar `src/app/core/account/terms.ts` com `export const TERMS_VERSION = '2026-11';`
+- [x] T006 [P] [FE] Criar `src/app/core/account/terms.ts` com `export const TERMS_VERSION = '2026-11';`
   e `src/app/features/account/account.routes.ts` com `export const ACCOUNT_ROUTES: Routes = [];`.
   **Feito quando**: `npm run build` passa.
 
@@ -178,7 +178,7 @@ navegação do frontend.
 
 ### Banco
 
-- [ ] T007 [BE] Criar `supabase/migrations/0008_enum_eventos_conta.sql` contendo **apenas** 12
+- [x] T007 [BE] Criar `supabase/migrations/0008_enum_eventos_conta.sql` contendo **apenas** 12
   comandos `ALTER TYPE public.evento_auth_enum ADD VALUE IF NOT EXISTS '<valor>';` para:
   `conta_criada`, `email_confirmado`, `termos_aceitos`, `celular_codigo_enviado`,
   `celular_codigo_invalido`, `celular_bloqueado`, `celular_confirmado`,
@@ -186,7 +186,7 @@ navegação do frontend.
   `conta_excluida`. Nenhum outro comando no arquivo. **Feito quando**: `supabase db reset` passa e
   `select count(*) from pg_enum e join pg_type t on t.oid = e.enumtypid where t.typname = 'evento_auth_enum';`
   devolve `16`.
-- [ ] T008 [BE] Criar `supabase/migrations/0009_hardening_funcoes_auth.sql`:
+- [x] T008 [BE] Criar `supabase/migrations/0009_hardening_funcoes_auth.sql`:
   `REVOKE ALL ON FUNCTION … FROM PUBLIC, anon, authenticated` + `GRANT EXECUTE … TO service_role`
   para `public.log_auth_event(public.evento_auth_enum, uuid, text, text, jsonb)` e
   `public.record_login_attempt(text, text, boolean)`; e, para `public.is_admin()` e
@@ -194,29 +194,29 @@ navegação do frontend.
   Motivo em `research.md` R13. **Feito quando**: `supabase db reset` passa e
   `select has_function_privilege('anon','public.log_auth_event(public.evento_auth_enum,uuid,text,text,jsonb)','EXECUTE');`
   devolve `false`.
-- [ ] T009 [P] [QA] Criar `supabase/tests/funcoes_auth_grants.test.sql` com os quatro testes do
+- [x] T009 [P] [QA] Criar `supabase/tests/funcoes_auth_grants.test.sql` com os quatro testes do
   bloco "`funcoes_auth_grants.test.sql`" de `contracts/account.rpc.md`. **Feito quando**:
   `supabase test db` passa, incluindo os três arquivos da `001` sem edição.
-- [ ] T010 [BE] Criar `supabase/migrations/0010_perfis_conta.sql` conforme `data-model.md` §1:
+- [x] T010 [BE] Criar `supabase/migrations/0010_perfis_conta.sql` conforme `data-model.md` §1:
   5 colunas novas, os 2 `CHECK` de formato, as 3 restrições nomeadas, o bloco de privilégios
   (copiar os 4 comandos) e o gatilho `perfis_set_updated_at`. Não alterar as políticas da `001`.
   **Feito quando**: `supabase db reset` passa;
   `select has_column_privilege('authenticated','public.perfis','celular','UPDATE');` devolve
   `false` e o mesmo para `nome` devolve `true`.
-- [ ] T011 [P] [QA] Criar `supabase/tests/rls_perfis_conta.test.sql` cobrindo **todas** as linhas
+- [x] T011 [P] [QA] Criar `supabase/tests/rls_perfis_conta.test.sql` cobrindo **todas** as linhas
   de `perfis` da matriz de `contracts/rls-expectations.md` (cada "nega" de coluna espera o erro
   `42501`), incluindo o teste de segurança nº 3 ("não se autoconfirma") e o nº 4 ("não escala
   papel"). **Feito quando**: `supabase test db` passa.
-- [ ] T012 [BE] Criar `supabase/migrations/0011_rate_limit_events.sql`: tabela
+- [x] T012 [BE] Criar `supabase/migrations/0011_rate_limit_events.sql`: tabela
   `public.rate_limit_events` (`data-model.md` §3) com `ENABLE ROW LEVEL SECURITY`, sem política,
   `REVOKE ALL … FROM anon, authenticated`, índice `(bucket, key, at DESC)`, e a função
   `public.rate_limit_check(jsonb, boolean)` exatamente como em `contracts/rate-limit.rpc.md`
   (passos 1 a 6). **Feito quando**: `supabase db reset` passa e, como `service_role`,
   `select public.rate_limit_check('[{"bucket":"t","key":"k","max":1,"window":60}]'::jsonb, true);`
   devolve `allowed = true` na primeira chamada e `allowed = false` na segunda.
-- [ ] T013 [P] [QA] Criar `supabase/tests/rate_limit_events.test.sql` com os sete testes de
+- [x] T013 [P] [QA] Criar `supabase/tests/rate_limit_events.test.sql` com os sete testes de
   `contracts/rate-limit.rpc.md`. **Feito quando**: `supabase test db` passa.
-- [ ] T014 [BE] Criar `supabase/migrations/0012_funcoes_conta.sql` com `CREATE OR REPLACE FUNCTION
+- [x] T014 [BE] Criar `supabase/migrations/0012_funcoes_conta.sql` com `CREATE OR REPLACE FUNCTION
   public.handle_new_user()` conforme `contracts/account.rpc.md` (tabela de metadados, regra do
   provedor, `papel = 'tutor'` fixo, auditoria dentro de bloco `EXCEPTION`). O gatilho
   `on_auth_user_created` da `001` continua o mesmo. Em seguida, ajustar `supabase/seed.sql` para
@@ -226,34 +226,34 @@ navegação do frontend.
   Não mexer no tutor B nem no admin. **Feito quando**: `supabase db reset` passa;
   `select count(*) from auth_audit_log where evento = 'conta_criada';` devolve `3`; o tutor A tem
   `termos_versao = '2026-11'` e `celular` preenchido; o tutor B tem os dois nulos.
-- [ ] T015 [BE] No mesmo arquivo `0012_funcoes_conta.sql`, acrescentar `accept_terms(text)`,
+- [x] T015 [BE] No mesmo arquivo `0012_funcoes_conta.sql`, acrescentar `accept_terms(text)`,
   `log_logout()`, `my_account()` e `account_auth_facts(uuid)` conforme `contracts/account.rpc.md`,
   com os `REVOKE`/`GRANT` de `data-model.md` §5. **Feito quando**: `supabase db reset` passa e
   `select has_function_privilege('authenticated','public.account_auth_facts(uuid)','EXECUTE');`
   devolve `false`.
-- [ ] T016 [P] [QA] Criar `supabase/tests/funcoes_conta.test.sql` com os nove testes do bloco
+- [x] T016 [P] [QA] Criar `supabase/tests/funcoes_conta.test.sql` com os nove testes do bloco
   "`funcoes_conta.test.sql`" de `contracts/account.rpc.md`. **Feito quando**: `supabase test db` passa.
-- [ ] T017 [BE] Criar `supabase/migrations/0013_auditoria_auth_users.sql`: função
+- [x] T017 [BE] Criar `supabase/migrations/0013_auditoria_auth_users.sql`: função
   `public.audit_auth_user_changes()` e gatilho `on_auth_user_updated`
   (`AFTER UPDATE OF email_confirmed_at, encrypted_password, recovery_sent_at ON auth.users`)
   conforme `contracts/account.rpc.md`, com o corpo dentro de `EXCEPTION WHEN OTHERS` e
   `RETURN NEW` sempre. **Feito quando**: `supabase db reset` passa e um login pelo app (ou pelo
   `curl` de `quickstart.md` §6) continua funcionando.
-- [ ] T018 [P] [QA] Criar `supabase/tests/auditoria_auth_users.test.sql` com os cinco testes do
+- [x] T018 [P] [QA] Criar `supabase/tests/auditoria_auth_users.test.sql` com os cinco testes do
   bloco correspondente de `contracts/account.rpc.md`. **Feito quando**: `supabase test db` passa.
 
 ### Edge Functions: módulos compartilhados
 
-- [ ] T019 [P] [BE] Criar `supabase/functions/_shared/http.ts` e `supabase/functions/_shared/env.ts`
+- [x] T019 [P] [BE] Criar `supabase/functions/_shared/http.ts` e `supabase/functions/_shared/env.ts`
   conforme `contracts/shared-edge.contract.md`, e `supabase/functions/_shared/env.test.ts`
   cobrindo cada regra de `loadEnv` (incluindo `HASH_SALT` curto, pepper curto e `FARO_ENV` ausente
   ⇒ `production`). **Feito quando**: `deno test supabase/functions/_shared/env.test.ts` passa.
-- [ ] T020 [P] [BE] Criar `supabase/functions/_shared/hash.ts`, `ip.ts`, `clients.ts` e `audit.ts`
+- [x] T020 [P] [BE] Criar `supabase/functions/_shared/hash.ts`, `ip.ts`, `clients.ts` e `audit.ts`
   conforme `contracts/shared-edge.contract.md`, e `supabase/functions/_shared/hash.test.ts`
   (vetor HMAC-SHA256 da RFC 4231, caso 2: chave `Jefe`, dado `what do ya want for nothing?`,
   resultado `5bdcc146bf60754e6a042426089575c75a003f089d2739839dec58b964ec3843`; e as duas funções
   de entrada de hash). **Feito quando**: `deno test supabase/functions/_shared/hash.test.ts` passa.
-- [ ] T021 [BE] Em `supabase/functions/login-guard/index.ts`, tratar `OPTIONS` e acrescentar os
+- [x] T021 [BE] Em `supabase/functions/login-guard/index.ts`, tratar `OPTIONS` e acrescentar os
   cabeçalhos CORS em **todas** as respostas usando `handleOptions` e `corsHeaders` de
   `_shared/http.ts`. Não mudar a lógica de decisão nem os corpos das respostas. **Feito quando**:
   o `curl -X OPTIONS` de `contracts/shared-edge.contract.md` devolve 204 (ou 200) com
@@ -262,36 +262,36 @@ navegação do frontend.
 
 ### Frontend: núcleo
 
-- [ ] T022 [P] [FE] Criar `src/app/core/auth/return-url.ts` (`sanitizeReturnUrl` e
+- [x] T022 [P] [FE] Criar `src/app/core/auth/return-url.ts` (`sanitizeReturnUrl` e
   `ReturnUrlService`) e `return-url.spec.ts` com a tabela de casos de
   `contracts/frontend-services.contract.md` §3. **Feito quando**: `npm test -- --watch=false`
   passa com os 13 casos da tabela.
-- [ ] T023 [P] [FE] Criar `src/app/core/auth/returning-visitor.ts` (`markReturning`, `isReturning`,
+- [x] T023 [P] [FE] Criar `src/app/core/auth/returning-visitor.ts` (`markReturning`, `isReturning`,
   com `isPlatformBrowser` e `try/catch`) e `returning-visitor.spec.ts`. **Feito quando**: o teste
   cobre "sem marca ⇒ false", "depois de marcar ⇒ true" e "storage lançando erro ⇒ false".
-- [ ] T024 [P] [FE] Criar `src/app/core/account/phone.ts` (`normalizeBrPhone`, `formatBrPhone`,
+- [x] T024 [P] [FE] Criar `src/app/core/account/phone.ts` (`normalizeBrPhone`, `formatBrPhone`,
   `maskBrPhoneInput`) e `phone.spec.ts` com a tabela de casos de
   `contracts/shared-edge.contract.md` (seção `phone.ts`). **Feito quando**: os 9 casos da tabela
   passam e `formatBrPhone('+5511987654421') === '(11) 98765-4421'`.
-- [ ] T025 [FE] Criar `src/app/core/account/account.store.ts` e `account.service.ts` (`load`,
+- [x] T025 [FE] Criar `src/app/core/account/account.store.ts` e `account.service.ts` (`load`,
   `ensureLoaded`, `updateName`, `acceptTerms`, `logout`) conforme
   `contracts/frontend-services.contract.md` §3, e `account.service.spec.ts`. `load` chama
   `rpc('my_account')` e converte os nomes para a interface `Account`. **Feito quando**: o teste
   cobre `load` (sucesso e falha), `updateName` com 1, 2, 80 e 81 caracteres, `acceptTerms` enviando
   `TERMS_VERSION` e `logout` chamando `log_logout` **antes** de `AuthService.signOut()`.
-- [ ] T026 [FE] Criar `src/app/core/auth/post-auth-navigation.ts` (`nextStep` e
+- [x] T026 [FE] Criar `src/app/core/auth/post-auth-navigation.ts` (`nextStep` e
   `PostAuthNavigator`) e `post-auth-navigation.spec.ts` conforme
   `contracts/frontend-services.contract.md` §3. **Feito quando**: as 7 linhas da tabela de
   `nextStep` passam; `go()` com serviços falsos limpa o destino só no passo final, ignora
   `return_to` com mais de 7 dias, ignora `return_to` que `sanitizeReturnUrl` reprova e chama
   `markReturning()`.
-- [ ] T027 [FE] Criar `src/app/core/auth/terms.guard.ts` + `terms.guard.spec.ts`; alterar
+- [x] T027 [FE] Criar `src/app/core/auth/terms.guard.ts` + `terms.guard.spec.ts`; alterar
   `src/app/core/auth/auth.guard.ts` para a regra "boas-vindas x login" (§2 do contrato) e
   acrescentar os dois casos a `src/app/core/auth/guards.spec.ts`. **Feito quando**: os testes
   cobrem: tutor sem aceite ⇒ `/auth/termos?returnUrl=…`; admin ⇒ `true`; falha ao carregar ⇒
   `true`; sem sessão e sem marca ⇒ `/auth?returnUrl=…`; sem sessão e com marca ⇒
   `/auth/login?returnUrl=…&reason=session_expired`.
-- [ ] T028 [FE] Reestruturar as rotas em `src/app/app.routes.ts` conforme
+- [x] T028 [FE] Reestruturar as rotas em `src/app/app.routes.ts` conforme
   `contracts/frontend-services.contract.md` §1: tirar `anonGuard` do pai `auth` e aplicá-lo só em
   `login`; `callback` sem guard; acrescentar `termsGuard` ao `canMatch` de `app`; registrar
   `auth/termos` (`authGuard`), `auth/celular` e `auth/confirmar-celular` (`authGuard`,
@@ -301,7 +301,7 @@ navegação do frontend.
   Não reordenar nem editar rotas de outras specs; as rotas da tag continuam por último.
   **Feito quando**: `npm run build` passa; com sessão do tutor B (sem aceite no seed), abrir `/app`
   redireciona para `/auth/termos`; sem sessão, `/auth/login` abre normalmente.
-- [ ] T029 [FE] Em `src/app/features/auth/login/login.ts` e
+- [x] T029 [FE] Em `src/app/features/auth/login/login.ts` e
   `src/app/features/auth/callback/oauth-callback.ts`, trocar a navegação pós-sucesso
   (`roleRedirect` + `router.navigate`) por `PostAuthNavigator.go()`; na `init` da tela de login,
   chamar `ReturnUrlService.capture(query.returnUrl)`. Em `src/app/core/auth/auth.service.ts`,
@@ -311,7 +311,7 @@ navegação do frontend.
   de navegação); entrando com o admin do seed chega-se a `/admin`; com `tutor.a@faro.test` (aceite
   e celular no seed), a `/app`; com `tutor.b@faro.test` (sem aceite), a `/auth/termos`. O E2E de
   login da `001` (`e2e/login.spec.ts`, se existir) continua verde usando o tutor A.
-- [ ] T030 [QA] Rodar a verificação de fim de fase (regra 12). **Feito quando**: os cinco comandos
+- [x] T030 [QA] Rodar a verificação de fim de fase (regra 12). **Feito quando**: os cinco comandos
   passam e `git status` não mostra arquivo alterado em `specs/002-ui-zardui/`,
   `specs/003-tag-qr/`, `src/app/shared/` nem `src/app/features/public/`.
 
@@ -327,27 +327,27 @@ link, com resposta idêntica para e-mail já cadastrado.
 **Independent Test**: criar conta com e-mail novo, abrir o link no coletor local, confirmar, e
 verificar sessão de tutor com aceite registrado; antes de confirmar, o login é recusado.
 
-- [ ] T031 [P] [US1] [FE] Criar `src/app/core/auth/registration.service.ts` (`signUp`,
+- [x] T031 [P] [US1] [FE] Criar `src/app/core/auth/registration.service.ts` (`signUp`,
   `resendConfirmation`, `confirmEmail`) e `registration.service.spec.ts` conforme
   `contracts/frontend-services.contract.md` §3. **Feito quando**: o teste cobre: entrada inválida
   não chama o Supabase; os metadados enviados são `name`, `phone` em E.164, `terms_version`,
   `return_to` e `return_to_at`; resposta de "usuário já existe" ⇒ `{ ok: true }`; o tempo mínimo de
   1.200 ms (relógio falso); `confirmEmail` usa `type: 'email'`; a senha não é gravada em nenhum
   store.
-- [ ] T032 [P] [US1] [FE] Criar as páginas `src/app/features/legal/terms/terms.ts` e
+- [x] T032 [P] [US1] [FE] Criar as páginas `src/app/features/legal/terms/terms.ts` e
   `src/app/features/legal/privacy-policy/privacy-policy.ts` (título, aviso "Rascunho. Texto final
   em preparação." e um `// TODO(LEGAL_TEXTS)`), registrar `/legal/termos` e `/legal/privacidade` em
   `src/app/app.routes.ts` (antes das rotas da tag) e em `src/app/app.routes.server.ts` como
   `RenderMode.Prerender`. Sempre claras, coluna de leitura de 680 px. **Feito quando**:
   `npm run build` passa e gera os dois HTML pré-renderizados; as duas rotas abrem sem sessão.
-- [ ] T033 [US1] [FE] Criar a tela de boas-vindas em `src/app/features/auth/welcome/`
+- [x] T033 [US1] [FE] Criar a tela de boas-vindas em `src/app/features/auth/welcome/`
   (`welcome.ts`, `welcome.html`, `welcome.spec.ts`) e trocar a rota `/auth` (índice) para ela, com
   `anonGuard`. Referência: `design/telas-v2/V2-boas-vindas.dc.html`, `-tablet`, `-desktop`; textos,
   medidas e regra da foto em `contracts/frontend-services.contract.md` §4 ("Boas-vindas").
   **Feito quando**: o teste confere `welcome-create-account` e `welcome-login`, a preservação do
   `returnUrl` nos dois links e o aviso `welcome-deleted-notice` com `?conta=excluida`; a tela não
   tem rolagem horizontal em 320, 390, 768 e 1440 px.
-- [ ] T034 [US1] [FE] Criar a tela de cadastro em `src/app/features/auth/signup/` (`signup.ts`,
+- [x] T034 [US1] [FE] Criar a tela de cadastro em `src/app/features/auth/signup/` (`signup.ts`,
   `signup.html`, `signup.spec.ts`) e registrar `/auth/criar-conta` com `anonGuard`. Referência:
   `design/telas-v2/V2-criar-conta.dc.html`, `-tablet`, `-desktop`; casca `app-flow-shell`; campos,
   atributos e textos em `contracts/frontend-services.contract.md` §4 ("Criar conta"). Reactive
@@ -356,7 +356,7 @@ verificar sessão de tutor com aceite registrado; antes de confirmar, o login é
   **estado do roteador**. **Feito quando**: o teste cobre cada validação (nome 1 e 81 caracteres,
   e-mail inválido, celular fixo, senha de 7, aceite desmarcado), os `data-testid` `signup-*` (menos
   `signup-google`) e que o e-mail não aparece na URL depois do envio.
-- [ ] T035 [US1] [FE] Criar a tela `src/app/features/auth/confirm-email/` (`confirm-email.ts`,
+- [x] T035 [US1] [FE] Criar a tela `src/app/features/auth/confirm-email/` (`confirm-email.ts`,
   `confirm-email.html`, `confirm-email.spec.ts`), registrar `/auth/confirmar-email` **sem guard**,
   e implementar o estado **de espera** (URL sem `token_hash`): e-mail do estado do roteador,
   reenvio com contagem de 60 s, campo de e-mail quando não há estado, mensagem uniforme depois do
@@ -364,29 +364,29 @@ verificar sessão de tutor com aceite registrado; antes de confirmar, o login é
   `PostAuthNavigator.go()` se a sessão aparecer. Tela: `V2-confirmar-email*.dc.html`
   (regra 14). **Feito quando**: o teste cobre a contagem (relógio falso), o reenvio chamando
   `resendConfirmation`, a mensagem `confirm-email-resent-notice` e o modo sem estado.
-- [ ] T036 [US1] [FE] No mesmo componente, implementar o estado **do link** (URL com
+- [x] T036 [US1] [FE] No mesmo componente, implementar o estado **do link** (URL com
   `token_hash` e `type=email`): **nenhuma** chamada ao carregar; botão `confirm-email-confirm` ⇒
   `confirmEmail(tokenHash)`; sucesso ⇒ `PostAuthNavigator.go()`; `invalid_link` ⇒ estado
   `confirm-email-invalid` com "Pedir novo link" e "Entrar". (A ligação com o envio do SMS entra na
   T059.) **Feito quando**: o teste prova que `verifyOtp` **não** é chamado na criação do
   componente, que é chamado uma vez no clique, e cobre os dois resultados.
-- [ ] T037 [US1] [FE] Em `src/app/features/auth/login/` (`login.ts` e `login.html`): o link "Criar
+- [x] T037 [US1] [FE] Em `src/app/features/auth/login/` (`login.ts` e `login.html`): o link "Criar
   conta" passa a navegar para `/auth/criar-conta` preservando `returnUrl` e perde o `aria-label`
   com "(em breve)"; entra o botão "Voltar" (`z-button zSize="icon"`, ícone `back`,
   `aria-label="Voltar"`) para `/auth`, no espaço de 56 px reservado pela `002`
   (`design/telas-v2/V2-entrar.dc.html`). Os `data-testid` existentes não mudam. **Feito quando**:
   `login.spec.ts` continua verde, com um teste novo no fim conferindo o destino do link
   `login-signup-link`.
-- [ ] T038 [P] [US1] [QA] Criar `e2e/support/mailbox.ts` com `waitForLink(email, contains)`
+- [x] T038 [P] [US1] [QA] Criar `e2e/support/mailbox.ts` com `waitForLink(email, contains)`
   conforme `quickstart.md` §7 (Mailpit e, se não houver, Inbucket; espera de até 15 s).
   **Feito quando**: um teste de fumaça em `e2e/support/mailbox.spec.ts` cria um usuário por
   `POST /auth/v1/signup` e obtém um link contendo `token_hash=`.
-- [ ] T039 [US1] [QA] Criar `e2e/signup-confirm-phone.spec.ts` com o primeiro teste: boas-vindas →
+- [x] T039 [US1] [QA] Criar `e2e/signup-confirm-phone.spec.ts` com o primeiro teste: boas-vindas →
   criar conta → tela de espera → link do coletor → "Confirmar meu e-mail" → sessão ativa (a URL
   final é `/auth/celular` ou `/auth/confirmar-celular`); e um segundo teste: antes de confirmar,
   entrar com as credenciais mostra `login-unconfirmed-notice`. **Feito quando**: os dois passam
   em Chromium com `supabase start` e `supabase functions serve` rodando.
-- [ ] T040 [US1] [QA] Criar `e2e/security/account-enumeration.spec.ts` (parte de cadastro):
+- [x] T040 [US1] [QA] Criar `e2e/security/account-enumeration.spec.ts` (parte de cadastro):
   chamando `POST /auth/v1/signup` com um e-mail novo e com `tutor.a@faro.test`, as duas respostas
   têm o mesmo status HTTP e nenhuma tem erro ou sessão; pela tela, os dois casos terminam na mesma
   tela de espera com o mesmo texto; o nome do perfil de `tutor.a` não muda. **Feito quando**: o
@@ -406,83 +406,83 @@ e ver `phone_is_confirmed` verdadeiro; repetir com código errado, vencido, reen
 
 ### Banco
 
-- [ ] T041 [US2] [BE] Criar `supabase/migrations/0014_phone_verifications.sql`: tabela
+- [x] T041 [US2] [BE] Criar `supabase/migrations/0014_phone_verifications.sql`: tabela
   `public.phone_verifications` com **exatamente** as 10 colunas de `data-model.md` §2, os dois
   índices (o único parcial e o de `(user_id, created_at DESC)`), `ENABLE ROW LEVEL SECURITY`, sem
   política, `REVOKE ALL … FROM anon, authenticated`. **Feito quando**: `supabase db reset` passa e
   `select count(*) from information_schema.columns where table_name = 'phone_verifications';`
   devolve `10`.
-- [ ] T042 [US2] [BE] Criar `supabase/migrations/0015_funcoes_celular.sql` com
+- [x] T042 [US2] [BE] Criar `supabase/migrations/0015_funcoes_celular.sql` com
   `phone_is_confirmed(uuid)` (corpo de `data-model.md` §5), `phone_verification_status()`,
   `phone_verification_begin(…)`, `phone_verification_send_failed(uuid)` e
   `phone_verification_active(uuid)` conforme `contracts/phone-verification.rpc.md`, com os
   `REVOKE`/`GRANT` de `data-model.md` §5. **Feito quando**: `supabase db reset` passa e
   `select has_function_privilege('authenticated','public.phone_verification_begin(uuid,text,text,text,integer,integer)','EXECUTE');`
   devolve `false`.
-- [ ] T043 [US2] [BE] No mesmo arquivo `0015_funcoes_celular.sql`, acrescentar
+- [x] T043 [US2] [BE] No mesmo arquivo `0015_funcoes_celular.sql`, acrescentar
   `phone_verification_confirm(uuid, uuid, text, text, text)` seguindo a tabela de 6 linhas de
   `contracts/phone-verification.rpc.md`, com `SELECT … FOR UPDATE` e a auditoria na mesma
   transação. **Feito quando**: `supabase db reset` passa.
-- [ ] T044 [P] [US2] [QA] Criar `supabase/tests/phone_verifications.test.sql` com os testes de
+- [x] T044 [P] [US2] [QA] Criar `supabase/tests/phone_verifications.test.sql` com os testes de
   **privilégios**, de `begin`, de `phone_is_confirmed` (5 casos) e de `phone_verification_status`
   de `contracts/phone-verification.rpc.md`, mais o guardião de esquema do item 5 de
   `contracts/rls-expectations.md` (conjunto exato de colunas). **Feito quando**:
   `supabase test db` passa.
-- [ ] T045 [US2] [QA] No mesmo arquivo, acrescentar os testes de `confirm`: acerto; 4 erros + 5º
+- [x] T045 [US2] [QA] No mesmo arquivo, acrescentar os testes de `confirm`: acerto; 4 erros + 5º
   bloqueia + 6º certo ⇒ `no_active`; vencido; verificação de outra conta; **troca** (o número
   antigo permanece até o acerto); nenhum `detalhe` com dígitos do telefone. **Feito quando**:
   `supabase test db` passa.
 
 ### Edge Functions
 
-- [ ] T046 [P] [US2] [BE] Criar `supabase/functions/_shared/phone.ts` e `phone.test.ts` com a
+- [x] T046 [P] [US2] [BE] Criar `supabase/functions/_shared/phone.ts` e `phone.test.ts` com a
   tabela de casos de `contracts/shared-edge.contract.md`. **Feito quando**:
   `deno test supabase/functions/_shared/phone.test.ts` passa com os 9 casos.
-- [ ] T047 [P] [US2] [BE] Criar `supabase/functions/_shared/otp.ts` (`generateCode`,
+- [x] T047 [P] [US2] [BE] Criar `supabase/functions/_shared/otp.ts` (`generateCode`,
   `resolveCode`) e `otp.test.ts`. **Feito quando**: o teste gera 10.000 códigos, todos `^[0-9]{6}$`,
   e prova que `resolveCode` só devolve o código fixo com `smsDriver = 'stub'` **e** `faroEnv` em
   `local`/`test`.
-- [ ] T048 [P] [US2] [BE] Criar `supabase/functions/_shared/sms/sender.ts` (`SmsSender`,
+- [x] T048 [P] [US2] [BE] Criar `supabase/functions/_shared/sms/sender.ts` (`SmsSender`,
   `resolveSender`, `buildOtpMessage`, drivers `log` e `stub`, e um comentário
   `// TODO(SMS_PROVIDER)` onde entra o driver real) e `sender.test.ts`. **Feito quando**: o teste
   cobre as quatro linhas da tabela de `resolveSender` e o texto **exato** de `buildOtpMessage`.
-- [ ] T049 [US2] [BE] Criar `supabase/functions/_shared/reauth.ts` (`requireRecentAuth`) conforme
+- [x] T049 [US2] [BE] Criar `supabase/functions/_shared/reauth.ts` (`requireRecentAuth`) conforme
   `contracts/shared-edge.contract.md`, recebendo os clientes por parâmetro para poder ser testado,
   e `reauth.test.ts` com clientes falsos. **Feito quando**: o teste cobre: limite atingido ⇒
   `rate_limited`; erro do limitador ⇒ `rate_limited`; conta com senha sem `password` ⇒
   `reauth_required`; senha errada ⇒ registra a falha, audita `reautenticacao_falha` e devolve
   `invalid_password`; senha certa ⇒ `ok` e revoga a sessão criada; conta sem senha com login há 5
   min ⇒ `ok`, há 11 min ⇒ `reauth_required`.
-- [ ] T050 [US2] [BE] Criar `supabase/functions/phone-verify-start/logic.ts` (funções puras:
+- [x] T050 [US2] [BE] Criar `supabase/functions/phone-verify-start/logic.ts` (funções puras:
   escolher o número alvo, decidir se é troca, mapear `denied_bucket` para
   `cooldown`/`rate_limited`/`sms_unavailable`, montar os 6 limites) e `logic.test.ts`.
   **Feito quando**: `deno test supabase/functions/phone-verify-start/` passa, cobrindo os 5 casos
   de número alvo e os 3 mapeamentos.
-- [ ] T051 [US2] [BE] Criar `supabase/functions/phone-verify-start/index.ts` seguindo os **16
+- [x] T051 [US2] [BE] Criar `supabase/functions/phone-verify-start/index.ts` seguindo os **16
   passos, na ordem**, de `contracts/phone-verify-start.edge.md`. **Feito quando**: com
   `supabase functions serve --env-file ./supabase/.env.local` e `SMS_DRIVER=log`, os quatro
   primeiros comandos `fn phone-verify-start …` de `quickstart.md` §6 devolvem as respostas
   indicadas e o código aparece **só** na linha `[sms:log]` do terminal.
-- [ ] T052 [US2] [BE] Criar `supabase/functions/phone-verify-confirm/logic.ts` (validação de
+- [x] T052 [US2] [BE] Criar `supabase/functions/phone-verify-confirm/logic.ts` (validação de
   formato; mapeamento de `status`), `logic.test.ts` e `index.ts` seguindo os 8 passos de
   `contracts/phone-verify-confirm.edge.md`. **Feito quando**: `deno test supabase/functions/phone-verify-confirm/`
   passa e a sequência de `quickstart.md` §6 dá `invalid_format`, 4 × `invalid_code`, `locked`,
   `no_active`.
-- [ ] T053 [US2] [QA] Executar e registrar a tabela "Falha fechada" e o bloco de CORS de
+- [x] T053 [US2] [QA] Executar e registrar a tabela "Falha fechada" e o bloco de CORS de
   `quickstart.md` §6 para as duas funções. **Feito quando**: as cinco linhas da tabela dão o
   resultado esperado e os `OPTIONS` devolvem 204/200; qualquer divergência é relatada, não
   contornada.
 
 ### Frontend
 
-- [ ] T054 [P] [US2] [FE] Criar `src/app/core/account/phone-verification.service.ts` (`status`,
+- [x] T054 [P] [US2] [FE] Criar `src/app/core/account/phone-verification.service.ts` (`status`,
   `start`, `confirm`) e o `.spec.ts` conforme `contracts/frontend-services.contract.md` §3.
   **Feito quando**: o teste mapeia cada código de erro dos dois contratos de Edge, trata resposta
   não-200 como `network` e recarrega a conta depois de `confirm` com sucesso.
-- [ ] T055 [P] [US2] [FE] Criar `src/app/core/account/phone-confirmed.guard.ts` e o `.spec.ts`
+- [x] T055 [P] [US2] [FE] Criar `src/app/core/account/phone-confirmed.guard.ts` e o `.spec.ts`
   (§2 do contrato). **Feito quando**: o teste cobre confirmado ⇒ `true`, admin ⇒ `true`, não
   confirmado ⇒ `/auth/celular?returnUrl=<rota>`.
-- [ ] T056 [US2] [FE] Criar a tela `src/app/features/auth/phone-entry/` (`phone-entry.ts`,
+- [x] T056 [US2] [FE] Criar a tela `src/app/features/auth/phone-entry/` (`phone-entry.ts`,
   `phone-entry.html`, `phone-entry.spec.ts`) e trocar o `ShellFallback` da rota `/auth/celular`
   por ela. Só o modo **primeira confirmação** (o modo troca é a T086): campo pré-preenchido com o
   número pendente, "Enviar código por SMS", "Agora não" ⇒ `PostAuthNavigator.go({ skipPhone: true })`,
@@ -490,7 +490,7 @@ e ver `phone_is_confirmed` verdadeiro; repetir com código errado, vencido, reen
   (regra 14). **Feito quando**: o teste cobre o pré-preenchimento, o envio com sucesso (navega
   para `/auth/confirmar-celular` preservando `returnUrl`), `invalid_phone`, `rate_limited` e o
   "Agora não".
-- [ ] T057 [US2] [FE] Criar a tela `src/app/features/auth/confirm-phone/` (`confirm-phone.ts`,
+- [x] T057 [US2] [FE] Criar a tela `src/app/features/auth/confirm-phone/` (`confirm-phone.ts`,
   `confirm-phone.html`, `confirm-phone.spec.ts`) e trocar o `ShellFallback` da rota
   `/auth/confirmar-celular`. Referência: `design/telas-v2/V2-confirmar-celular.dc.html`, `-tablet`,
   `-desktop`. Nesta tarefa: `status()` no `init` (sem número pendente ⇒ `/auth/celular`), título e
@@ -499,7 +499,7 @@ e ver `phone_is_confirmed` verdadeiro; repetir com código errado, vencido, reen
   sucesso ⇒ `PostAuthNavigator.go()`, "Número errado? Corrigir" ⇒ `/auth/celular`.
   **Feito quando**: o teste cobre o redirecionamento sem pendente, colar `482913` preenchendo as
   seis células, o botão habilitando, o sucesso e os `data-testid` `confirm-phone-*`.
-- [ ] T058 [US2] [FE] No mesmo componente, implementar a contagem e os estados da tabela de
+- [x] T058 [US2] [FE] No mesmo componente, implementar a contagem e os estados da tabela de
   `contracts/frontend-services.contract.md` §4 ("Confirmar celular"): "Reenviar em m:ss" a partir
   de `resendAvailableAt`, botão "Reenviar código", `invalid_code` (limpa e foca a primeira
   célula), `locked`, `expired`/`no_active`, `cooldown`, `rate_limited`, `sms_unavailable`/
@@ -507,12 +507,12 @@ e ver `phone_is_confirmed` verdadeiro; repetir com código errado, vencido, reen
   confirmar" **só** nos estados indicados. Erros em região `aria-live="polite"`.
   **Feito quando**: o teste cobre cada linha da tabela de estados (relógio falso para a contagem)
   e prova que `confirm-phone-continue-without` não existe no estado normal.
-- [ ] T059 [US2] [FE] Em `src/app/features/auth/confirm-email/confirm-email.ts`, depois de
+- [x] T059 [US2] [FE] Em `src/app/features/auth/confirm-email/confirm-email.ts`, depois de
   `confirmEmail` com sucesso: se a conta tem `celularPendente`, chamar
   `PhoneVerificationService.start()`; `ok` ⇒ `/auth/confirmar-celular`; qualquer falha ⇒
   `/auth/celular`; sem pendente ⇒ `PostAuthNavigator.go()`. Sempre preservando `returnUrl`.
   **Feito quando**: `confirm-email.spec.ts` cobre os três ramos.
-- [ ] T060 [US2] [QA] Em `e2e/signup-confirm-phone.spec.ts`, acrescentar: (a) caminho completo com
+- [x] T060 [US2] [QA] Em `e2e/signup-confirm-phone.spec.ts`, acrescentar: (a) caminho completo com
   `SMS_DRIVER=stub`, `FARO_ENV=test`, `SMS_STUB_CODE=424242`: cadastro → link → confirmar e-mail →
   digitar `424242` → `/app`, e em seguida a RPC `phone_is_confirmed` devolve `true`; (b) código
   errado mostra "restam 4"; (c) cadastro iniciado em `/auth/criar-conta?returnUrl=/app/conta`
@@ -530,25 +530,25 @@ e ver `phone_is_confirmed` verdadeiro; repetir com código errado, vencido, reen
 **Independent Test**: uma conta sem aceite (criada pelo Google ou o tutor do seed) só chega ao app
 depois de aceitar, e é convidada a confirmar o celular, podendo adiar.
 
-- [ ] T061 [US3] [FE] Em `src/app/features/auth/signup/` (`signup.ts`, `signup.html`,
+- [x] T061 [US3] [FE] Em `src/app/features/auth/signup/` (`signup.ts`, `signup.html`,
   `signup.spec.ts`): acrescentar a linha "ou" e o botão de contorno "Continuar com o Google" com
   `app-google-glyph` (ícone oficial), `data-testid="signup-google"`, que chama
   `AuthService.signInWithGoogle()`. O `returnUrl` já está guardado pelo `ReturnUrlService`.
   **Feito quando**: o teste confere o botão, o componente `app-google-glyph` dentro dele e a
   chamada ao serviço.
-- [ ] T062 [US3] [FE] Criar a tela `src/app/features/auth/accept-terms/` (`accept-terms.ts`,
+- [x] T062 [US3] [FE] Criar a tela `src/app/features/auth/accept-terms/` (`accept-terms.ts`,
   `accept-terms.html`, `accept-terms.spec.ts`) e trocar o `ShellFallback` da rota `/auth/termos`.
   Caixa de aceite com os links para `/legal/termos` e `/legal/privacidade`; "Aceitar e continuar"
   desabilitado sem a caixa ⇒ `AccountService.acceptTerms()` ⇒ `PostAuthNavigator.go()`; botão de
   texto "Sair" ⇒ `AccountService.logout()`. Tela de referência na tabela do contrato (regra 14). **Feito quando**: o
   teste cobre o botão desabilitado, o aceite com navegação, a falha de rede (mensagem e botão
   reabilitado) e o "Sair".
-- [ ] T063 [US3] [FE] Conferir `src/app/features/auth/callback/oauth-callback.ts`: sucesso usa
+- [x] T063 [US3] [FE] Conferir `src/app/features/auth/callback/oauth-callback.ts`: sucesso usa
   `PostAuthNavigator.go()` (T029) e o cancelamento volta para `/auth/login` com a mensagem neutra
   já existente, sem criar sessão. Acrescentar a `oauth-callback` um teste
   (`oauth-callback.spec.ts`) para os dois casos se ainda não existir. **Feito quando**: o teste
   passa.
-- [ ] T064 [US3] [QA] Criar `e2e/account-onboarding.spec.ts`: criar pela API de admin um usuário
+- [x] T064 [US3] [QA] Criar `e2e/account-onboarding.spec.ts`: criar pela API de admin um usuário
   confirmado **sem** metadados de aceite (equivale a uma conta vinda do Google; a chave
   `SUPABASE_SERVICE_ROLE_KEY` vem do ambiente do teste, nunca do repositório); entrar com ele ⇒
   `/auth/termos`; tentar abrir `/app` direto ⇒ volta para `/auth/termos`; aceitar ⇒
@@ -571,40 +571,40 @@ senha nova e encerrar todas as sessões.
 **Independent Test**: pedir para um e-mail com conta e para um sem; comparar respostas; trocar a
 senha pelo link; a antiga deixa de valer.
 
-- [ ] T066 [P] [US4] [BE] Criar `supabase/functions/password-recovery/logic.ts` (validação de
+- [x] T066 [P] [US4] [BE] Criar `supabase/functions/password-recovery/logic.ts` (validação de
   e-mail; cálculo da espera até o piso de 600 ms) e `logic.test.ts`. **Feito quando**:
   `deno test supabase/functions/password-recovery/` passa com 8 casos de e-mail e a espera nunca
   negativa.
-- [ ] T067 [US4] [BE] Criar `supabase/functions/password-recovery/index.ts` seguindo os 8 passos
+- [x] T067 [US4] [BE] Criar `supabase/functions/password-recovery/index.ts` seguindo os 8 passos
   de `contracts/password-recovery.edge.md` (resposta sempre `{ "ok": true }`, envio em
   `EdgeRuntime.waitUntil`). **Feito quando**: os comandos de recuperação de `quickstart.md` §6
   dão: corpo idêntico e tempo ≥ 0,6 s para e-mail existente e inexistente; no 4º pedido para o
   mesmo e-mail, **nenhum** e-mail novo no coletor local e um evento
   `senha_recuperacao_solicitada` com `permitido = false`.
-- [ ] T068 [P] [US4] [FE] Criar `src/app/core/auth/password.service.ts` com `requestRecovery` e
+- [x] T068 [P] [US4] [FE] Criar `src/app/core/auth/password.service.ts` com `requestRecovery` e
   `resetPassword` (e a assinatura de `changePassword` lançando "não implementado": entra na T087)
   e `password.service.spec.ts`, conforme `contracts/password-recovery.edge.md`. **Feito quando**:
   o teste cobre: `requestRecovery` resolve igual em sucesso e em falha de rede; `resetPassword`
   chama `verifyOtp` (`type: 'recovery'`) → `updateUser` → `signOut({ scope: 'global' })` nessa
   ordem; `invalid_link`; `weak_password`; nova tentativa depois de `weak_password` **não** repete
   o `verifyOtp`.
-- [ ] T069 [US4] [FE] Criar a tela `src/app/features/auth/forgot-password/` (3 arquivos) e
+- [x] T069 [US4] [FE] Criar a tela `src/app/features/auth/forgot-password/` (3 arquivos) e
   registrar `/auth/recuperar-senha` com `anonGuard`. Campo de e-mail, "Enviar link", estado
   `forgot-password-sent` com o texto fixo do contrato, "Voltar para entrar", botão desabilitado
   por 60 s depois de cada envio. Tela de referência na tabela do contrato (regra 14). **Feito quando**: o teste cobre a
   validação de formato, a mesma tela de confirmação para qualquer resposta e a contagem.
-- [ ] T070 [US4] [FE] Criar a tela `src/app/features/auth/reset-password/` (3 arquivos) e
+- [x] T070 [US4] [FE] Criar a tela `src/app/features/auth/reset-password/` (3 arquivos) e
   registrar `/auth/nova-senha` **sem guard**. Sem `token_hash` ⇒ estado `reset-password-invalid`;
   campo "Nova senha" com mostrar; "Salvar nova senha" ⇒ `resetPassword`; sucesso ⇒
   `/auth/login?senha=alterada`; `invalid_link` ⇒ "Pedir novo link". Nenhuma chamada ao carregar.
   Tela de referência na tabela do contrato (regra 14). **Feito quando**: o teste prova que nada é chamado na criação e
   cobre senha de 7 caracteres, sucesso e link inválido.
-- [ ] T071 [US4] [FE] Em `src/app/features/auth/login/`: o link "Esqueci a senha" passa a navegar
+- [x] T071 [US4] [FE] Em `src/app/features/auth/login/`: o link "Esqueci a senha" passa a navegar
   para `/auth/recuperar-senha` (sem o `aria-label` "(em breve)"), e `?senha=alterada` mostra um
   `z-alert` de sucesso "Senha alterada. Entre com a nova senha." com
   `data-testid="login-password-changed"`. **Feito quando**: `login.spec.ts` continua verde, com
   dois testes novos no fim.
-- [ ] T072 [US4] [QA] Criar `e2e/password-recovery.spec.ts`: criar um usuário confirmado pela API
+- [x] T072 [US4] [QA] Criar `e2e/password-recovery.spec.ts`: criar um usuário confirmado pela API
   de admin (com `user_metadata: { terms_version: '2026-11' }`); pedir a recuperação pela tela;
   obter o link com `mailbox.ts`; definir a senha nova; entrar com a nova (a URL deixa
   `/auth/login`) e com a antiga (mensagem genérica); abrir o mesmo link de novo ⇒
@@ -623,17 +623,17 @@ senha pelo link; a antiga deixa de valer.
 **Independent Test**: exportar e conferir o arquivo; excluir e verificar que não entra mais, que
 os dados pessoais sumiram e que a trilha de auditoria ficou sem identificação.
 
-- [ ] T073 [US5] [BE] Criar `supabase/migrations/0016_conta_privacidade.sql` com
+- [x] T073 [US5] [BE] Criar `supabase/migrations/0016_conta_privacidade.sql` com
   `public.export_my_data()` conforme `contracts/account-export.rpc.md` (5 passos; formato de
   saída; `EXECUTE` de texto constante para a função da `003`, com `USING`). **Feito quando**:
   `supabase db reset` passa e, autenticado como tutor A, a RPC devolve `conta.id` de A e
   `tags_e_pets = null` com uma observação.
-- [ ] T074 [US5] [BE] No mesmo arquivo, acrescentar `public.delete_account_data(uuid, text, text)`
+- [x] T074 [US5] [BE] No mesmo arquivo, acrescentar `public.delete_account_data(uuid, text, text)`
   seguindo o pseudocódigo de `contracts/account-delete.edge.md` (falha fechada com
   `deletion_hook_missing`; evento único). **Feito quando**: `supabase db reset` passa e
   `select has_function_privilege('authenticated','public.delete_account_data(uuid,text,text)','EXECUTE');`
   devolve `false`.
-- [ ] T075 [P] [US5] [QA] Criar `supabase/tests/conta_privacidade.test.sql` com os testes de
+- [x] T075 [P] [US5] [QA] Criar `supabase/tests/conta_privacidade.test.sql` com os testes de
   `contracts/account-export.rpc.md` (6) e de `contracts/account-delete.edge.md` (7), criando
   **dentro do teste** a tabela `public.tag_assignments` e as funções
   `end_assignments_for_account`/`export_tutor_tag_data` de mentira quando o caso pede.
@@ -645,21 +645,21 @@ os dados pessoais sumiram e que a trilha de auditoria ficou sem identificação.
   **Feito quando**: `supabase test db` passa; e passa de novo depois de criar à mão, numa sessão
   de teste, uma `public.tag_assignments` vazia e uma `end_assignments_for_account(uuid)` qualquer
   (apague as duas em seguida).
-- [ ] T076 [P] [US5] [BE] Criar `supabase/functions/account-delete/logic.ts` (validação de
+- [x] T076 [P] [US5] [BE] Criar `supabase/functions/account-delete/logic.ts` (validação de
   `confirm`; remoção paginada de arquivos sob um prefixo, recebendo o cliente de storage por
   parâmetro) e `logic.test.ts`. **Feito quando**: `deno test supabase/functions/account-delete/`
   passa com 0, 1, 100 e 250 arquivos e com bucket inexistente.
-- [ ] T077 [US5] [BE] Criar `supabase/functions/account-delete/index.ts` seguindo os **9 passos,
+- [x] T077 [US5] [BE] Criar `supabase/functions/account-delete/index.ts` seguindo os **9 passos,
   na ordem**, de `contracts/account-delete.edge.md`. **Feito quando**: por `curl`, com um usuário
   de teste: `confirm` errado ⇒ `confirmation_required`; senha errada ⇒ `invalid_password` e o
   usuário continua existindo; senha certa ⇒ `{ "ok": true }`, o usuário some de `auth.users` e de
   `perfis`, e existe um evento `conta_excluida` com `ator IS NULL`.
-- [ ] T078 [P] [US5] [FE] Criar `src/app/core/account/privacy.service.ts` (`exportData`,
+- [x] T078 [P] [US5] [FE] Criar `src/app/core/account/privacy.service.ts` (`exportData`,
   `deleteAccount`) e o `.spec.ts` conforme `contracts/frontend-services.contract.md` §3 e
   `contracts/account-export.rpc.md` ("Frontend"). **Feito quando**: o teste cobre o nome do
   arquivo `faro-meus-dados-AAAA-MM-DD.json`, `rate_limited` com `retryAfterSeconds`, o envio de
   `{ confirm: 'EXCLUIR', password }`, cada código de erro e a limpeza local depois do sucesso.
-- [ ] T079 [US5] [FE] Preencher `src/app/features/account/account.routes.ts` com a rota índice
+- [x] T079 [US5] [FE] Preencher `src/app/features/account/account.routes.ts` com a rota índice
   (`data: { hub: true }`) e criar `src/app/features/account/account-home/` (3 arquivos): cabeçalho
   com nome e e-mail, as cinco linhas e o botão "Sair" (§4 do contrato, "Conta (lista)"). Ligar em
   `src/app/app.routes.ts` como filho de `app`: `{ path: 'conta', loadChildren: … }` **antes** do
@@ -667,12 +667,12 @@ os dados pessoais sumiram e que a trilha de auditoria ficou sem identificação.
   **Feito quando**: o teste confere os `data-testid` `account-*`, o selo do celular nos dois
   estados e que "Sair" chama `AccountService.logout()`; no navegador, `/app/conta` abre com o item
   "Conta" ativo na navegação.
-- [ ] T080 [US5] [FE] Criar `src/app/features/account/privacy/privacy.ts`, `privacy.html` e
+- [x] T080 [US5] [FE] Criar `src/app/features/account/privacy/privacy.ts`, `privacy.html` e
   `privacy.spec.ts`, registrar `/app/conta/privacidade`, e implementar o bloco **Exportar meus
   dados** (texto, botão `account-privacy-export`, erro `rate_limited` com o tempo). Cabeçalho
   `app-screen-header` com voltar para `/app/conta`. **Feito quando**: o teste cobre o download
   disparado e a mensagem de limite.
-- [ ] T081 [US5] [FE] Criar `src/app/features/account/privacy/delete-account-dialog.ts` (+ spec) e
+- [x] T081 [US5] [FE] Criar `src/app/features/account/privacy/delete-account-dialog.ts` (+ spec) e
   ligar ao botão de texto vermelho `account-privacy-delete`: diálogo `z-alert-dialog` com o texto
   das consequências, campo "Digite EXCLUIR", campo "Senha atual" (`hasPassword()`) ou aviso e
   botão "Entrar de novo com o Google" (`isGoogleOnly()`; antes, `ReturnUrlService.capture('/app/conta/privacidade')`),
@@ -681,7 +681,7 @@ os dados pessoais sumiram e que a trilha de auditoria ficou sem identificação.
   cobre o botão desabilitado, `invalid_password`, `reauth_required` nos dois métodos,
   `deletion_unavailable`, `deletion_incomplete` e o sucesso; o diálogo sai escuro quando o app
   está no tema escuro.
-- [ ] T082 [US5] [QA] Criar `e2e/account.spec.ts`: (a) Conta → Sair ⇒ tela de entrada e um evento
+- [x] T082 [US5] [QA] Criar `e2e/account.spec.ts`: (a) Conta → Sair ⇒ tela de entrada e um evento
   `logout` novo; (b) exportar ⇒ o arquivo baixado é JSON com `conta.email` do usuário e sem
   nenhuma chave contendo `hash`; (c) excluir com senha errada ⇒ erro e a conta continua; (d)
   excluir com a senha certa ⇒ `/auth?conta=excluida`, o login falha com a mensagem genérica e o
@@ -699,39 +699,39 @@ senha e escolher a aparência.
 **Independent Test**: cada ajuste funciona sozinho; durante a troca de celular,
 `phone_is_confirmed` continua verdadeiro e `perfis.celular` é o número antigo.
 
-- [ ] T083 [P] [US6] [FE] Criar `src/app/features/account/personal-data/` (3 arquivos) e registrar
+- [x] T083 [P] [US6] [FE] Criar `src/app/features/account/personal-data/` (3 arquivos) e registrar
   `/app/conta/dados`: campo Nome (2–80), e-mail somente leitura com a ajuda do contrato, "Salvar
   alterações" desabilitado sem mudança, aviso "Dados salvos." pelo `sonner`. **Feito quando**: o
   teste cobre os limites 1, 2, 80, 81, o botão desabilitado e o sucesso.
-- [ ] T084 [P] [US6] [FE] Criar `src/app/features/account/phone/` (3 arquivos) e registrar
+- [x] T084 [P] [US6] [FE] Criar `src/app/features/account/phone/` (3 arquivos) e registrar
   `/app/conta/celular` com os três estados de §4 do contrato ("Celular"): confirmado, não
   confirmado, troca pendente. **Feito quando**: o teste cobre os três estados e os destinos dos
   botões (`/auth/celular?returnUrl=/app/conta/celular` e
   `/auth/confirmar-celular?returnUrl=/app/conta/celular`).
-- [ ] T085 [US6] [FE] Em `src/app/features/auth/phone-entry/`, implementar o **modo troca**
+- [x] T085 [US6] [FE] Em `src/app/features/auth/phone-entry/`, implementar o **modo troca**
   (`AccountStore.phoneConfirmed()` verdadeiro): título "Novo celular", linha com o celular atual,
   "Cancelar" no lugar de "Agora não", tratamento de `reauth_required` (`method = 'password'`:
   mostrar `phone-password` e reenviar; `method = 'google'`: botão `phone-google-reauth`),
   `invalid_password` e `same_number`. **Feito quando**: `phone-entry.spec.ts` cobre os cinco casos.
-- [ ] T086 [US6] [QA] Acrescentar a `e2e/account.spec.ts`: com conta de celular confirmado, iniciar
+- [x] T086 [US6] [QA] Acrescentar a `e2e/account.spec.ts`: com conta de celular confirmado, iniciar
   a troca (senha atual) ⇒ a tela de código aparece e `my_account()` ainda mostra o número antigo
   em `celular` e o novo em `celular_pendente`; digitar `424242` ⇒ `celular` passa a ser o novo e
   `/app/conta/celular` mostra "Confirmado". **Feito quando**: o teste passa.
-- [ ] T087 [P] [US6] [FE] Implementar `changePassword(current, next)` em
+- [x] T087 [P] [US6] [FE] Implementar `changePassword(current, next)` em
   `src/app/core/auth/password.service.ts` (5 passos de `contracts/password-recovery.edge.md`) e
   os testes em `password.service.spec.ts`. **Feito quando**: o teste cobre `no_password`,
   `invalid_current`, `rate_limited`, `weak_password` e o sucesso com
   `signOut({ scope: 'others' })`.
-- [ ] T088 [US6] [FE] Criar `src/app/features/account/password/` (3 arquivos) e registrar
+- [x] T088 [US6] [FE] Criar `src/app/features/account/password/` (3 arquivos) e registrar
   `/app/conta/senha`: formulário para `hasPassword()`, só a nota `account-password-google-note`
   para `isGoogleOnly()`. **Feito quando**: o teste cobre os dois modos, a validação da nova senha
   e cada mensagem.
-- [ ] T089 [P] [US6] [FE] Criar `src/app/features/account/appearance/` (3 arquivos) e registrar
+- [x] T089 [P] [US6] [FE] Criar `src/app/features/account/appearance/` (3 arquivos) e registrar
   `/app/conta/aparencia`: `z-toggle-group` de seleção única com "Clara", "Escura", "Igual ao
   sistema", refletindo `ThemeService.preference()` e chamando `setPreference`. **Não** tocar no
   DOM nem em `localStorage` aqui. **Feito quando**: o teste cobre a opção marcada para cada
   preferência e a chamada a `setPreference` com `'light'`, `'dark'` e `'system'`.
-- [ ] T090 [US6] [QA] Acrescentar a `e2e/account.spec.ts`: alterar o nome e ver o novo nome em
+- [x] T090 [US6] [QA] Acrescentar a `e2e/account.spec.ts`: alterar o nome e ver o novo nome em
   `/app/conta`; trocar a senha e entrar com a nova; escolher "Escura" e conferir que o contêiner
   da casca do tutor tem a classe `dark` e que, abrindo `/auth/login` depois de sair, **nenhum**
   elemento tem a classe `dark`. **Feito quando**: os três passam.
@@ -742,12 +742,12 @@ senha e escolher a aparência.
 
 ## Phase 9: Polish & Cross-Cutting Concerns
 
-- [ ] T091 [P] [QA] Criar `e2e/account-a11y.spec.ts`: axe (sem violações `serious` ou `critical`)
+- [x] T091 [P] [QA] Criar `e2e/account-a11y.spec.ts`: axe (sem violações `serious` ou `critical`)
   e "sem rolagem horizontal" em 320, 390, 768 e 1440 px para `/auth`, `/auth/criar-conta`,
   `/auth/confirmar-email`, `/auth/celular`, `/auth/confirmar-celular`, `/auth/termos`,
   `/auth/recuperar-senha`, `/auth/nova-senha`, `/app/conta` e suas cinco telas (estas nos temas
   claro e escuro), `/legal/termos`, `/legal/privacidade`. **Feito quando**: o teste passa.
-- [ ] T092 [P] [FE] Conferir que todo texto visível e todo `aria-label` das telas desta spec está
+- [x] T092 [P] [FE] Conferir que todo texto visível e todo `aria-label` das telas desta spec está
   marcado com `i18n`/`$localize`, e que os textos batem com os contratos. **Feito quando**:
   `npx ng extract-i18n --output-path /tmp/faro-i18n` conclui sem erro e uma busca por texto em
   português solto nos `.html` de `features/auth`, `features/account` e `features/legal`
@@ -777,54 +777,54 @@ senha e escolher a aparência.
 2026-11-21. Leia o contrato inteiro antes da primeira tarefa. As tarefas de banco e de função desta
 fase dependem só da Phase 2; as de tela dependem das telas das histórias 1, 4, 5 e 6.
 
-- [ ] T097 [BE] Migration `0017_endurecimento_base.sql` e `supabase/tests/security_catalog.test.sql`,
+- [x] T097 [BE] Migration `0017_endurecimento_base.sql` e `supabase/tests/security_catalog.test.sql`,
   conforme o contrato §6 (privilégios padrão, `REVOKE` nas tabelas que já existem com os testes de
   leitura negada da `001` voltando a exigir erro `42501`, `search_path` das funções da `001`,
   `statement_timeout` por papel, remoção do `pg_graphql`) e os ajustes de `[api]` no
   `config.toml`. **Feito quando**: o portão de catálogo passa; uma função criada sem `GRANT`
   dentro do teste não é executável por `authenticated`; os testes da `001` continuam verdes.
-- [ ] T098 [BE] Limites novos do contrato §2 em `phone-verify-confirm`, `account-delete` e
+- [x] T098 [BE] Limites novos do contrato §2 em `phone-verify-confirm`, `account-delete` e
   `password-recovery` (escopos `otp:confirm:h`, `acct:delete:h`, `recover:calls:ip`).
   **Feito quando**: `deno test` cobre cada linha da tabela, inclusive o que **não** pode ser
   gravado no estouro.
-- [ ] T099 [BE] Endurecer `login-guard` conforme o contrato §2: escopo `guard:ip:m`, `detail`
+- [x] T099 [BE] Endurecer `login-guard` conforme o contrato §2: escopo `guard:ip:m`, `detail`
   filtrado, `user_id` do corpo ignorado, corpo até 2 KB, recusa sem `HASH_SALT`.
   **Feito quando**: `deno test` cobre os cinco pontos e os testes existentes da `001` passam.
-- [ ] T100 [P] [BE] Regras comuns das Edge Functions (contrato §5): `readJsonObject` com limite,
+- [x] T100 [P] [BE] Regras comuns das Edge Functions (contrato §5): `readJsonObject` com limite,
   `unknown_field`, só `POST`/`OPTIONS`, `verify_jwt` por função, `deno.json` com versões exatas e
   `deno.lock` versionado. **Feito quando**: `deno test` cobre `413`, `400` e `405`; nenhum
   import com versão flutuante em `supabase/functions/` (`grep` vazio).
-- [ ] T101 [BE] Configuração do Auth (contrato §4 e §1): rotação de refresh token, entrada anônima
+- [x] T101 [BE] Configuração do Auth (contrato §4 e §1): rotação de refresh token, entrada anônima
   e vínculo manual desligados, e a seção `[auth.captcha]` com Turnstile e o segredo por variável de
   ambiente, **ainda com `enabled = false`** (ligar agora quebraria todo login até as telas
   enviarem o token; quem liga é a T104). Use as chaves de teste do Turnstile no ambiente local,
   copiadas da documentação da Cloudflare. **Se a CLI recusar alguma chave, PARE e relate.**
   **Feito quando**: `supabase start` sobe sem aviso de chave desconhecida e os testes existentes
   continuam verdes.
-- [ ] T102 [BE] Repassar o token do desafio ao Auth: `password-recovery` (passo 7) e
+- [x] T102 [BE] Repassar o token do desafio ao Auth: `password-recovery` (passo 7) e
   `_shared/reauth.ts`; corpo `captcha_token` em `phone-verify-start` (troca) e `account-delete`;
   código de erro `captcha_failed`. **Feito quando**: `deno test` prova que o token chega ao Auth
   e que `captcha_failed` não conta como falha de senha.
-- [ ] T103 [FE] Componente `app-turnstile` (`src/app/shared/components/faro/turnstile/`) e a
+- [x] T103 [FE] Componente `app-turnstile` (`src/app/shared/components/faro/turnstile/`) e a
   chave `turnstileSiteKey` nos ambientes, conforme o contrato §1. **Feito quando**: teste
   unitário prova que sem chave nenhum script é carregado e que `reset()` zera o token;
   `npm run check:bundle` mostra que o pacote inicial não contém `challenges.cloudflare.com`.
-- [ ] T104 [FE] Usar o desafio em "Entrar", "Criar conta", "Confirme seu e-mail" (reenvio),
+- [x] T104 [FE] Usar o desafio em "Entrar", "Criar conta", "Confirme seu e-mail" (reenvio),
   "Esqueci a senha", "Trocar celular", "Senha" e no diálogo de exclusão; `reset()` depois de cada
   envio; texto de `captcha_failed`. **Por último**, e só depois de todas as telas enviarem o token:
   ligar `[auth.captcha] enabled = true` no `config.toml` e ajustar os apoios de E2E que entram
   pela tela. **Feito quando**: teste de componente de cada tela cobre o envio com token e o erro
   `captcha_failed`; com o desafio ligado, `signUp` sem token é recusado e toda a suíte de E2E
   existente continua verde.
-- [ ] T105 [FE] Cabeçalhos (contrato §3): `src/security-headers.ts`, uso no `src/server.ts` com
+- [x] T105 [FE] Cabeçalhos (contrato §3): `src/security-headers.ts`, uso no `src/server.ts` com
   o middleware **antes** dos arquivos estáticos, `vercel.json` com as duas políticas e
   `scripts/security/check-headers.mjs` (`npm run check:headers`). **Feito quando**:
   `check:headers` passa e falha se alguém editar só um dos dois lugares.
-- [ ] T106 [P] [QA] Checagens do repositório (contrato §7): `check:secrets` com o gancho de
+- [x] T106 [P] [QA] Checagens do repositório (contrato §7): `check:secrets` com o gancho de
   pre-commit, `check:audit` com a triagem registrada em `specs/004-conta-tutor/execution-log.md`,
   `check:templates` e `check:prod-config`. **Feito quando**: cada script passa no estado atual e
   reprova o exemplo ruim que o próprio teste cria e apaga.
-- [ ] T107 [QA] CI: acrescentar ao `.github/workflows/ci.yml` (que já existe, com o job do app e o
+- [x] T107 [QA] CI: acrescentar ao `.github/workflows/ci.yml` (que já existe, com o job do app e o
   job do Supabase local) os `check:*` desta fase, e criar `.github/dependabot.yml`, conforme o
   contrato §7. **Feito quando**: depois do push da branch, os dois jobs ficam verdes.
 - [ ] T108 [QA] `e2e/security/headers.spec.ts` e `e2e/security/captcha.spec.ts` (contrato §9).

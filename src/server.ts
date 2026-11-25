@@ -1,15 +1,10 @@
 /**
  * server.ts — SSR handler (Express + Angular Node App Engine).
  *
- * T020a: CSP estrita espelhada aqui (além de vercel.json).
- * - script-src: 'self' sem unsafe-inline/unsafe-eval.
- * - connect-src: 'self' + domínio Supabase (anon key/auth/realtime).
- * - style-src: 'self' 'unsafe-inline' (necessário para PrimeNG inline styles; o risco de
- *   XSS via CSS é baixo comparado a script — aceitável no MVP; revisar com nonce se necessário).
- * - font-src: 'self' (fontes Poppins/Inter são self-hosted ou importadas no bundle).
- * - img-src: 'self' data: blob:.
- * - frame-ancestors: 'none' (impede clickjacking).
- * - Sem unsafe-eval → bloqueia eval(), new Function() dinâmicos.
+ * Cabeçalhos de segurança (T020a, T105): a CSP e os demais vêm de `src/security-headers.ts`, a fonte
+ * única, também espelhada em vercel.json (`npm run check:headers` reprova divergência). Duas
+ * políticas: `tag` (página de resgate) e `app` (todo o resto). O middleware vem ANTES dos arquivos
+ * estáticos para que eles também saiam com os cabeçalhos.
  *
  * Nota: o domínio do Supabase (SUPABASE_URL) pode ser sobrescrito por env var.
  * Em dev: http://127.0.0.1:54321. Em prod: https://YOUR_PROJECT.supabase.co
@@ -22,6 +17,7 @@ import {
 } from '@angular/ssr/node';
 import express from 'express';
 import { join } from 'node:path';
+import { headerKindForPath, isHttpsRequest, securityHeaders } from './security-headers';
 
 const browserDistFolder = join(import.meta.dirname, '../browser');
 
@@ -29,28 +25,25 @@ const browserDistFolder = join(import.meta.dirname, '../browser');
 // Em prod, SUPABASE_URL deve ser definido como env var (não é segredo — é a URL pública).
 const supabaseHost = process.env['SUPABASE_URL']
   ? new URL(process.env['SUPABASE_URL']).host
-  : '*.supabase.co';
-
-/**
- * Content-Security-Policy estrita (T020a).
- * Espelhada em vercel.json para a hospedagem de produção.
- * Sem unsafe-inline em script-src; sem unsafe-eval.
- */
-const CSP = [
-  `default-src 'self'`,
-  `script-src 'self'`,
-  `style-src 'self' 'unsafe-inline'`,
-  `font-src 'self' data:`,
-  `img-src 'self' data: blob: https:`,
-  `connect-src 'self' https://${supabaseHost} wss://${supabaseHost}`,
-  `frame-ancestors 'none'`,
-  `base-uri 'self'`,
-  `form-action 'self'`,
-  `object-src 'none'`,
-].join('; ');
+  : undefined;
 
 const app = express();
 const angularApp = new AngularNodeAppEngine();
+
+/**
+ * Cabeçalhos de segurança em TODA resposta (SSR e arquivos estáticos): por isso este middleware vem
+ * antes do `express.static`. `upgrade-insecure-requests` e HSTS só quando o pedido chegou por HTTPS
+ * (em localhost quebrariam a conversa com o Supabase local, que é HTTP).
+ */
+app.use((req, res, next) => {
+  const https = isHttpsRequest(
+    req.headers['x-forwarded-proto'],
+    Boolean((req.socket as { encrypted?: boolean }).encrypted),
+  );
+  const headers = securityHeaders(headerKindForPath(req.path), { https, supabaseHost });
+  for (const [name, value] of Object.entries(headers)) res.setHeader(name, value);
+  next();
+});
 
 /**
  * Serve static files from /browser
@@ -62,19 +55,6 @@ app.use(
     redirect: false,
   }),
 );
-
-/**
- * Injeta headers de segurança em todas as respostas SSR.
- * Inclui a CSP estrita (T020a) e outros headers de hardening.
- */
-app.use((_req, res, next) => {
-  res.setHeader('Content-Security-Policy', CSP);
-  res.setHeader('X-Content-Type-Options', 'nosniff');
-  res.setHeader('X-Frame-Options', 'DENY');
-  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-  res.setHeader('Permissions-Policy', 'geolocation=(self), camera=(), microphone=()');
-  next();
-});
 
 /**
  * Handle all other requests by rendering the Angular application.

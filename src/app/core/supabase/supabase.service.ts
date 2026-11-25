@@ -2,6 +2,7 @@ import { Injectable, PLATFORM_ID, inject } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { environment } from '../../../environments/environment';
+import { findPersistedStorage } from '../auth/session-persistence';
 
 /**
  * Ponto único de acesso ao Supabase no cliente.
@@ -19,6 +20,11 @@ import { environment } from '../../../environments/environment';
 export class SupabaseService {
   private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
+  private storageOption(): { storage?: Storage } {
+    const storage = findPersistedStorage();
+    return storage ? { storage } : {};
+  }
+
   readonly client: SupabaseClient = createClient(
     environment.supabaseUrl,
     environment.supabaseAnonKey,
@@ -27,6 +33,9 @@ export class SupabaseService {
         persistSession: this.isBrowser,
         autoRefreshToken: this.isBrowser,
         detectSessionInUrl: this.isBrowser,
+        // DEF-001: o cliente nasce lendo o storage onde a sessão está (local = "Manter conectado";
+        // session = volátil). Sem sessão gravada, o padrão do SDK (localStorage).
+        ...(this.isBrowser ? this.storageOption() : {}),
       },
     },
   );

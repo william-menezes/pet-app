@@ -14,49 +14,69 @@
  * A11y: WCAG 2.1 AA, aria-live em erros, aria-describedby nos campos,
  *        foco visível, navegação por teclado, targets ≥ 44px.
  */
-import { Component, OnInit, signal, computed, inject } from '@angular/core';
+import { Component, OnInit, signal, computed, inject, viewChild } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { Router, ActivatedRoute } from '@angular/router';
+import { Router, ActivatedRoute, RouterLink } from '@angular/router';
 
-// PrimeNG — componentes nativos (sem wrappers custom; decisão do tutor 2026-07-01)
-import { ToastModule } from 'primeng/toast';
-import { MessageService } from 'primeng/api';
-import { InputTextModule } from 'primeng/inputtext';
-import { PasswordModule } from 'primeng/password';
-import { CheckboxModule } from 'primeng/checkbox';
-import { ButtonModule } from 'primeng/button';
-import { MessageModule } from 'primeng/message';
-import { DividerModule } from 'primeng/divider';
+// Componentes do Faro (ZardUI + próprios)
+import { NgIcon } from '@ng-icons/core';
+import { ZardAlertComponent } from '@/shared/components/alert';
+import { ZardButtonComponent } from '@/shared/components/button';
+import { ZardCheckboxComponent } from '@/shared/components/checkbox';
+import { ZardFieldImports } from '@/shared/components/field';
+import { ZardInputComponent } from '@/shared/components/input';
+import { ZardSonnerComponent, ZardSonnerService } from '@/shared/components/sonner';
+import { BRAND_HEADLINE, BRAND_SUB } from '@/shared/components/faro/brand-panel/brand-copy';
+import { BrandPanel } from '@/shared/components/faro/brand-panel/brand-panel';
+import { Focinho } from '@/shared/components/faro/focinho/focinho';
+import { GoogleGlyph } from '@/shared/components/faro/google-glyph/google-glyph';
+import { Logo } from '@/shared/components/faro/logo/logo';
+import { CAPTCHA_FAILED_MESSAGE } from '@/shared/components/faro/turnstile/captcha-messages';
+import { Turnstile } from '@/shared/components/faro/turnstile/turnstile';
 
 // Core (token nunca lido fora de core/)
 import { AuthService } from '../../../core/auth/auth.service';
-import { roleRedirect } from '../../../core/auth/role-redirect';
+import { PostAuthNavigator } from '../../../core/auth/post-auth-navigation';
+import { ReturnUrlService, sanitizeReturnUrl } from '../../../core/auth/return-url';
 
-type FormError = 'invalid' | 'rate_limited' | 'unconfirmed' | 'provider_unavailable' | 'network' | null;
+type FormError =
+  | 'invalid'
+  | 'rate_limited'
+  | 'unconfirmed'
+  | 'provider_unavailable'
+  | 'network'
+  | 'captcha_failed'
+  | null;
 
 @Component({
   selector: 'app-login',
   standalone: true,
   imports: [
     ReactiveFormsModule,
-    ToastModule,
-    InputTextModule,
-    PasswordModule,
-    CheckboxModule,
-    ButtonModule,
-    MessageModule,
-    DividerModule,
+    NgIcon,
+    RouterLink,
+    ZardAlertComponent,
+    ZardButtonComponent,
+    ZardCheckboxComponent,
+    ZardFieldImports,
+    ZardInputComponent,
+    ZardSonnerComponent,
+    BrandPanel,
+    Focinho,
+    GoogleGlyph,
+    Logo,
+    Turnstile,
   ],
-  providers: [MessageService],
   templateUrl: './login.html',
-  styleUrl: './login.css',
 })
 export class Login implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
-  private readonly messageService = inject(MessageService);
+  private readonly sonner = inject(ZardSonnerService);
+  private readonly postAuth = inject(PostAuthNavigator);
+  private readonly returnUrlService = inject(ReturnUrlService);
 
   // ── Formulário (Reactive Forms tipado) ──
   readonly form: FormGroup = this.fb.group({
@@ -66,12 +86,25 @@ export class Login implements OnInit {
   });
 
   // ── Estado local (signals) ──
+  /** Desafio anti-robô (Turnstile). O token vale uma vez: `reset()` depois de cada envio. */
+  private readonly captcha = viewChild(Turnstile);
   readonly isLoading = signal(false);
   readonly formError = signal<FormError>(null);
   readonly isUnconfirmed = signal(false);
   readonly isGoogleDisabled = signal(false);
   readonly showSessionExpired = signal(false);
   readonly showLoggedOut = signal(false);
+  /** `?senha=alterada`: vindo da tela de nova senha (T071). */
+  readonly showPasswordChanged = signal(false);
+  readonly showPassword = signal(false);
+  /** `returnUrl` sanitizado da URL, repassado aos links para criar conta e voltar (T037). */
+  readonly linkQueryParams = signal<{ returnUrl: string } | null>(null);
+
+  // Frase e apoio do painel de marca (desktop) e rótulos do botão de olho
+  protected readonly brandHeadline = BRAND_HEADLINE;
+  protected readonly brandSub = BRAND_SUB;
+  protected readonly showPasswordLabel = $localize`Mostrar senha`;
+  protected readonly hidePasswordLabel = $localize`Ocultar senha`;
 
   // ── Computed: mensagem do banner de erro ──
   readonly errorBannerMessage = computed<string | null>(() => {
@@ -84,29 +117,31 @@ export class Login implements OnInit {
   get emailFieldError(): string | null {
     const ctrl = this.form.get('email');
     if (!ctrl || !ctrl.touched || ctrl.valid) return null;
-    if (ctrl.hasError('required')) return 'Informe seu e-mail.';
-    if (ctrl.hasError('email')) return 'Informe um e-mail válido.';
+    if (ctrl.hasError('required')) return $localize`Informe seu e-mail.`;
+    if (ctrl.hasError('email')) return $localize`Informe um e-mail válido.`;
     return null;
   }
 
   get passwordFieldError(): string | null {
     const ctrl = this.form.get('password');
     if (!ctrl || !ctrl.touched || ctrl.valid) return null;
-    if (ctrl.hasError('required')) return 'Informe sua senha.';
+    if (ctrl.hasError('required')) return $localize`Informe sua senha.`;
     return null;
   }
-
-  // ── Destino pós-login (returnUrl) ──
-  private returnUrl = '/app';
 
   ngOnInit(): void {
     // Lê queryParams para session-expired e returnUrl (FR-012)
     this.route.queryParams.subscribe((params) => {
-      this.returnUrl = params['returnUrl'] ?? '/app';
+      // Guarda o destino já sanitizado; quem decide para onde ir é o PostAuthNavigator.
+      this.returnUrlService.capture(params['returnUrl']);
+      const safeReturnUrl = sanitizeReturnUrl(params['returnUrl']);
+      this.linkQueryParams.set(safeReturnUrl === null ? null : { returnUrl: safeReturnUrl });
 
       if (params['reason'] === 'session_expired') {
         this.showSessionExpired.set(true);
       }
+
+      this.showPasswordChanged.set(params['senha'] === 'alterada');
 
       if (params['loggedOut'] === '1') {
         this.showLoggedOut.set(true);
@@ -139,6 +174,7 @@ export class Login implements OnInit {
 
     if (this.form.invalid || this.isLoading()) return;
 
+    const captchaToken = this.captcha()?.token() ?? undefined;
     const { email, password, rememberMe } = this.form.value as {
       email: string;
       password: string;
@@ -154,7 +190,7 @@ export class Login implements OnInit {
     this.authService.setRememberMe(rememberMe);
 
     try {
-      const result = await this.authService.signInPassword(email, password);
+      const result = await this.authService.signInPassword(email, password, captchaToken);
 
       if (!result.ok) {
         this.formError.set(result.reason ?? 'invalid');
@@ -164,11 +200,11 @@ export class Login implements OnInit {
         return;
       }
 
-      // Sucesso: roteia ao destino do papel ou returnUrl (FR-005/006/012)
-      const destination = result.role ? roleRedirect(result.role) : this.returnUrl;
-      await this.router.navigate([destination]);
+      // Sucesso: aceite dos termos, celular, destino guardado ou casa do papel (FR-005/006/012)
+      await this.postAuth.go();
     } finally {
       this.isLoading.set(false);
+      this.captcha()?.reset();
     }
   }
 
@@ -192,33 +228,28 @@ export class Login implements OnInit {
     const email = this.form.get('email')?.value as string;
     if (!email) return;
 
-    await this.authService.resendConfirmation(email);
+    const captchaToken = this.captcha()?.token() ?? undefined;
+    const result = await this.authService.resendConfirmation(email, captchaToken);
+    this.captcha()?.reset();
+    if (!result.ok) {
+      this.sonner.error($localize`Não foi possível reenviar`, {
+        description: CAPTCHA_FAILED_MESSAGE,
+        duration: 6000,
+      });
+      return;
+    }
 
     // Toast de confirmação (resposta uniforme — não confirma existência)
-    this.messageService.add({
-      severity: 'success',
-      summary: 'E-mail reenviado',
-      detail: 'E-mail de confirmação reenviado. Verifique sua caixa de entrada.',
-      life: 6000,
-    });
-  }
-
-  onProvisionalLink(event: Event): void {
-    event.preventDefault();
-    this.messageService.add({
-      severity: 'info',
-      summary: 'Em breve',
-      detail: 'Esta função estará disponível em breve.',
-      life: 4000,
+    this.sonner.success($localize`E-mail reenviado`, {
+      description: $localize`E-mail de confirmação reenviado. Verifique sua caixa de entrada.`,
+      duration: 6000,
     });
   }
 
   private showGoogleCancelledInfo(): void {
-    this.messageService.add({
-      severity: 'info',
-      summary: 'Login não concluído',
-      detail: 'Login com Google não foi concluído. Use e-mail e senha para entrar.',
-      life: 5000,
+    this.sonner.info($localize`Login não concluído`, {
+      description: $localize`Login com Google não foi concluído. Use e-mail e senha para entrar.`,
+      duration: 5000,
     });
   }
 
@@ -231,23 +262,17 @@ export class Login implements OnInit {
     return this.form.get('password')!;
   }
 
-  get isErrorBanner(): boolean {
-    const err = this.formError();
-    return err === 'invalid' || err === 'rate_limited' || err === 'network';
+  /** Tom do aviso de erro (contrato §6.2): só credenciais inválidas é 'danger'. */
+  get bannerType(): 'danger' | 'neutral' {
+    return this.formError() === 'invalid' ? 'danger' : 'neutral';
   }
 
-  get isWarnBanner(): boolean {
-    return this.formError() === 'rate_limited' || this.formError() === 'provider_unavailable';
-  }
-
-  get bannerSeverity(): 'error' | 'warn' | 'info' {
-    const err = this.formError();
-    if (err === 'rate_limited' || err === 'provider_unavailable') return 'warn';
-    if (err === 'network') return 'warn';
-    return 'error';
+  /** Reenvio da confirmação: precisa do token novo do desafio, como o envio do formulário. */
+  get resendDisabled(): boolean {
+    return this.captcha()?.pending() ?? false;
   }
 
   get submitButtonDisabled(): boolean {
-    return this.isLoading() || this.formError() === 'rate_limited';
+    return this.isLoading() || this.formError() === 'rate_limited' || (this.captcha()?.pending() ?? false);
   }
 }

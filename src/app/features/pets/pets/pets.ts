@@ -5,13 +5,13 @@
  */
 import { Component, inject } from '@angular/core';
 import { AuthService } from '../../../core/auth/auth.service';
+import { ZardButtonComponent } from '@/shared/components/button';
 
 @Component({
   selector: 'app-pets',
   standalone: true,
-  imports: [],
+  imports: [ZardButtonComponent],
   templateUrl: './pets.html',
-  styleUrl: './pets.css',
 })
 export class Pets {
   private readonly authService = inject(AuthService);

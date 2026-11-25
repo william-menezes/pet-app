@@ -1,0 +1,4 @@
+#!/bin/sh
+# Gancho de pre-commit do Faro: varre so os arquivos preparados atras de segredos (npm run prepare liga este diretorio).
+[ -f scripts/security/check-secrets.mjs ] || exit 0
+exec node scripts/security/check-secrets.mjs --staged

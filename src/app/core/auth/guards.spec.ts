@@ -16,11 +16,13 @@ describe('authGuard', () => {
   let store: AuthStore;
 
   beforeEach(() => {
+    localStorage.clear();
     TestBed.configureTestingModule({
       providers: [
         provideRouter([
           { path: 'app', component: class {} as never, canMatch: [authGuard] },
           { path: 'auth/login', component: class {} as never },
+          { path: 'auth', component: class {} as never },
         ]),
         AuthStore,
       ],
@@ -36,15 +38,31 @@ describe('authGuard', () => {
     expect(result).toBe(true);
   });
 
-  it('deve redirecionar ao login com returnUrl quando não autenticado', () => {
+  it('sem sessão e sem marca => boas-vindas com returnUrl', () => {
     const result = TestBed.runInInjectionContext(() =>
       authGuard({ path: 'app' } as never, [{ path: 'app' }] as never),
     ) as UrlTree;
     expect(result).toBeInstanceOf(UrlTree);
-    expect(result.toString()).toContain('/auth/login');
-    expect(result.toString()).toContain('returnUrl');
+    expect(result.toString()).toBe('/auth?returnUrl=%2Fapp');
+  });
+
+  it('sem sessão e com marca => login com returnUrl e reason=session_expired', () => {
+    localStorage.setItem('faro.returning', '1');
+    const result = TestBed.runInInjectionContext(() =>
+      authGuard({ path: 'app' } as never, [{ path: 'app' }, { path: 'conta' }] as never),
+    ) as UrlTree;
+    expect(result.toString()).toBe('/auth/login?returnUrl=%2Fapp%2Fconta&reason=session_expired');
+  });
+
+  it('destino dentro de /auth não vira returnUrl', () => {
+    const result = TestBed.runInInjectionContext(() =>
+      authGuard({ path: 'auth' } as never, [{ path: 'auth' }, { path: 'termos' }] as never),
+    ) as UrlTree;
+    expect(result.toString()).toBe('/auth');
   });
 });
+
+afterEach(() => localStorage.clear());
 
 describe('adminGuard', () => {
   let store: AuthStore;

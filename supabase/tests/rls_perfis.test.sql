@@ -22,6 +22,14 @@ BEGIN;
 
 SELECT plan(18);
 
+-- Schema de apoio do teste: criado dentro da transação (some no ROLLBACK).
+-- anon e authenticated precisam de USAGE para chamar tests.* depois de trocar de papel.
+CREATE SCHEMA IF NOT EXISTS tests;
+GRANT USAGE ON SCHEMA tests TO anon, authenticated;
+-- 0017: funcao criada sem GRANT nao e mais executavel por PUBLIC. Os auxiliares abaixo sao chamados depois de
+-- trocar de papel, entao o schema do teste (so existe nesta transacao) mantem o padrao antigo.
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA tests GRANT EXECUTE ON FUNCTIONS TO PUBLIC;
+
 -- ─────────────────────────────────────────
 -- Helpers de contexto de sessão (simula auth.uid() para os testes)
 -- ─────────────────────────────────────────
@@ -59,18 +67,28 @@ AS $$
 $$;
 
 -- ─────────────────────────────────────────
--- 1. anon: SELECT em perfis → negado
+-- 1. anon: SELECT em perfis → negado (RLS devolve zero linhas)
 -- ─────────────────────────────────────────
+
+-- Precondição (como dono da tabela, antes de trocar de papel): o seed existe.
+-- Sem isso, "zero linhas" poderia ser só tabela vazia.
+SELECT ok(
+  (SELECT COUNT(*) FROM public.perfis) >= 3,
+  'precondição: perfis tem as linhas do seed (o teste de anon não é vazio por acaso)'
+);
 
 SELECT tests.set_anon();
 
+-- Spec 004 (0010): anon perde todo privilégio em perfis; leitura agora dá 42501 (antes: zero linhas).
 SELECT throws_ok(
-  $$ SELECT * FROM public.perfis LIMIT 1 $$,
-  'anon não pode SELECT em perfis (deny-by-default)'
+  $$ SELECT * FROM public.perfis $$,
+  '42501', NULL,
+  'anon não lê perfis (deny-by-default: sem privilégio, 42501)'
 );
 
 SELECT throws_ok(
   $$ INSERT INTO public.perfis(id, nome, email) VALUES (gen_random_uuid(), 'x', 'x@x.com') $$,
+  '42501', NULL,
   'anon não pode INSERT em perfis'
 );
 
@@ -101,7 +119,14 @@ SELECT is_empty(
 
 SELECT throws_ok(
   $$ UPDATE public.perfis SET papel = 'admin' WHERE id = '00000000-0000-0000-0000-000000000001' $$,
+  '42501', NULL,
   'tutor não pode escalar papel para admin (anti-escalada RLS)'
+);
+
+-- Tutor A também não altera o perfil de B (nenhuma linha afetada).
+SELECT is_empty(
+  $$ WITH u AS (UPDATE public.perfis SET nome = 'invadido' WHERE id = '00000000-0000-0000-0000-000000000002' RETURNING 1) SELECT * FROM u $$,
+  'tutor A não altera o perfil de B (0 linhas afetadas)'
 );
 
 -- ─────────────────────────────────────────
@@ -175,9 +200,12 @@ SELECT results_eq(
 );
 
 -- Admin pode alterar papel de tutor → admin (promoção legítima).
-SELECT lives_ok(
+-- Spec 004 (0010): só "nome" é atualizável por authenticated; promoção de papel é operação controlada
+-- (fora do PostgREST). Antes: lives_ok.
+SELECT throws_ok(
   $$ UPDATE public.perfis SET papel = 'tutor' WHERE id = '00000000-0000-0000-0000-000000000002' $$,
-  'admin pode alterar papel de outro usuário (perfis_admin_all)'
+  '42501', NULL,
+  'admin não altera papel por UPDATE direto (privilégio de coluna, 42501)'
 );
 
 -- ─────────────────────────────────────────
@@ -188,6 +216,7 @@ SELECT tests.set_auth_uid('00000000-0000-0000-0000-000000000001');
 
 SELECT throws_ok(
   $$ INSERT INTO public.perfis(id, nome, email) VALUES (gen_random_uuid(), 'X', 'x@x.test') $$,
+  '42501', NULL,
   'authenticated não pode INSERT em perfis diretamente (só trigger handle_new_user)'
 );
 
