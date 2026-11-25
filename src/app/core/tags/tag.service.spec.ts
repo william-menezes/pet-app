@@ -252,3 +252,60 @@ describe('TagService', () => {
     });
   });
 });
+
+describe('TagService: 2ª via e início do vínculo (T088 a T090)', () => {
+  let rpc: ReturnType<typeof vi.fn>;
+  let maybeSingle: ReturnType<typeof vi.fn>;
+  let is: ReturnType<typeof vi.fn>;
+  let eq: ReturnType<typeof vi.fn>;
+  let from: ReturnType<typeof vi.fn>;
+  let service: TagService;
+
+  beforeEach(() => {
+    rpc = vi.fn();
+    maybeSingle = vi.fn();
+    is = vi.fn(() => ({ maybeSingle }));
+    eq = vi.fn(() => ({ is }));
+    from = vi.fn(() => ({ select: () => ({ eq }) }));
+    TestBed.configureTestingModule({ providers: [{ provide: SupabaseService, useValue: { client: { rpc, from } } }] });
+    service = TestBed.inject(TagService);
+  });
+
+  it('requestReplacement valida o código antes, manda o tipo e devolve o id do pedido', async () => {
+    expect(await service.requestReplacement('xx', 'lost')).toEqual({ ok: false, error: 'invalid_code' });
+    expect(rpc).not.toHaveBeenCalled();
+    rpc.mockResolvedValue({ data: { ok: true, request_id: 'req-1' }, error: null });
+    expect(await service.requestReplacement('7k3m-q9xa-c', 'damaged')).toEqual({ ok: true, requestId: 'req-1' });
+    expect(rpc).toHaveBeenCalledWith('request_tag_replacement', { p_code: '7K3MQ9XAC', p_kind: 'damaged' });
+  });
+
+  it('requestReplacement: not_owner, replacement_limit e too_many_requests chegam como erro; sem id é network', async () => {
+    rpc.mockResolvedValueOnce({ data: { ok: false, error: 'not_owner' }, error: null });
+    expect(await service.requestReplacement(CODE, 'lost')).toEqual({ ok: false, error: 'not_owner' });
+    rpc.mockResolvedValueOnce({ data: { ok: false, error: 'replacement_limit' }, error: null });
+    expect(await service.requestReplacement(CODE, 'damaged')).toEqual({ ok: false, error: 'replacement_limit' });
+    rpc.mockResolvedValueOnce({ data: { ok: false, error: 'too_many_requests', retry_after_seconds: 30 }, error: null });
+    expect(await service.requestReplacement(CODE, 'damaged')).toEqual({ ok: false, error: 'too_many_requests', retryAfterSeconds: 30 });
+    rpc.mockResolvedValueOnce({ data: { ok: true }, error: null });
+    expect(await service.requestReplacement(CODE, 'damaged')).toEqual({ ok: false, error: 'network' });
+  });
+
+  it('assignmentStart lê só o vínculo ativo da tag, pelo código normalizado', async () => {
+    maybeSingle.mockResolvedValue({ data: { started_at: '2026-11-02T21:40:00Z' }, error: null });
+    expect(await service.assignmentStart('7k3m q9xa c')).toBe('2026-11-02T21:40:00Z');
+    expect(from).toHaveBeenCalledWith('tag_assignments');
+    expect(eq).toHaveBeenCalledWith('tag_code', '7K3MQ9XAC');
+    expect(is).toHaveBeenCalledWith('ended_at', null);
+  });
+
+  it('assignmentStart devolve null em código inválido, erro, sem linha ou exceção', async () => {
+    expect(await service.assignmentStart('xx')).toBeNull();
+    expect(from).not.toHaveBeenCalled();
+    maybeSingle.mockResolvedValueOnce({ data: null, error: { message: 'x' } });
+    expect(await service.assignmentStart(CODE)).toBeNull();
+    maybeSingle.mockResolvedValueOnce({ data: null, error: null });
+    expect(await service.assignmentStart(CODE)).toBeNull();
+    maybeSingle.mockRejectedValueOnce(new Error('boom'));
+    expect(await service.assignmentStart(CODE)).toBeNull();
+  });
+});

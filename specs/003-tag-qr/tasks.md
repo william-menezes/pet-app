@@ -415,17 +415,17 @@ Igual à `004`: a máquina não tem Docker nem a CLI do Supabase. Todo "Feito qu
   máscara, inserção, e o pacote **só com `pins.csv`** enquanto a etiqueta não existe (o PDF entra em
   T084). **Feito quando**: `deno test` gera um lote de 54, todos válidos e distintos; o PIN do CSV
   ativa o código; nenhum PIN aparece na saída de log do teste.
-- [ ] T077 [P] [US7] [FE] `core/admin/admin-tag.service.ts`. **Feito quando**: teste unitário.
-- [ ] T078 [US7] [FE] Tela "Lotes" conforme `V2-admin-lotes*.dc.html`: contadores, tabela (lista de
+- [x] T077 [P] [US7] [FE] `core/admin/admin-tag.service.ts`. **Feito quando**: teste unitário.
+- [x] T078 [US7] [FE] Tela "Lotes" conforme `V2-admin-lotes*.dc.html`: contadores, tabela (lista de
   cartões no celular), aviso do pacote, "Criar lote" com formulário, confirmação e download do
   pacote. **Feito quando**: teste de componente; o download não fica em memória depois de salvo.
-- [ ] T079 [US7] [FE] Tela "Códigos" conforme `V2-admin-codigos*.dc.html`: busca, filtros, tabela
+- [x] T079 [US7] [FE] Tela "Códigos" conforme `V2-admin-codigos*.dc.html`: busca, filtros, tabela
   com seleção e paginação, "Reimprimir seleção". **Feito quando**: teste cobre busca e filtro.
-- [ ] T080 [US7] [FE] Tela "Detalhe do código" conforme `V2-admin-codigo*.dc.html`: vínculo, scans,
+- [x] T080 [US7] [FE] Tela "Detalhe do código" conforme `V2-admin-codigo*.dc.html`: vínculo, scans,
   histórico, ações com confirmação, exibição única do PIN novo. **Feito quando**: teste cobre cada ação.
-- [ ] T081 [P] [US7] [FE] Tela "Fila": scans de tags não vinculadas, pedidos de 2ª via, tags
+- [x] T081 [P] [US7] [FE] Tela "Fila": scans de tags não vinculadas, pedidos de 2ª via, tags
   travadas, conforme `V2-admin-fila*.dc.html` (três seções, filtro por chips; no celular, um cartão por linha). **Feito quando**: teste de componente.
-- [ ] T082 [P] [US7] [FE] Tela "Auditoria" conforme `V2-admin-auditoria*.dc.html`: lista filtrável por evento e por código, com "Carregar mais".
+- [x] T082 [P] [US7] [FE] Tela "Auditoria" conforme `V2-admin-auditoria*.dc.html`: lista filtrável por evento e por código, com "Carregar mais".
   **Feito quando**: teste de componente.
 - [ ] T083 [US7] [QA] `e2e/admin.spec.ts`: criar lote, baixar o pacote, bloquear um código e
   conferir "tag não encontrada" na página pública, reemitir PIN, encerrar vínculo; tutor comum não
@@ -446,12 +446,12 @@ Igual à `004`: a máquina não tem Docker nem a CLI do Supabase. Todo "Feito qu
 - [x] T087 [US8] [BE] `release_tag` e `request_tag_replacement` em `0031_rpc_tutor.sql`
   (`end_assignments_for_account` já existe desde T019A). **Feito quando**: pgTAP cobre os itens do
   contrato e o isolamento após a troca de dono.
-- [ ] T088 [US8] [FE] Tela "Gerenciar tag" conforme `V2-tag*.dc.html` (claro e escuro): cartão do
+- [x] T088 [US8] [FE] Tela "Gerenciar tag" conforme `V2-tag*.dc.html` (claro e escuro): cartão do
   código, três ações e "Desvincular". **Feito quando**: teste de componente.
-- [ ] T089 [US8] [FE] Fluxo "Passar a tag adiante" e "Desvincular": confirmação, depois a tela do
+- [x] T089 [US8] [FE] Fluxo "Passar a tag adiante" e "Desvincular": confirmação, depois a tela do
   PIN novo com "Copiar" e o aviso de que não aparece de novo; sair da tela apaga o PIN da memória.
   **Feito quando**: teste confere que o PIN não fica em nenhum estado depois de sair.
-- [ ] T090 [US8] [FE] Fluxo de segunda via: danificada (confirmação e mensagem de pedido
+- [x] T090 [US8] [FE] Fluxo de segunda via: danificada (confirmação e mensagem de pedido
   registrado) e perdida (confirmação explicando que o endereço antigo para de funcionar).
   **Feito quando**: teste de componente cobre os dois.
 - [ ] T091 [US8] [QA] e2e: Ana passa a tag adiante; outra conta (criada pelo próprio teste, pela

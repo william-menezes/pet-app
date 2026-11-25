@@ -40,6 +40,24 @@ describe('ZardInputOtpComponent', () => {
     expect(fixture.componentInstance.tokens().join('')).toBe('K47Q9M');
   });
 
+  it('o PIN colado com hífen ou espaço não perde caractere (o corte em seis vem depois do filtro)', () => {
+    for (const pasted of ['K47-Q9M', 'K47 Q9M', ' K47Q9M ', 'K4-7Q-9M', 'k47q9m'.toUpperCase(), 'K47Q9M123']) {
+      const fixture = render('alphanumeric', 'PIN de 6 caracteres');
+      fixture.componentInstance.handlePaste(pasted);
+      fixture.detectChanges();
+      expect(fixture.componentInstance.tokens().join(''), pasted).toBe('K47Q9M');
+    }
+  });
+
+  it('colar no primeiro campo (autopreenchimento) com separador também preenche os seis', () => {
+    const fixture = render('alphanumeric', 'PIN de 6 caracteres');
+    const [first] = cells(fixture);
+    first.value = 'K47-Q9M';
+    first.dispatchEvent(new InputEvent('input', { inputType: 'insertFromPaste', bubbles: true }));
+    fixture.detectChanges();
+    expect(fixture.componentInstance.tokens().join('')).toBe('K47Q9M');
+  });
+
   it('o modo alfanumérico usa teclado de texto, letras maiúsculas e sem preenchimento automático', () => {
     const [first] = cells(render('alphanumeric', 'PIN de 6 caracteres'));
     expect(first.getAttribute('inputmode')).toBe('text');

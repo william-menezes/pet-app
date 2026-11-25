@@ -97,6 +97,11 @@ export interface TutorState {
   releaseBodies: unknown[];
   petDeletes: string[];
   petUpdates: unknown[];
+  /** Respostas de `request_tag_replacement` (a última se repete) e os corpos recebidos. */
+  replacementReplies: unknown[];
+  replacementBodies: unknown[];
+  /** `started_at` do vínculo ativo devolvido pela tabela `tag_assignments` (nulo: sem linha). */
+  assignmentStart: string | null;
 }
 
 export function newTutorState(over: Partial<TutorState> = {}): TutorState {
@@ -126,6 +131,9 @@ export function newTutorState(over: Partial<TutorState> = {}): TutorState {
     releaseBodies: [],
     petDeletes: [],
     petUpdates: [],
+    replacementReplies: [{ ok: true, request_id: "req-1" }],
+    replacementBodies: [],
+    assignmentStart: "2026-11-02T21:40:00Z",
     ...over,
   };
 }
@@ -246,6 +254,14 @@ export async function mockTutorBackend(page: Page, state: TutorState): Promise<T
     state.releaseBodies.push(route.request().postDataJSON());
     return route.fulfill(json(reply));
   });
+  await page.route('**/rest/v1/rpc/request_tag_replacement', (route) => {
+    const reply = state.replacementReplies[Math.min(state.replacementBodies.length, state.replacementReplies.length - 1)];
+    state.replacementBodies.push(route.request().postDataJSON());
+    return route.fulfill(json(reply));
+  });
+  await page.route('**/rest/v1/tag_assignments**', (route) =>
+    route.fulfill(json(state.assignmentStart === null ? null : { started_at: state.assignmentStart })),
+  );
   await page.route('**/rest/v1/rescue_profiles**', (route) => {
     const req = route.request();
     const petId = new URL(req.url()).searchParams.get('pet_id')?.replace('eq.', '') ?? '';

@@ -5,3 +5,4 @@ export type * from './rescue-profile';
 export type * from './scan';
 export type * from './tag-resolution';
 export type * from './dashboard';
+export type * from './admin';

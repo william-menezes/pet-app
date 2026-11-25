@@ -89,7 +89,7 @@ export const routes: Routes = [
       },
       {
         path: 'pets/:petId/tag',
-        loadComponent: shellFallback,
+        loadComponent: () => import('./features/pets/manage-tag/manage-tag').then((m) => m.ManageTag),
         data: { home: '/app/pets' },
         title: $localize`Gerenciar tag — Faro`,
       },
@@ -128,32 +128,28 @@ export const routes: Routes = [
       {
         path: '',
         pathMatch: 'full',
-        loadComponent: () => import('./features/admin/admin/admin').then((m) => m.Admin),
+        loadComponent: () => import('./features/admin/batches/batches').then((m) => m.AdminBatches),
         title: 'Administração — Faro',
       },
       {
         path: 'codigos',
         pathMatch: 'full',
-        loadComponent: shellFallback,
-        data: { home: '/admin' },
+        loadComponent: () => import('./features/admin/codes/codes').then((m) => m.AdminCodes),
         title: $localize`Códigos — Faro`,
       },
       {
         path: 'codigos/:code',
-        loadComponent: shellFallback,
-        data: { home: '/admin/codigos' },
+        loadComponent: () => import('./features/admin/code-detail/code-detail').then((m) => m.AdminCodeDetailPage),
         title: $localize`Detalhe do código — Faro`,
       },
       {
         path: 'fila',
-        loadComponent: shellFallback,
-        data: { home: '/admin' },
+        loadComponent: () => import('./features/admin/queue/queue').then((m) => m.AdminQueuePage),
         title: $localize`Fila — Faro`,
       },
       {
         path: 'auditoria',
-        loadComponent: shellFallback,
-        data: { home: '/admin' },
+        loadComponent: () => import('./features/admin/audit/audit').then((m) => m.AdminAuditPage),
         title: $localize`Auditoria — Faro`,
       },
       {

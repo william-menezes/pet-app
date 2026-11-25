@@ -136,6 +136,8 @@ zSize: {
 
 Then extend `ZardButtonTypeVariants` / `ZardButtonSizeVariants` (they derive from the cva, so nothing else changes). Microcopy stays verb + object ("Adicionar vacina"), never "OK".
 
+**`input-otp` (the activation PIN), paste fix.** `handlePaste` cut the pasted text at six characters and only then dropped the characters outside the pattern, so a PIN pasted as `K47-Q9M` or `K47 Q9M` lost its last character. It now filters first and cuts after (`.filter(...).slice(0, effectiveMaxLength())`). Re-apply this edit if the component is ever re-copied with `zard-cli`; `input-otp.component.spec.ts` has the test.
+
 ## 3. Which ZardUI component for which Faro component
 
 | Faro (this system) | In the app | Notes |

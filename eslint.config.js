@@ -179,6 +179,7 @@ module.exports = defineConfig([
             'zId',
             'zIcon',
             'rel',
+            'scope',
             'ariaCurrentWhenActive',
             'tone',
             'd',

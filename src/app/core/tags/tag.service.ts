@@ -49,6 +49,9 @@ export interface ActivationResult {
 
 export type ReleaseReason = 'released' | 'transferred';
 
+/** Pedido de 2ª via: tag danificada (mesmo código, etiqueta nova) ou perdida (código novo; o antigo é anulado). */
+export type ReplacementKind = 'damaged' | 'lost';
+
 export interface ReleaseResult {
   /** Código na forma de exibição. */
   code: string;
@@ -221,6 +224,40 @@ export class TagService {
     const newPin = str(res.data['new_pin']);
     if (newPin === null) return failure('network');
     return { ok: true, code: str(res.data['code']) ?? format(normalized), newPin };
+  }
+
+  /**
+   * `request_tag_replacement`: registra o pedido de 2ª via. `damaged`: a tag continua funcionando. `lost`: o código
+   * antigo é anulado na hora e o vínculo termina (irreversível: quem chama já confirmou com o tutor). Não há PIN
+   * novo aqui; o tutor ativa a tag nova com o PIN do cartão dela.
+   */
+  async requestReplacement(code: string, kind: ReplacementKind): Promise<TagResult<{ requestId: string }>> {
+    const normalized = normalize(code);
+    if (!isValid(normalized)) return failure('invalid_code');
+    const res = await this.call('request_tag_replacement', { p_code: normalized, p_kind: kind });
+    if (!res.ok) return res;
+    const requestId = str(res.data['request_id']);
+    return requestId === null ? failure('network') : { ok: true, requestId };
+  }
+
+  /**
+   * Quando o vínculo ativo da tag começou (`tag_assignments`, que a RLS já limita ao próprio tutor). Só enfeita a
+   * tela: qualquer falha devolve `null` e a tela segue sem a data.
+   */
+  async assignmentStart(code: string): Promise<string | null> {
+    const normalized = normalize(code);
+    if (!isValid(normalized)) return null;
+    try {
+      const { data, error } = await this.supabase.client
+        .from('tag_assignments')
+        .select('started_at')
+        .eq('tag_code', normalized)
+        .is('ended_at', null)
+        .maybeSingle();
+      return error || !isRecord(data) ? null : str(data['started_at']);
+    } catch {
+      return null;
+    }
   }
 
   /** `my_dashboard`: pets do tutor com a situação da tag (e a ativação pendente). */
