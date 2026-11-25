@@ -79,3 +79,45 @@ jobs:
       - name: Parar o Supabase local
         if: always()
         run: supabase stop --no-backup || true
+
+  # Spec 004: E2E com backend REAL (Supabase local + Edge Functions + navegador). Aponta o app para o stack local sem
+  # alterar os ambientes versionados: environment.e2e.ts e gerado aqui, no runner (fora do git).
+  e2e:
+    name: e2e
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - uses: supabase/setup-cli@689adcfb80d947100a1eab127289b97d1fb07b13 # v3.2.0
+        with:
+          version: 3.2.0
+      - name: Subir o Supabase local
+        run: supabase start
+      - name: Preparar ambiente do app e Edge Functions (modo teste)
+        run: bash scripts/ci/e2e-prepare.sh
+      - name: Instalar o Chromium do Playwright
+        run: npx playwright install --with-deps chromium
+      - name: E2E com backend real
+        run: npx playwright test -c playwright.e2e-real.config.ts
+      - name: Relatorio do Playwright
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: playwright-report-real
+          path: |
+            playwright-report-real
+            test-results-real
+          retention-days: 7
+      - name: Log das Edge Functions
+        if: ${{ failure() }}
+        run: tail -n 200 /tmp/functions-serve.log || true
+      - name: Parar o Supabase local
+        if: always()
+        run: supabase stop --no-backup || true

@@ -719,3 +719,17 @@ Progresso registrado a cada passo (a sessão caiu mais de uma vez). Nenhum teste
 - `check:audit`: 0 vulnerabilidades de producao (secao acima). Passo bloqueante no CI.
 - CI, job `app`: `build:stats`, `check:ui`, `check:bundle`, `check:headers`, `check:secrets` (varre tambem `dist/`), `check:templates`, `test:scripts`, `check:audit`.
   `.github/dependabot.yml` (`npm` e `github-actions`, semanal).
+
+## Job `e2e` (backend real) — infraestrutura
+
+- Terceiro job `e2e` em `.github/workflows/ci.yml`: sobe o Supabase local, roda `scripts/ci/e2e-prepare.sh` (le as chaves de `supabase status`, gera
+  `src/environments/environment.e2e.ts` **so no runner** e o `supabase/.env.local` com `FARO_ENV=test`, `SMS_DRIVER=stub`, `SMS_STUB_CODE=424242`, sobe o
+  `functions serve` e aquece o modelo de e-mail), instala o Chromium e roda `playwright.e2e-real.config.ts`. Falhou: publica `playwright-report-real` e
+  mostra o log do `functions serve`. Action `upload-artifact` fixada por hash (v7.0.2, `cf430e0...`, conferido com `gh api`).
+- Versionado: configuracao `e2e` do Angular (`fileReplacements` para `environment.e2e.ts`), `environment.e2e.example.ts` sem valores, `.gitignore` do arquivo com valores.
+  Os ambientes `environment.ts` e `environment.development.ts` nao foram tocados.
+- O app e servido por `ng serve --configuration e2e` na porta 4200 (o `site_url` dos e-mails). O servidor construido nao serve aqui: a CSP `connect-src` so
+  libera `https://<host>` e o Supabase local e `http://127.0.0.1:54321`.
+- **Desvio de caminho**: os testes ficam em `e2e-real/` (nao em `e2e/...` como no `tasks.md`), porque `npm run e2e` (testDir `e2e/`) roda na maquina de
+  desenvolvimento, onde o ambiente aponta para o projeto hospedado. `e2e-real/global-setup.ts` ABORTA se `E2E_SUPABASE_URL` ou `environment.e2e.ts` nao forem locais.
+- `workers: 1`: os limites de taxa (IP, conta) sao compartilhados no runner; cada teste usa e-mail e celular unicos.

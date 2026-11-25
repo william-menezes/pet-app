@@ -31,6 +31,8 @@ export const SECRET_NAMES = [
  */
 export const ALLOWED_ASSIGNMENTS = [
   { file: 'scripts/ci/supabase-checks.sh', value: 'ci-test-salt-0123456789' },
+  { file: 'scripts/ci/e2e-prepare.sh', value: 'ci-test-salt-0123456789' },
+  { file: 'scripts/ci/e2e-prepare.sh', value: 'ci-test-pepper-0123456789-0123456789-abcdef' },
   { file: 'specs/004-conta-tutor/quickstart.md', value: 'local-dev-salt-0123456789' },
   { file: 'specs/004-conta-tutor/quickstart.md', value: 'local-dev-pepper-0123456789-abcdefghij' },
   { file: 'specs/004-conta-tutor/quickstart.md', value: 'curto' },
