@@ -40,7 +40,7 @@ test('T060b: codigo errado mostra "restam 4"', async ({ page }) => {
   await confirmEmailAndGo(page, email);
   await expect(page).toHaveURL(/\/auth\/confirmar-celular/);
   await typeSmsCode(page, '111111');
-  await expect(page.locator(tid('confirm-phone-error'))).toContainText(/restam\s+4/i);
+  await expect(page.locator(tid('confirm-phone-error'))).toContainText(/mais\s+4\s+tentativas/i);
 });
 
 test('T060c: cadastro iniciado com returnUrl=/app/conta termina em /app/conta', async ({ page }) => {

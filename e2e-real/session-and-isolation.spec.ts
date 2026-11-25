@@ -31,6 +31,18 @@ test('recarregar a pagina mantem a sessao (/app continua em /app)', async ({ pag
   await expect(page).toHaveURL(/\/app\/conta/);
 });
 
+// DEF-001 (produto, spec 001/004): sem "Manter conectado" o AuthService grava a sessao no sessionStorage (auth.storage = ...),
+// mas o cliente Supabase novo, criado a cada carga da pagina, le so o localStorage. Recarregar a aba perde a sessao
+// ("Sua sessao expirou"), embora o contrato diga que o sessionStorage vive ate fechar a aba. Fica como falha esperada ate o
+// frontend corrigir; quando corrigir, este teste passa e o Playwright o reprova ("expected to fail"), forcando a remocao do test.fail.
+test('DEF-001: sem "Manter conectado", recarregar a mesma aba mantem a sessao', async ({ page }) => {
+  test.fail(true, 'DEF-001: a sessao volatil nao sobrevive ao recarregamento');
+  await loginViaUi(page, SEED.tutorA.email, SEED.password, { remember: false });
+  await expect(page).toHaveURL(/localhost:4200\/app(\?|$|\/)/);
+  await page.goto('/app/conta');
+  await expect(page.locator(tid('account-home'))).toBeVisible();
+});
+
 test('papel pelo servidor: current_user_role de cada usuario do seed', async () => {
   for (const [u, papel] of [
     [SEED.tutorA, 'tutor'],
