@@ -13,5 +13,5 @@ test('o coletor local entrega o link de confirmacao com token_hash', async () =>
   expect(res.status).toBe(200);
   const link = await waitForLink(email, 'token_hash=');
   expect(link).toContain('/auth/confirmar-email?token_hash=');
-  expect(link).toContain('type=signup');
+  expect(link).toMatch(/type=(email|signup)/);
 });

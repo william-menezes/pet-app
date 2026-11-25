@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { signUpViaUi, loginViaUi, tid, typeSmsCode } from './support/flows';
 import { waitForLink } from './support/mailbox';
-import { apiSignIn, rest, TEST_PASSWORD, uniqueEmail, uniquePhoneDigits } from './support/stack';
+import { apiSignIn, rest, serviceRequest, TEST_PASSWORD, uniqueEmail, uniquePhoneDigits } from './support/stack';
 
 /** T039 e T060: cadastro, link do e-mail, confirmar celular com o codigo do driver stub, chegar ao app. */
 
@@ -64,4 +64,26 @@ test('T060d: returnUrl externo (https://evil.com) e ignorado e termina em /app',
   await typeSmsCode(page);
   await expect(page).toHaveURL(/localhost:4200\/app(\?|$|\/)/);
   expect(page.url()).not.toContain('evil.com');
+});
+
+test('T060e: o 5o codigo errado trava a verificacao (invalida no banco) e o codigo certo depois nao confirma', async ({ page }) => {
+  const email = uniqueEmail('lock');
+  await signUpViaUi(page, { email, phoneDigits: uniquePhoneDigits() });
+  await confirmEmailAndGo(page, email);
+  await expect(page).toHaveURL(/\/auth\/confirmar-celular/);
+  for (let i = 0; i < 5; i++) {
+    await expect(page.locator(tid('confirm-phone-cell-1'))).toBeVisible();
+    await typeSmsCode(page, '111111');
+    await expect(page.locator(`${tid('confirm-phone-error')}, ${tid('confirm-phone-resend')}`).first()).toBeVisible();
+  }
+  const { session } = await apiSignIn(email, TEST_PASSWORD);
+  await expect
+    .poll(async () => {
+      const r = await serviceRequest(`phone_verifications?user_id=eq.${session!.user.id}&select=attempts,invalidated_at,consumed_at`);
+      return r.body.some((v: { invalidated_at: string | null }) => v.invalidated_at !== null);
+    })
+    .toBe(true);
+  const ok = await rest('rpc/phone_is_confirmed', { token: session!.access_token, body: { p_user_id: session!.user.id } });
+  expect(ok.body).toBe(false);
+  await expect(page).not.toHaveURL(/localhost:4200\/app(\?|$|\/)/);
 });

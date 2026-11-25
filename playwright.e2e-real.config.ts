@@ -26,6 +26,9 @@ export default defineConfig({
     baseURL: 'http://localhost:4200',
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
+    // O dev server aplica a CSP de src/security-headers.ts, cujo connect-src so aceita https://<host>: o Supabase local
+    // (http://127.0.0.1:54321) fica bloqueado. Achado de QA registrado no execution-log; os cabecalhos sao provados em headers.spec.
+    bypassCSP: true,
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: {

@@ -147,3 +147,38 @@ export async function refresh(refreshToken: string): Promise<number> {
   });
   return res.status;
 }
+
+/** Escrita/leitura como service_role (so para preparar ou conferir estado no stack LOCAL). */
+export async function serviceRequest(
+  path: string,
+  opts: { method?: string; body?: unknown } = {},
+): Promise<{ status: number; body: any }> {
+  return json(
+    await fetch(`${stack.url}/rest/v1/${path}`, {
+      method: opts.method ?? 'GET',
+      headers: {
+        apikey: stack.serviceKey,
+        Authorization: `Bearer ${stack.serviceKey}`,
+        'Content-Type': 'application/json',
+        Prefer: 'return=representation',
+      },
+      body: opts.body === undefined ? undefined : JSON.stringify(opts.body),
+    }),
+  );
+}
+
+/** Prepara um usuario com celular ja confirmado, como se tivesse concluido o cadastro (so no stack local). */
+export async function confirmPhoneAsService(userId: string, phoneDigits: string): Promise<void> {
+  const r = await serviceRequest(`perfis?id=eq.${userId}`, {
+    method: 'PATCH',
+    body: { celular: e164(phoneDigits), celular_confirmado_em: new Date().toISOString() },
+  });
+  if (r.status >= 300) throw new Error(`confirmPhoneAsService: HTTP ${r.status}`);
+}
+
+export const SEED = {
+  password: 'TesteSenha123!',
+  tutorA: { id: '00000000-0000-0000-0000-000000000001', email: 'tutor.a@faro.test' },
+  tutorB: { id: '00000000-0000-0000-0000-000000000002', email: 'tutor.b@faro.test' },
+  admin: { id: '00000000-0000-0000-0000-000000000003', email: 'admin@faro.test' },
+};
