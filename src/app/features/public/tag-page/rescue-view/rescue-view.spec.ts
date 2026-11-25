@@ -169,12 +169,26 @@ describe('RescueView (T031, T061)', () => {
       expect(byId('public-owner-banner')?.textContent).toContain('Você está vendo como um estranho');
       expect(byId('public-owner-banner')?.textContent).toContain('Este scan não gera aviso');
       expect(byId('public-owner-edit')?.tagName).toBe('A');
+      // O pet não vem na projeção: "Editar" acha o pet pelo código, no app (link comum, nunca routerLink).
+      expect(byId('public-owner-edit')?.getAttribute('href')).toBe('/app/tag/7K3MQ9XAC');
       const whats = byId('public-rescue-whatsapp') as HTMLButtonElement;
       expect(whats.tagName).toBe('BUTTON');
       expect(whats.disabled).toBe(true);
       expect(byId('public-rescue-phone')?.getAttribute('href')).toBeNull();
       expect((byId('public-rescue-location') as HTMLButtonElement).disabled).toBe(true);
       expect(byId('public-owner-note')).not.toBeNull();
+    });
+
+    it('a prévia dentro do app esconde o "Editar" e mantém o resto da faixa', () => {
+      TestBed.configureTestingModule({ providers: [provideIcons(faroIcons)] });
+      const fixture = TestBed.createComponent(RescueView);
+      fixture.componentRef.setInput('profile', full);
+      fixture.componentRef.setInput('ownerView', true);
+      fixture.componentRef.setInput('showOwnerEdit', false);
+      fixture.detectChanges();
+      const el = fixture.nativeElement as HTMLElement;
+      expect(el.querySelector('[data-testid="public-owner-banner"]')).not.toBeNull();
+      expect(el.querySelector('[data-testid="public-owner-edit"]')).toBeNull();
     });
 
     it('sem a visão do dono não há faixa', () => {

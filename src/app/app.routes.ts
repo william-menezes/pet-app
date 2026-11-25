@@ -74,7 +74,7 @@ export const routes: Routes = [
       },
       {
         path: 'pets/:petId/visibilidade',
-        loadComponent: shellFallback,
+        loadComponent: () => import('./features/pets/visibility/visibility').then((m) => m.VisibilityPage),
         data: { home: '/app/pets' },
         title: $localize`O que estranhos veem — Faro`,
       },
@@ -89,6 +89,13 @@ export const routes: Routes = [
         loadComponent: shellFallback,
         data: { home: '/app/pets' },
         title: $localize`Gerenciar tag — Faro`,
+      },
+      {
+        // Do código da tag ao pet dono dele (o "Editar" da visão do dono só conhece o código).
+        path: 'tag/:code',
+        loadComponent: () => import('./features/pets/tag-redirect/tag-redirect').then((m) => m.TagRedirect),
+        data: { home: '/app' },
+        title: $localize`Abrindo a tag — Faro`,
       },
       {
         path: 'scans',

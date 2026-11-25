@@ -9,6 +9,7 @@ import { IconTile } from '@/shared/components/faro/icon-tile/icon-tile';
 import { InfoCard } from '@/shared/components/faro/info-card/info-card';
 import { PublicFooter } from '@/shared/shells/public-layout/public-footer';
 import { PublicLayout } from '@/shared/shells/public-layout/public-layout';
+import { normalize } from '../../../../core/tag-code';
 import type { LostElapsed, PublicRescueProfile } from '../../../../models';
 import { telHref } from './tel-href';
 
@@ -35,9 +36,17 @@ export class RescueView {
   readonly lostElapsed = input<LostElapsed | null>(null);
   /** Visão do dono: o tutor logado abrindo a própria tag. */
   readonly ownerView = input(false);
+  /** Visão do dono: mostra o botão "Editar" da faixa. Desligado na prévia dentro do app (ela tem o próprio "voltar"). */
+  readonly showOwnerEdit = input(true);
   readonly locationStatus = input<LocationStatus>('unavailable');
   /** O visitante tocou em "Enviar onde estou". */
   readonly shareLocation = output<void>();
+
+  /**
+   * Para onde vai o "Editar" da faixa do dono. A projeção pública não traz id de pet, então o destino é a rota do app
+   * que acha o pet pelo código da tag (`/app/tag/<código>`) e segue para "O que estranhos veem". Link comum (`<a href>`).
+   */
+  protected readonly editHref = computed(() => `/app/tag/${normalize(this.profile().code)}`);
 
   protected readonly name = computed(() => this.profile().pet.name);
   protected readonly photo = computed(() => this.profile().pet.photo_url ?? null);

@@ -9,7 +9,9 @@
       <p class="text-[15px] font-semibold text-brand-foreground" i18n>Você está vendo como um estranho</p>
       <p class="text-[13px] text-brand-muted" i18n>Este scan não gera aviso</p>
     </div>
-    <a z-button zSize="md" href="/app" data-testid="public-owner-edit" i18n>Editar</a>
+    @if (showOwnerEdit()) {
+      <a z-button zSize="md" [href]="editHref()" data-testid="public-owner-edit" i18n>Editar</a>
+    }
   </div>
 }
 

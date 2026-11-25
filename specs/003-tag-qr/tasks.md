@@ -367,13 +367,13 @@ Igual à `004`: a máquina não tem Docker nem a CLI do Supabase. Todo "Feito qu
 
 ## Phase 7: User Story 5 — O que estranhos veem (P2)
 
-- [ ] T064 [US5] [FE] `core/pets/rescue-profile.service.ts`: ler e salvar as opções `show_*` e
+- [x] T064 [US5] [FE] `core/pets/rescue-profile.service.ts`: ler e salvar as opções `show_*` e
   `lost_show_*`. **Feito quando**: teste unitário.
-- [ ] T065 [US5] [FE] Tela "O que estranhos veem" conforme `V2-visibilidade*.dc.html` (claro e
+- [x] T065 [US5] [FE] Tela "O que estranhos veem" conforme `V2-visibilidade*.dc.html` (claro e
   escuro): três grupos, "Nome e foto" travado em "Sempre", interruptores, "Pré-visualizar" e
   "Salvar"; ligar telefone ou WhatsApp sem celular confirmado mostra o aviso e leva à confirmação.
   **Feito quando**: teste de componente cobre o aviso.
-- [ ] T066 [US5] [FE] Prévia: reutilizar os componentes da página de resgate com as escolhas ainda
+- [x] T066 [US5] [FE] Prévia: reutilizar os componentes da página de resgate com as escolhas ainda
   não salvas, na visão do dono. **Feito quando**: a prévia reflete um interruptor alterado sem salvar.
 - [ ] T067 [US5] [QA] e2e: desligar "Cuidados", salvar, abrir a página pública sem login e conferir
   que o texto não está no HTML bruto. **Feito quando**: passa.

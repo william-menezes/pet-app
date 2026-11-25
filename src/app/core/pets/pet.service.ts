@@ -141,6 +141,18 @@ export class PetService {
     }
   }
 
+  /** Um pet do tutor. Pet de outro tutor (a RLS não devolve a linha) ou inexistente: `not_found`. */
+  async get(petId: string): Promise<PetResult<{ pet: Pet }>> {
+    try {
+      const { data, error } = await this.supabase.client.from('pets').select('*').eq('id', petId).maybeSingle();
+      if (error) return { ok: false, error: 'network' };
+      if (data === null) return { ok: false, error: 'not_found' };
+      return { ok: true, pet: toPet(data as PetRow) };
+    } catch {
+      return { ok: false, error: 'network' };
+    }
+  }
+
   async create(draft: PetDraft): Promise<PetResult<{ petId: string }>> {
     const tutorId = this.authStore.user()?.id;
     const cols = toPetColumns(draft, true);

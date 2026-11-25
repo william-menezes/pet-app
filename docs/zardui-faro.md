@@ -250,6 +250,8 @@ Only the authenticated tutor app gets the dark theme. Add the class on the tutor
 }
 ```
 
+**Back to light inside the dark app (2026-11-25).** The "how strangers will see it" preview (`features/pets/visibility/`) is the public page itself, and the public page is never dark. Its full-screen panel carries `.faro-light`, a block in `src/styles.css` that sets every variable `.dark` redefines back to its `:root` value (a nested element's own declaration beats the inherited dark one). `npm run check:tokens` compares the two blocks, so a variable added to `.dark` without its light twin fails the check.
+
 Selection flips with the theme because it is written as `bg-foreground text-background`: an ink pill on light, a light pill on dark. Links use `text-indigo-700` on light and `dark:text-indigo-200`. Use the white-letter wordmark on dark grounds.
 
 Breakpoints, mobile first: the base styles are the 390px phone layout; `md:` (768px) swaps the bottom nav for the icon rail and centres forms in one 480px column; `xl:` (1280px) brings the sidebar with the wordmark and puts the photo or the navy brand panel on the left half. Screens are drawn at 390, 768 and 1440.

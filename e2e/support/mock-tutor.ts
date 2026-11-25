@@ -216,7 +216,10 @@ export async function mockTutorBackend(page: Page, state: TutorState): Promise<T
       state.petDeletes.push(new URL(req.url()).search);
       return route.fulfill({ status: 204 });
     }
-    return route.fulfill(json(state.petRows));
+    const wanted = new URL(req.url()).searchParams.get('id')?.replace('eq.', '');
+    const rows = wanted === undefined ? state.petRows : state.petRows.filter((row) => row['id'] === wanted);
+    const single = (req.headers()['accept'] ?? '').includes('pgrst.object');
+    return route.fulfill(json(single ? (rows[0] ?? null) : rows));
   });
   await page.route('**/rest/v1/rpc/set_lost_mode', (route) => {
     const body = route.request().postDataJSON() as { p_pet_id: string; p_on: boolean };

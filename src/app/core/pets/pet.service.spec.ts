@@ -13,7 +13,7 @@ function setup(opts: { user?: boolean; processor?: (f: Blob) => Promise<Blob> } 
   const calls: { op: string; args: unknown[] }[] = [];
   let result: { data: unknown; error: unknown } = { data: [], error: null };
   const chain: Record<string, unknown> = {};
-  for (const op of ['select', 'insert', 'update', 'delete', 'eq', 'order', 'single']) {
+  for (const op of ['select', 'insert', 'update', 'delete', 'eq', 'order', 'single', 'maybeSingle']) {
     chain[op] = (...args: unknown[]) => {
       calls.push({ op, args });
       return chain;
@@ -135,6 +135,21 @@ describe('PetService', () => {
     });
     const res = await t.service.list();
     expect(res.ok && res.pets[0]).toMatchObject({ id: PET, tutorId: UID, temperament: [] });
+  });
+
+  it('get: devolve o pet; sem linha (RLS ou inexistente) é not_found; erro do banco é network', async () => {
+    const t = setup();
+    t.setResult({
+      data: { id: PET, tutor_id: UID, name: 'Paçoca', species: 'dog', breed: 'SRD', sex: 'male', size: 'medium', neutered: true, birth_month: '2022-03-01', temperament: ['Dócil'], care_notes: null, photo_path: null, created_at: 'a', updated_at: 'b' },
+      error: null,
+    });
+    const res = await t.service.get(PET);
+    expect(res.ok && res.pet).toMatchObject({ id: PET, breed: 'SRD', birthMonth: '2022-03-01', temperament: ['Dócil'] });
+    expect(t.calls.some((c) => c.op === 'eq' && c.args[0] === 'id' && c.args[1] === PET)).toBe(true);
+    t.setResult({ data: null, error: null });
+    expect(await t.service.get(PET)).toEqual({ ok: false, error: 'not_found' });
+    t.setResult({ data: null, error: { message: 'segredo' } });
+    expect(await t.service.get(PET)).toEqual({ ok: false, error: 'network' });
   });
 
   describe('uploadPhoto', () => {
