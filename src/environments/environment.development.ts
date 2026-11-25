@@ -7,4 +7,6 @@ export const environment = {
   production: false,
   supabaseUrl: 'https://orawzpslqvduwsvmlemv.supabase.co',
   supabaseAnonKey: 'sb_publishable_x8tQQCSOzBzznvxd9OfBEw_0_VZIL-u',
+  /** Chave pública do Turnstile. Vazia = desafio desligado. A chave de produção ainda não existe (conta Cloudflare). */
+  turnstileSiteKey: '',
 };

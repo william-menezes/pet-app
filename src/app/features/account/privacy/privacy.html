@@ -1,0 +1,73 @@
+<!-- Privacidade. Referência: design/telas-v2/V2-conta-privacidade*.dc.html e V2-conta-excluir*.dc.html; contrato §4. -->
+<div class="flex w-full flex-col gap-3 md:max-w-[560px] md:gap-4" data-testid="account-privacy">
+  <app-screen-header title="Privacidade" i18n-title [back]="'back'" [backLink]="'/app/conta'" />
+
+  <!-- Exportar meus dados -->
+  <section class="flex flex-col gap-2.5 rounded-xl bg-card p-[18px]" aria-labelledby="account-privacy-export-title">
+    <h2
+      id="account-privacy-export-title"
+      class="font-display text-[19px] leading-[1.15] font-semibold tracking-[-0.01em] text-foreground"
+      i18n>
+      Exportar meus dados
+    </h2>
+    <p class="text-[15px] leading-[1.45] text-text" i18n>
+      Um arquivo com os dados da sua conta, os termos que você aceitou e o histórico de acessos. Os dados dos seus pets, das suas tags e dos scans entram no arquivo quando essas áreas estiverem no app.
+    </p>
+    <div aria-live="polite">
+      @if (exportProblemMessage(); as message) {
+        <z-alert zType="danger" [zRole]="'status'" [zDescription]="message" data-testid="account-privacy-export-error" />
+      } @else if (exported()) {
+        <z-alert
+          zType="success"
+          [zRole]="'status'"
+          zDescription="Pronto. O arquivo foi baixado para o seu aparelho."
+          i18n-zDescription
+          data-testid="account-privacy-exported" />
+      }
+    </div>
+    <div class="mt-1 flex">
+      <button
+        type="button"
+        z-button
+        zType="outline"
+        [zLoading]="exporting()"
+        [zDisabled]="exporting()"
+        (click)="onExport()"
+        data-testid="account-privacy-export">
+        <ng-icon name="download" size="20" aria-hidden="true" />
+        <span i18n>Baixar meus dados</span>
+      </button>
+    </div>
+  </section>
+
+  <!-- Excluir minha conta -->
+  <section class="flex flex-col gap-2.5 rounded-xl bg-card p-[18px]" aria-labelledby="account-privacy-delete-title">
+    <h2
+      id="account-privacy-delete-title"
+      class="font-display text-[19px] leading-[1.15] font-semibold tracking-[-0.01em] text-foreground"
+      i18n>
+      Excluir minha conta
+    </h2>
+    <ul class="flex flex-col gap-2.5">
+      <li class="flex items-start gap-2.5 text-[15px] leading-[1.45] text-text">
+        <ng-icon name="close" size="20" class="mt-px shrink-0 text-danger-foreground" aria-hidden="true" />
+        <span i18n>Suas tags são desvinculadas e ficam livres para uma nova ativação.</span>
+      </li>
+      <li class="flex items-start gap-2.5 text-[15px] leading-[1.45] text-text">
+        <ng-icon name="close" size="20" class="mt-px shrink-0 text-danger-foreground" aria-hidden="true" />
+        <span i18n>A página de resgate deixa de mostrar os seus dados.</span>
+      </li>
+      <li class="flex items-start gap-2.5 text-[15px] leading-[1.45] text-text">
+        <ng-icon name="close" size="20" class="mt-px shrink-0 text-danger-foreground" aria-hidden="true" />
+        <span i18n>Não dá para desfazer.</span>
+      </li>
+    </ul>
+    <div class="mt-0.5 flex">
+      <button type="button" z-button zType="danger" (click)="openDelete()" data-testid="account-privacy-delete" i18n>
+        Excluir minha conta
+      </button>
+    </div>
+  </section>
+</div>
+
+<app-delete-account-dialog [(visible)]="deleteOpen" />

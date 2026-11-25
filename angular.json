@@ -25,7 +25,7 @@
                 "input": "public"
               }
             ],
-            "styles": ["primeicons/primeicons.css", "src/styles.css", "src/styles/faro-ds.css"],
+            "styles": ["src/styles.css"],
             "server": "src/main.server.ts",
             "outputMode": "server",
             "security": {
@@ -50,8 +50,12 @@
                   "maximumError": "16kB"
                 }
               ],
-              "outputHashing": "all",
-              "serviceWorker": "ngsw-config.json"
+              "optimization": {
+                "scripts": true,
+                "styles": { "minify": true, "inlineCritical": false },
+                "fonts": false
+              },
+              "outputHashing": "all"
             },
             "development": {
               "optimization": false,
@@ -61,6 +65,17 @@
                 {
                   "replace": "src/environments/environment.ts",
                   "with": "src/environments/environment.development.ts"
+                }
+              ]
+            },
+            "e2e": {
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true,
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.e2e.ts"
                 }
               ]
             }
@@ -75,6 +90,9 @@
             },
             "development": {
               "buildTarget": "faro:build:development"
+            },
+            "e2e": {
+              "buildTarget": "faro:build:e2e"
             }
           },
           "defaultConfiguration": "development"
@@ -83,6 +101,7 @@
           "builder": "@angular/build:unit-test",
           "options": {
             "runner": "vitest",
+            "setupFiles": ["src/test-setup.ts"],
             "tsConfig": "tsconfig.spec.json"
           }
         },

@@ -1,0 +1,199 @@
+<!--
+  Confirmar celular. Referência: design/telas-v2/V2-confirmar-celular{,-erro,-vencido,-indisponivel}*.dc.html; contrato §4.
+  A região aria-live existe sempre (vazia) para que o leitor de tela anuncie o erro quando ele entra.
+  Cada elemento projetado em [footer] fica num bloco de raiz única (regra da projeção com @if/@switch).
+-->
+<app-flow-shell [back]="'back'" [backLink]="'/auth/celular'" [headline]="headline" [sub]="sub">
+  @if (view() === 'loading') {
+    <div role="status" aria-busy="true" class="py-10 text-center text-text" data-testid="confirm-phone-loading">
+      <span i18n>Um instante…</span>
+    </div>
+  }
+
+  @if (view() !== 'loading') {
+    <div [attr.aria-busy]="confirming() || resending()">
+      <h1 class="font-display text-[32px] leading-[1.04] font-bold tracking-[-0.03em] text-foreground md:text-[42px]" i18n>
+        Confirme seu celular
+      </h1>
+      @switch (view()) {
+        @case ('load_error') {}
+        @case ('ended') {
+          <p class="mt-2.5 text-base leading-[1.45] text-text">
+            <span i18n>O código que enviamos para</span>&ngsp;<strong class="font-semibold whitespace-nowrap text-foreground" data-testid="confirm-phone-number">{{ phoneText() }}</strong>&ngsp;<span i18n>não vale mais.</span>
+          </p>
+        }
+        @case ('unavailable') {
+          <p class="mt-2.5 text-base leading-[1.45] text-text" i18n>
+            Seu número fica guardado. Você pode tentar de novo agora ou confirmar depois, em Conta.
+          </p>
+        }
+        @case ('request') {
+          <p class="mt-2.5 text-base leading-[1.45] text-text">
+            <span i18n>Peça um código para continuar. Vamos enviar por SMS para</span>&ngsp;<strong class="font-semibold whitespace-nowrap text-foreground" data-testid="confirm-phone-number">{{ phoneText() }}</strong>.
+          </p>
+        }
+        @default {
+          <p class="mt-2.5 text-base leading-[1.45] text-text">
+            <span i18n>Enviamos um código de 6 dígitos por SMS para</span>&ngsp;<strong class="font-semibold whitespace-nowrap text-foreground" data-testid="confirm-phone-number">{{ phoneText() }}</strong>.
+            <span i18n>É esse número que aparece para quem encontrar seu pet.</span>
+          </p>
+        }
+      }
+    </div>
+  }
+
+  @if (view() === 'code') {
+    <form id="confirm-phone-form" (submit)="$event.preventDefault(); onConfirm()" novalidate>
+      <z-input-otp
+        [zMode]="'numeric'"
+        [zMaxLength]="6"
+        zAriaLabel="Código de 6 dígitos"
+        i18n-zAriaLabel
+        [zInvalid]="codeInvalid()"
+        [formControl]="code" />
+    </form>
+  }
+
+  <div aria-live="polite" data-testid="confirm-phone-live">
+    @if (view() === 'load_error') {
+      <z-alert
+        zType="danger"
+        [zRole]="'status'"
+        zDescription="Não conseguimos conectar. Verifique sua conexão e tente de novo."
+        i18n-zDescription
+        data-testid="confirm-phone-error" />
+    } @else if (problemMessage(); as message) {
+      <z-alert zType="danger" [zRole]="'status'" [zDescription]="message" data-testid="confirm-phone-error" />
+    }
+  </div>
+
+  @if ((view() === 'code' || view() === 'ended') && countdown.remaining() > 0) {
+    <div class="flex items-center gap-2 text-sm text-muted-foreground" data-testid="confirm-phone-countdown" role="timer">
+      <ng-icon name="clock" size="18" aria-hidden="true" />
+      <span><span i18n>Reenviar em</span> {{ countdown.text() }}</span>
+    </div>
+  }
+
+  @if (view() === 'code' && countdown.remaining() === 0) {
+    <div>
+      <button
+        type="button"
+        z-button
+        zType="link"
+        [zLoading]="resending()"
+        (click)="onResend()"
+        data-testid="confirm-phone-resend"
+        i18n>
+        Reenviar código
+      </button>
+    </div>
+  }
+
+  @if (view() === 'unavailable' || canContinueWithout()) {
+    <app-note icon="info" i18n>Sem celular confirmado, não dá para ativar uma tag.</app-note>
+  }
+
+  @switch (view()) {
+    @case ('code') {
+      <button
+        footer
+        type="submit"
+        [attr.form]="'confirm-phone-form'"
+        z-button
+        zSize="lg"
+        class="w-full text-lg"
+        [zLoading]="confirming()"
+        [zDisabled]="!canConfirm()"
+        data-testid="confirm-phone-submit"
+        i18n>
+        Confirmar
+      </button>
+    }
+    @case ('request') {
+      <button
+        footer
+        type="button"
+        z-button
+        zSize="lg"
+        class="w-full text-lg"
+        [zLoading]="resending()"
+        [zDisabled]="resending() || countdown.remaining() > 0"
+        (click)="onResend()"
+        data-testid="confirm-phone-resend"
+        i18n>
+        Enviar código por SMS
+      </button>
+    }
+    @case ('ended') {
+      <button
+        footer
+        type="button"
+        z-button
+        zSize="lg"
+        class="w-full text-lg"
+        [zLoading]="resending()"
+        [zDisabled]="resending() || countdown.remaining() > 0"
+        (click)="onResend()"
+        data-testid="confirm-phone-resend"
+        i18n>
+        Reenviar código
+      </button>
+    }
+    @case ('unavailable') {
+      <button
+        footer
+        type="button"
+        z-button
+        zSize="lg"
+        class="w-full text-lg"
+        [zLoading]="resending()"
+        [zDisabled]="resending() || countdown.remaining() > 0"
+        (click)="onResend()"
+        data-testid="confirm-phone-resend"
+        i18n>
+        Tentar de novo
+      </button>
+    }
+    @case ('load_error') {
+      <button
+        footer
+        type="button"
+        z-button
+        zSize="lg"
+        class="w-full text-lg"
+        (click)="loadStatus()"
+        data-testid="confirm-phone-retry"
+        i18n>
+        Tentar de novo
+      </button>
+    }
+  }
+
+  @if (canContinueWithout()) {
+    <button
+      footer
+      type="button"
+      z-button
+      zType="ghost"
+      class="w-full"
+      (click)="continueWithout()"
+      data-testid="confirm-phone-continue-without"
+      i18n>
+      Continuar sem confirmar
+    </button>
+  }
+
+  @if (view() !== 'loading') {
+    <a
+      footer
+      z-button
+      zType="ghost"
+      class="w-full"
+      routerLink="/auth/celular"
+      [queryParams]="queryParams()"
+      data-testid="confirm-phone-fix"
+      i18n>
+      Número errado? Corrigir
+    </a>
+  }
+</app-flow-shell>

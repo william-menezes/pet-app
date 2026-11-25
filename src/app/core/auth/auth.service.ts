@@ -17,27 +17,47 @@ import { isPlatformBrowser } from '@angular/common';
 import { Router } from '@angular/router';
 import { AuthStore, Role } from './auth.store';
 import { SupabaseService } from '../supabase/supabase.service';
-import { getSessionStorage } from './session-persistence';
+import { AccountStore } from '../account/account.store';
+import { ReturnUrlService } from './return-url';
+import { clearPersistedSessions, findPersistedStorage, getSessionStorage } from './session-persistence';
 import { environment } from '../../../environments/environment';
 
 export interface AuthResult {
   ok: boolean;
   role?: Role;
-  reason?: 'invalid' | 'unconfirmed' | 'rate_limited' | 'provider_unavailable' | 'network';
+  reason?:
+    | 'invalid'
+    | 'unconfirmed'
+    | 'rate_limited'
+    | 'provider_unavailable'
+    | 'network'
+    | 'captcha_failed';
+}
+
+/** Reenvio do e-mail de confirmação: uniforme, exceto o desafio anti-robô recusado. */
+export type ResendResult = { ok: true } | { ok: false; reason: 'captcha_failed' };
+
+/** Código do Supabase Auth para o desafio anti-robô recusado (contrato de endurecimento §1). */
+export function isCaptchaFailure(error: { code?: string; message?: string } | null | undefined): boolean {
+  if (!error) return false;
+  return error.code === 'captcha_failed' || (error.message ?? '').toLowerCase().includes('captcha');
 }
 
 /** Mensagens PT-BR canônicas (anti-enumeração: nunca ramifica por código do GoTrue). */
 const ERROR_MESSAGES: Record<NonNullable<AuthResult['reason']>, string> = {
-  invalid: 'E-mail ou senha inválidos. Verifique e tente de novo.',
-  unconfirmed: 'Confirme seu e-mail para entrar. Não recebeu o e-mail de confirmação?',
-  rate_limited: 'Muitas tentativas em sequência. Aguarde alguns minutos antes de tentar de novo.',
-  provider_unavailable: 'Login com Google está indisponível agora. Entre com e-mail e senha.',
-  network: 'Não conseguimos conectar. Verifique sua conexão e tente de novo.',
+  invalid: $localize`E-mail ou senha inválidos. Verifique e tente de novo.`,
+  unconfirmed: $localize`Confirme seu e-mail para entrar. Não recebeu o e-mail de confirmação?`,
+  rate_limited: $localize`Muitas tentativas em sequência. Aguarde alguns minutos antes de tentar de novo.`,
+  provider_unavailable: $localize`Login com Google está indisponível agora. Entre com e-mail e senha.`,
+  network: $localize`Não conseguimos conectar. Verifique sua conexão e tente de novo.`,
+  captcha_failed: $localize`Não foi possível confirmar que você não é um robô. Tente de novo.`,
 };
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly store = inject(AuthStore);
+  private readonly accountStore = inject(AccountStore);
+  private readonly returnUrl = inject(ReturnUrlService);
   private readonly supabase = inject(SupabaseService);
   private readonly router = inject(Router);
   private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
@@ -60,10 +80,20 @@ export class AuthService {
   async restoreSession(): Promise<void> {
     if (!this.isBrowser) return;
 
-    const { data } = await this.supabase.client.auth.getSession();
+    // O cliente já nasce no storage certo (SupabaseService); reafirma aqui por segurança (DEF-001).
+    const persisted = findPersistedStorage();
+    if (persisted) {
+      (this.supabase.client.auth as unknown as { storage: Storage }).storage = persisted;
+    }
+
+    const { data, error } = await this.supabase.client.auth.getSession();
     if (data.session) {
       this.store.setSession(data.session);
       await this._resolveRole();
+    } else if (persisted && !error) {
+      // Havia credencial gravada, mas sem sessão válida: limpa só deste aparelho, sem token órfão em nenhum storage.
+      await this.supabase.client.auth.signOut({ scope: 'local' }).catch(() => undefined);
+      clearPersistedSessions();
     }
 
     this.supabase.client.auth.onAuthStateChange(async (event, session) => {
@@ -72,6 +102,7 @@ export class AuthService {
         await this._resolveRole();
       } else {
         this.store.setRole(null);
+        clearPersistedSessions();
       }
     });
   }
@@ -87,6 +118,8 @@ export class AuthService {
   setRememberMe(remember: boolean): void {
     this.rememberMe = remember;
     if (this.isBrowser) {
+      // Um token velho no outro storage faria a carga seguinte escolher o storage errado.
+      clearPersistedSessions();
       // Configura o storage no cliente Supabase para a próxima sessão.
       // O supabase-js aceita storage customizado; aqui aplicamos antes do signIn.
       (this.supabase.client.auth as unknown as { storage: Storage }).storage =
@@ -111,7 +144,7 @@ export class AuthService {
    * 7. Registra o resultado (sucesso/falha) via login-guard post_result —
    *    ÚNICO caminho que alimenta o rate-limit (FR-018) e a auditoria (FR-020).
    */
-  async signInPassword(email: string, password: string): Promise<AuthResult> {
+  async signInPassword(email: string, password: string, captchaToken?: string): Promise<AuthResult> {
     this.store.setStatus('loading');
     this.store.clearError();
     this.isUnconfirmed.set(false);
@@ -129,10 +162,16 @@ export class AuthService {
       const { data, error } = await this.supabase.client.auth.signInWithPassword({
         email,
         password,
+        ...(captchaToken ? { options: { captchaToken } } : {}),
       });
 
       // ── Passo 3: processar resultado (timing uniforme) ──
       if (error) {
+        // Desafio recusado não é senha errada: não conta no limite nem na auditoria de falha.
+        if (isCaptchaFailure(error as { code?: string; message?: string })) {
+          this.store.setError(ERROR_MESSAGES.captcha_failed);
+          return { ok: false, reason: 'captcha_failed' };
+        }
         const reason = this._classifyError(error.message);
 
         if (reason === 'unconfirmed') {
@@ -245,12 +284,21 @@ export class AuthService {
    * Reenvia o e-mail de confirmação.
    * Resposta uniforme: NÃO confirma nem nega existência da conta (anti-enumeração).
    */
-  async resendConfirmation(email: string): Promise<void> {
+  async resendConfirmation(email: string, captchaToken?: string): Promise<ResendResult> {
     try {
-      await this.supabase.client.auth.resend({ type: 'signup', email });
+      const { error } = await this.supabase.client.auth.resend({
+        type: 'signup',
+        email,
+        ...(captchaToken ? { options: { captchaToken } } : {}),
+      });
+      // O Auth confere o desafio antes de olhar o e-mail: dizer que ele falhou não revela a conta.
+      if (isCaptchaFailure(error as { code?: string; message?: string } | null)) {
+        return { ok: false, reason: 'captcha_failed' };
+      }
     } catch {
       // Ignora erro silenciosamente — resposta uniforme por design (anti-enumeração)
     }
+    return { ok: true };
   }
 
   // ────────────────────────────────────────────────────────────────
@@ -268,7 +316,11 @@ export class AuthService {
     try {
       await this.supabase.client.auth.signOut();
     } finally {
+      if (this.isBrowser) clearPersistedSessions();
       this.store.reset();
+      this.accountStore.reset();
+      // o destino guardado é de quem acabou de sair: não pode sobrar para o próximo login da aba
+      this.returnUrl.clear();
       this.isUnconfirmed.set(false);
       await this.router.navigate(['/auth/login'], {
         queryParams: { loggedOut: '1' },

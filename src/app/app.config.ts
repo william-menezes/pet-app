@@ -1,7 +1,7 @@
 import {
   ApplicationConfig,
   ErrorHandler,
-  isDevMode,
+  provideAppInitializer,
   provideBrowserGlobalErrorListeners,
   provideZonelessChangeDetection,
 } from '@angular/core';
@@ -11,16 +11,17 @@ import {
   withEventReplay,
   withIncrementalHydration,
 } from '@angular/platform-browser';
-import { provideServiceWorker } from '@angular/service-worker';
-import { providePrimeNG } from 'primeng/config';
 
 import { routes } from './app.routes';
-import { FaroPreset } from '../theme/faro-preset';
+import { bootstrapSession } from './core/auth/session-bootstrap';
 import { GlobalErrorHandler } from './core/error/global-error-handler';
+import { provideZard } from '@/shared/core/provider/providezard';
+import { provideIcons } from '@ng-icons/core';
+import { faroIcons } from './shared/icons/faro-icons';
 
 export const appConfig: ApplicationConfig = {
   providers: [
-    // Zoneless: detecção de mudança por signals (sem zone.js). Ver docs/frontend.md.
+    // Zoneless: detecção de mudança por signals (sem zone.js).
     provideZonelessChangeDetection(),
     provideBrowserGlobalErrorListeners(),
     { provide: ErrorHandler, useClass: GlobalErrorHandler },
@@ -32,22 +33,13 @@ export const appConfig: ApplicationConfig = {
     // event replay (não perde o clique no CTA de resgate antes da hidratação).
     provideClientHydration(withIncrementalHydration(), withEventReplay()),
 
-    // Tema PrimeNG (Aura via FaroPreset, Paleta C). PrimeNG isolado em @layer primeng;
-    // faro-ds.css (unlayered) sobrepõe quando precisa. darkMode via classe .faro-dark.
-    providePrimeNG({
-      theme: {
-        preset: FaroPreset,
-        options: {
-          darkModeSelector: '.faro-dark',
-          cssLayer: { name: 'primeng', order: 'primeng' },
-        },
-      },
-    }),
+    // Restaura a sessão do Supabase antes do roteador (só no navegador e só se houver sessão
+    // gravada; sem ela nada é importado). Ver core/auth/session-bootstrap.ts.
+    provideAppInitializer(() => bootstrapSession()),
 
-    // PWA: service worker só fora de dev.
-    provideServiceWorker('ngsw-worker.js', {
-      enabled: !isDevMode(),
-      registrationStrategy: 'registerWhenStable:30000',
-    }),
+    provideZard(),
+
+    // Ícones do Faro (Boxicons sob nomes do Faro). Ver shared/icons/faro-icons.ts.
+    provideIcons(faroIcons),
   ],
 };
