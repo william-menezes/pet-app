@@ -63,6 +63,8 @@ for (const theme of [undefined, 'dark'] as const) {
 
         await page.locator(tid('manage-tag-confirm')).click();
         await expect(page.locator(tid('manage-tag-pin'))).toHaveText(PIN);
+        await expect(page.locator(tid('manage-tag-pin'))).toBeInViewport();
+        await expect(page.locator('#manage-tag-pin-title')).toBeFocused();
         await expect(page.locator(tid('manage-tag-pin-warning'))).toContainText('Anote agora. Ele não aparece de novo.');
         expect(state.releaseBodies).toEqual([{ p_code: '7K3MQ9XAC', p_reason: 'transferred' }]);
         const stored = await page.evaluate(() => JSON.stringify({ ...localStorage }) + JSON.stringify({ ...sessionStorage }) + location.href);
@@ -90,6 +92,8 @@ for (const size of SIZES) {
       await page.locator(tid('manage-tag-confirm')).click();
       await expect(page.locator(tid('manage-tag-registered-text'))).toContainText('O código antigo foi anulado');
       expect(state.replacementBodies).toEqual([{ p_code: '7K3MQ9XAC', p_kind: 'lost' }]);
+      // O diálogo de confirmação sai com uma transição: a captura espera ele sumir.
+      await page.waitForTimeout(600);
       await shot(page, `tag-perdida-registrada-${size.name}`);
     });
 

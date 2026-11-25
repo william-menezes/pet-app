@@ -157,7 +157,7 @@ describe('AdminBatches (T078)', () => {
       await click('admin-batches-continue');
       await click('admin-batches-generate');
       expect(save).toHaveBeenCalledWith(blob, 'lote-novo.zip');
-      expect(byId('admin-batches-done')?.textContent).toContain('O arquivo com os PINs foi baixado');
+      expect(byId('admin-batches-done')?.textContent).toContain('O arquivo foi baixado');
     });
 
     it('"Voltar" na confirmação não gera nada', async () => {

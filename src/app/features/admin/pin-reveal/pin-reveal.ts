@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, afterNextRender, inject, input, output, signal } from '@angular/core';
 
 import { ZardButtonComponent } from '@/shared/components/button';
 
@@ -13,7 +13,7 @@ import { ZardButtonComponent } from '@/shared/components/button';
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'flex flex-col gap-3 rounded-2xl bg-card p-5', role: 'region', 'aria-labelledby': 'admin-pin-reveal-title', 'data-testid': 'admin-pin-reveal' },
   template: `
-    <h2 id="admin-pin-reveal-title" class="font-display text-[19px] font-semibold text-foreground" i18n>PIN novo da tag {{ code() }}</h2>
+    <h2 id="admin-pin-reveal-title" tabindex="-1" class="font-display text-[19px] font-semibold text-foreground outline-none" i18n>PIN novo da tag {{ code() }}</h2>
     <p class="rounded-xl bg-inset px-4 py-3 text-center font-display text-[32px] leading-none font-bold tracking-[0.2em] text-foreground" data-testid="admin-pin-reveal-pin">
       {{ pin() }}
     </p>
@@ -36,6 +36,23 @@ export class AdminPinReveal {
   readonly done = output<void>();
 
   protected readonly copied = signal(false);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+
+  constructor() {
+    // O PIN aparece uma vez só: leva a caixa para a tela (o admin pode estar rolado até as ações, no fim da página) e o foco
+    // para o título, para o leitor de tela anunciar.
+    afterNextRender(() => this.show());
+  }
+
+  /**
+   * Leva a caixa para a tela e o foco para o título. Quem hospeda chama de novo quando o diálogo de confirmação termina de
+   * fechar: o overlay devolve a rolagem de antes ao sair e desfaria a primeira chamada.
+   */
+  show(): void {
+    const root = this.host.nativeElement;
+    root.scrollIntoView?.({ block: 'center' });
+    root.querySelector<HTMLElement>('h2')?.focus({ preventScroll: true });
+  }
 
   protected async copy(): Promise<void> {
     try {

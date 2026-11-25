@@ -522,3 +522,26 @@ Em todas, `forbidden` (conta sem acesso) mostra a mensagem sem "Tentar de novo" 
 - As telas do admin no navegador contra o banco de verdade (o `environment.e2e.ts` não existe e não mexi em `src/environments/*`); as respostas foram conferidas por script contra o banco local.
 - Lote grande (500) e o tempo da função; leitura de QR físico; Safari do iOS.
 - `admin-labels`, reimpressão e T085: bloqueadas.
+
+### Ajustes depois da revisão (mesma rodada)
+
+- **PIN novo à vista.** A caixa do PIN do admin e o painel do PIN de "Gerenciar tag" levam a tela e o foco para o título quando aparecem (o botão que abriu o diálogo sai do DOM e o admin pode estar rolado até as ações). O e2e confere `toBeInViewport()` e o foco, nas três larguras.
+- **Ordem do detalhe do código.** No celular e no tablet "Ações" vem logo depois de "Vínculo atual", como em `V2-admin-codigo*.dc.html`; no desktop as ações ficam na coluna da direita.
+- **Códigos nos testes.** `T6EV-BXPY-W` e `TJ27-9DDB-B` (em `codes.spec.ts` e `queue.spec.ts`) são dos vetores SINTÉTICOS (`specs/003-tag-qr/contracts/tag-code.vectors.json`, que declara "nenhum destes é um código real"); o resto vem do seed (`e2e/fixtures/seed-codes.json`). Nenhum código nem PIN do lote-001 foi aberto.
+- **Banco local.** A pilha local foi parada e o volume `supabase_db_wt-003` apagado: os testes por script tinham mexido nele (PIN reemitido de `5P8NMRXYW`, pedidos de 2ª via, pets de teste). `supabase start` recria tudo do zero com o seed.
+
+### Tarefas [FE] ainda abertas na spec inteira
+
+- **T024A** (verificação da hospedagem no preview da Vercel): precisa de um deploy de preview e o preview fica atrás de SSO; sem token de bypass não dá para conferir por `curl`. É do William ou de quem tem acesso ao projeto na Vercel.
+- **T025** (`POST /api/scan` e `/api/scan/location` em `src/server.ts`): o código existe, tem testes (413, 415, 400, IP só dos cabeçalhos da Vercel) e funciona no `ng serve`; a tarefa depende de T024A para virar `[x]` e, se a hospedagem reprovar a rota própria do Express, a lógica está pronta para ir para `api/*.ts`.
+- **T099** (página de contingência de pré-lançamento): a rota `/:code` de verdade já existe e a tela "Este pet tem dono" (contingência) já é parte dela; a tarefa manda substituir um conteúdo provisório em `features/public/rescue-page/`, que não existe mais, e a mensagem pedida ("Em breve mais informações.") é de antes da página real. Não executei: precisa de uma decisão do William sobre se ainda se quer uma página estática só enquanto o app não estiver no ar.
+- T084 e T085 (bloqueadas, `[BE]` e `[QA]`), T100 (`docs/dominio-tagfaro.md`, para o William) e as `[QA]` ficam fora desta lista.
+
+### Pendências que ficam para quem pegar depois
+
+- **`remove-pet` (T071, Phase 8) ainda mostra o PIN novo num diálogo que fecha com Esc**: o tutor pode perder a única visão do PIN. A correção é a mesma de "Gerenciar tag" (PIN numa seção da página). Não corrigido nesta rodada.
+- **T106**: as cargas de `activation` (passo do pet) e de `new-pet` em edição seguem com o texto genérico de erro de carga quando o servidor limita as chamadas.
+- **T095** pede o checklist "no PR": ele está acima, neste log; falta copiar a tabela para a descrição do PR nº 5.
+- **CORS da `admin-create-batch`** (item 1 dos desvios): sem a correção do `[BE]`, "Criar lote" não funciona num navegador e a T083 (e2e do admin) fica bloqueada. Conferido por leitura do código (`_shared/responses.ts` e o handler), não por preflight real: a pilha local subiu sem o `edge-runtime`.
+
+- **Nota sobre o e2e final.** A asserção nova de "PIN à vista" pegou um defeito real (no tablet o overlay do diálogo devolve a rolagem de antes ao sair e desfazia o `scrollIntoView`): o painel do PIN agora é levado à tela de novo quando o diálogo termina de fechar (`zAfterClose`). Depois disso, `admin-ui` e `manage-tag-ui` passaram 33 de 33; a rodada completa anterior tinha dado 287 de 288, com só essa falha. O texto de fim de lote perdeu uma repetição ("O arquivo foi baixado e tem os PINs dos cartões").

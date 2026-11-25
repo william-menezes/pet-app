@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, input, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, Injector, afterNextRender, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { NgIcon } from '@ng-icons/core';
 
@@ -71,7 +71,7 @@ interface Action {
 
       @if (outcome() === 'pin') {
         <section class="flex flex-col gap-3 rounded-2xl bg-card p-5" aria-labelledby="manage-tag-pin-title" data-testid="manage-tag-pin-panel">
-          <h2 id="manage-tag-pin-title" class="font-display text-[22px] font-semibold text-foreground" data-testid="manage-tag-pin-title">{{ pinTitle() }}</h2>
+          <h2 id="manage-tag-pin-title" tabindex="-1" class="font-display text-[22px] font-semibold text-foreground outline-none" data-testid="manage-tag-pin-title">{{ pinTitle() }}</h2>
           <p class="text-[15px] leading-[1.45] text-text">{{ pinText() }}</p>
           <p class="rounded-xl bg-inset px-4 py-3 text-center font-display text-[32px] leading-none font-bold tracking-[0.2em] text-foreground" data-testid="manage-tag-pin">
             {{ pin() }}
@@ -89,7 +89,7 @@ interface Action {
         </section>
       } @else if (outcome() === 'registered') {
         <section class="flex flex-col gap-3 rounded-2xl bg-card p-5" aria-labelledby="manage-tag-registered-title" data-testid="manage-tag-registered">
-          <h2 id="manage-tag-registered-title" class="font-display text-[22px] font-semibold text-foreground" data-testid="manage-tag-registered-title" i18n>Pedido registrado</h2>
+          <h2 id="manage-tag-registered-title" tabindex="-1" class="font-display text-[22px] font-semibold text-foreground outline-none" data-testid="manage-tag-registered-title" i18n>Pedido registrado</h2>
           <p class="text-[15px] leading-[1.45] text-text" data-testid="manage-tag-registered-text">{{ registeredText() }}</p>
           <div>
             <button type="button" z-button zSize="lg" (click)="finish()" data-testid="manage-tag-registered-done" i18n>Entendi</button>
@@ -145,7 +145,7 @@ interface Action {
 
       <!-- O diálogo só confirma. O PIN novo e o "pedido registrado" ficam NA PÁGINA, não num diálogo: Esc fecharia o diálogo
            e o tutor perderia a única vez em que o PIN aparece. -->
-      <z-alert-dialog [(zVisible)]="visible">
+      <z-alert-dialog [(zVisible)]="visible" (zAfterClose)="onDialogClosed()">
         <z-alert-dialog-header>
           <z-alert-dialog-title data-testid="manage-tag-confirm-title">{{ confirmTitle() }}</z-alert-dialog-title>
           <z-alert-dialog-description data-testid="manage-tag-confirm-text">{{ confirmText() }}</z-alert-dialog-description>
@@ -177,6 +177,7 @@ export class ManageTag {
   private readonly tags = inject(TagService);
   private readonly router = inject(Router);
   private readonly sonner = inject(ZardSonnerService);
+  private readonly injector = inject(Injector);
 
   /** Parâmetro de rota `:petId` (ligado por `withComponentInputBinding`). */
   readonly petId = input.required<string>();
@@ -332,6 +333,7 @@ export class ManageTag {
       this.pin.set(res.newPin);
       this.visible.set(false);
       this.outcome.set('pin');
+      this.focusOutcome('manage-tag-pin-title');
       return;
     }
     const res = await this.tags.requestReplacement(code, kind);
@@ -342,6 +344,26 @@ export class ManageTag {
     }
     this.visible.set(false);
     this.outcome.set('registered');
+    this.focusOutcome('manage-tag-registered-title');
+  }
+
+  /** O diálogo terminou de fechar: o overlay devolve a rolagem de antes e desfaria o foco; leva o foco ao resultado de novo. */
+  protected onDialogClosed(): void {
+    const outcome = this.outcome();
+    if (outcome === 'pin') this.focusOutcome('manage-tag-pin-title');
+    else if (outcome === 'registered') this.focusOutcome('manage-tag-registered-title');
+  }
+
+  /** O botão que abriu o diálogo sai do DOM: leva o foco (e a tela) para o título do resultado. */
+  private focusOutcome(titleId: string): void {
+    afterNextRender(
+      () => {
+        const title = document.getElementById(titleId);
+        title?.scrollIntoView?.({ block: 'start' });
+        title?.focus({ preventScroll: true });
+      },
+      { injector: this.injector },
+    );
   }
 
   protected async copy(): Promise<void> {

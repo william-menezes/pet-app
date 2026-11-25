@@ -62,7 +62,7 @@ for (const size of SIZES) {
       await page.locator(tid('admin-batches-generate')).click();
       // O id do lote não é legível (cabeçalho não exposto): o pacote é salvo mesmo assim, com nome de reserva.
       expect((await download).suggestedFilename()).toBe('lote-novo.zip');
-      await expect(page.locator(tid('admin-batches-done'))).toContainText('O arquivo com os PINs foi baixado');
+      await expect(page.locator(tid('admin-batches-done'))).toContainText('O arquivo foi baixado');
       expect(state.batchBodies).toEqual([{ quantity: 10, notes: 'Segunda leva' }]);
       await shot(page, `admin-lotes-pronto-${size.name}`);
     });
@@ -119,9 +119,14 @@ for (const size of SIZES) {
       state.detail = { ...state.detail, status: 'available', assignment: null };
       await page.goto('/admin/codigos/7K3M-Q9XA-C');
       await expect(page.locator(tid('admin-action-reissue'))).toBeEnabled({ timeout: 15_000 });
+      await page.locator(tid('admin-action-reissue')).scrollIntoViewIfNeeded();
+      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
       await page.locator(tid('admin-action-reissue')).click();
       await page.locator(tid('admin-confirm-ok')).click();
       await expect(page.locator(tid('admin-pin-reveal-pin'))).toHaveText(PIN_FIXTURE);
+      // O PIN aparece uma vez só: a caixa tem de estar à vista (e com o foco no título), mesmo que a tela estivesse rolada.
+      await expect(page.locator(tid('admin-pin-reveal-pin'))).toBeInViewport();
+      await expect(page.locator('#admin-pin-reveal-title')).toBeFocused();
       await expect(page.locator(tid('admin-pin-reveal'))).toContainText('não aparece de novo');
       // O aviso (toast) do sonner é uma <ol> com filhos que não são <li>: o axe reprova enquanto ele estiver na tela.
       await expect(page.locator('ngx-sonner-toast')).toHaveCount(0, { timeout: 15_000 });

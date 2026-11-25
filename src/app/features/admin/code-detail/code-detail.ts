@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, input, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, input, signal, untracked, viewChild } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { NgIcon } from '@ng-icons/core';
 
@@ -101,8 +101,7 @@ const SCANS_SHOWN = 10;
         <p class="text-[15px] text-text" data-testid="admin-code-meta" i18n>{{ d.batchId }} · criado em {{ day(d.createdAt) }}</p>
 
         <div class="flex flex-col gap-3.5 md:gap-[18px] xl:grid xl:grid-cols-[minmax(0,1fr)_380px] xl:items-start xl:gap-5">
-          <div class="flex flex-col gap-3.5 md:gap-[18px] xl:order-1 xl:gap-5">
-            <section class="flex flex-col gap-3 rounded-2xl bg-card p-5" aria-labelledby="admin-code-link-title" data-testid="admin-code-assignment">
+            <section class="flex flex-col gap-3 rounded-2xl bg-card p-5 xl:col-start-1" aria-labelledby="admin-code-link-title" data-testid="admin-code-assignment">
               <h2 id="admin-code-link-title" class="font-display text-[19px] font-semibold text-foreground" i18n>Vínculo atual</h2>
               @if (d.assignment; as a) {
                 <dl class="m-0 grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-[15px]">
@@ -125,7 +124,90 @@ const SCANS_SHOWN = 10;
               </div>
             </section>
 
-            <section class="flex flex-col gap-3 rounded-2xl bg-card p-5" aria-labelledby="admin-code-scans-title" data-testid="admin-code-scans">
+            <section class="flex flex-col gap-3 rounded-2xl bg-card p-5 xl:col-start-2 xl:row-span-4 xl:row-start-1 xl:sticky xl:top-6" aria-labelledby="admin-code-actions-title" data-testid="admin-code-actions">
+              <h2 id="admin-code-actions-title" class="font-display text-[19px] font-semibold text-foreground" i18n>Ações</h2>
+              @if (d.status === 'void') {
+                <app-note icon="info" data-testid="admin-code-void-note">
+                  <span i18n>Código anulado: não há mais ações. O histórico fica guardado.</span>
+                </app-note>
+              } @else {
+                <ul class="m-0 flex list-none flex-col gap-2.5 p-0">
+                  <li>
+                    @if (d.status === 'blocked') {
+                      <button type="button" z-button zType="outline" class="h-auto min-h-14 w-full justify-start py-2.5" [zDisabled]="working()" (click)="ask('unblock')" data-testid="admin-action-unblock">
+                        <span class="flex flex-col items-start text-left">
+                          <span i18n>Desbloquear código</span>
+                          <span class="text-[13px] font-normal text-muted-foreground" i18n>A página da tag volta a funcionar</span>
+                        </span>
+                      </button>
+                    } @else {
+                      <button type="button" z-button zType="outline" class="h-auto min-h-14 w-full justify-start py-2.5" [zDisabled]="working()" (click)="ask('block')" data-testid="admin-action-block">
+                        <span class="flex flex-col items-start text-left">
+                          <span i18n>Bloquear código</span>
+                          <span class="text-[13px] font-normal text-muted-foreground" i18n>Quem escanear vê “tag não encontrada”</span>
+                        </span>
+                      </button>
+                    }
+                  </li>
+                  <li>
+                    <button
+                      type="button"
+                      z-button
+                      zType="outline"
+                      class="h-auto min-h-14 w-full justify-start py-2.5"
+                      [zDisabled]="working() || d.status !== 'available'"
+                      (click)="ask('reissue')"
+                      data-testid="admin-action-reissue">
+                      <span class="flex flex-col items-start text-left">
+                        <span i18n>Reemitir PIN</span>
+                        <span class="text-[13px] font-normal text-muted-foreground">{{ d.status === 'available' ? reissueHint : reissueBlocked }}</span>
+                      </span>
+                    </button>
+                  </li>
+                  <li>
+                    <button
+                      type="button"
+                      z-button
+                      zType="outline"
+                      class="h-auto min-h-14 w-full justify-start py-2.5"
+                      [zDisabled]="working() || d.assignment === null"
+                      (click)="ask('end')"
+                      data-testid="admin-action-end">
+                      <span class="flex flex-col items-start text-left">
+                        <span i18n>Encerrar vínculo</span>
+                        <span class="text-[13px] font-normal text-muted-foreground">{{ d.assignment === null ? endBlocked : endHint }}</span>
+                      </span>
+                    </button>
+                  </li>
+                  <li>
+                    <button type="button" z-button zType="outline" class="h-auto min-h-14 w-full justify-start py-2.5" [zDisabled]="true" data-testid="admin-action-reprint">
+                      <span class="flex flex-col items-start text-left">
+                        <span i18n>Reimprimir QR</span>
+                        <span class="text-[13px] font-normal text-muted-foreground">{{ reprintHint }}</span>
+                      </span>
+                    </button>
+                  </li>
+                  <li>
+                    <button type="button" z-button zType="outline" class="h-auto min-h-14 w-full justify-start py-2.5" [zDisabled]="working()" (click)="ask('swap')" data-testid="admin-action-swap">
+                      <span class="flex flex-col items-start text-left">
+                        <span i18n>Trocar código (2ª via)</span>
+                        <span class="text-[13px] font-normal text-muted-foreground" i18n>Tag perdida: código novo, o antigo é anulado</span>
+                      </span>
+                    </button>
+                  </li>
+                  <li>
+                    <button type="button" z-button zType="danger" class="h-auto min-h-14 w-full justify-start py-2.5" [zDisabled]="working()" (click)="ask('void')" data-testid="admin-action-void">
+                      <span class="flex flex-col items-start text-left">
+                        <span i18n>Anular código</span>
+                        <span class="text-[13px] font-normal text-muted-foreground" i18n>Definitivo; o histórico fica guardado</span>
+                      </span>
+                    </button>
+                  </li>
+                </ul>
+              }
+            </section>
+
+            <section class="flex flex-col gap-3 rounded-2xl bg-card p-5 xl:col-start-1" aria-labelledby="admin-code-scans-title" data-testid="admin-code-scans">
               <h2 id="admin-code-scans-title" class="font-display text-[19px] font-semibold text-foreground" i18n>Scans</h2>
               @if (d.scans.length === 0) {
                 <p class="text-[15px] text-text" i18n>Ninguém escaneou este código ainda.</p>
@@ -148,7 +230,7 @@ const SCANS_SHOWN = 10;
               }
             </section>
 
-            <section class="flex flex-col gap-3 rounded-2xl bg-card p-5" aria-labelledby="admin-code-history-title" data-testid="admin-code-history">
+            <section class="flex flex-col gap-3 rounded-2xl bg-card p-5 xl:col-start-1" aria-labelledby="admin-code-history-title" data-testid="admin-code-history">
               <h2 id="admin-code-history-title" class="font-display text-[19px] font-semibold text-foreground" i18n>Histórico de vínculos</h2>
               @if (d.history.length === 0) {
                 <p class="text-[15px] text-text" i18n>Sem vínculos anteriores.</p>
@@ -165,7 +247,7 @@ const SCANS_SHOWN = 10;
             </section>
 
             @if (d.replacementRequests.length > 0) {
-              <section class="flex flex-col gap-3 rounded-2xl bg-card p-5" aria-labelledby="admin-code-requests-title" data-testid="admin-code-requests">
+              <section class="flex flex-col gap-3 rounded-2xl bg-card p-5 xl:col-start-1" aria-labelledby="admin-code-requests-title" data-testid="admin-code-requests">
                 <h2 id="admin-code-requests-title" class="font-display text-[19px] font-semibold text-foreground" i18n>Pedidos de 2ª via</h2>
                 <ul class="m-0 flex list-none flex-col divide-y divide-divider p-0">
                   @for (r of d.replacementRequests; track r.id) {
@@ -184,94 +266,10 @@ const SCANS_SHOWN = 10;
                 </ul>
               </section>
             }
-          </div>
-
-          <section class="flex flex-col gap-3 rounded-2xl bg-card p-5 xl:sticky xl:top-6 xl:order-2" aria-labelledby="admin-code-actions-title" data-testid="admin-code-actions">
-            <h2 id="admin-code-actions-title" class="font-display text-[19px] font-semibold text-foreground" i18n>Ações</h2>
-            @if (d.status === 'void') {
-              <app-note icon="info" data-testid="admin-code-void-note">
-                <span i18n>Código anulado: não há mais ações. O histórico fica guardado.</span>
-              </app-note>
-            } @else {
-              <ul class="m-0 flex list-none flex-col gap-2.5 p-0">
-                <li>
-                  @if (d.status === 'blocked') {
-                    <button type="button" z-button zType="outline" class="h-auto min-h-14 w-full justify-start py-2.5" [zDisabled]="working()" (click)="ask('unblock')" data-testid="admin-action-unblock">
-                      <span class="flex flex-col items-start text-left">
-                        <span i18n>Desbloquear código</span>
-                        <span class="text-[13px] font-normal text-muted-foreground" i18n>A página da tag volta a funcionar</span>
-                      </span>
-                    </button>
-                  } @else {
-                    <button type="button" z-button zType="outline" class="h-auto min-h-14 w-full justify-start py-2.5" [zDisabled]="working()" (click)="ask('block')" data-testid="admin-action-block">
-                      <span class="flex flex-col items-start text-left">
-                        <span i18n>Bloquear código</span>
-                        <span class="text-[13px] font-normal text-muted-foreground" i18n>Quem escanear vê “tag não encontrada”</span>
-                      </span>
-                    </button>
-                  }
-                </li>
-                <li>
-                  <button
-                    type="button"
-                    z-button
-                    zType="outline"
-                    class="h-auto min-h-14 w-full justify-start py-2.5"
-                    [zDisabled]="working() || d.status !== 'available'"
-                    (click)="ask('reissue')"
-                    data-testid="admin-action-reissue">
-                    <span class="flex flex-col items-start text-left">
-                      <span i18n>Reemitir PIN</span>
-                      <span class="text-[13px] font-normal text-muted-foreground">{{ d.status === 'available' ? reissueHint : reissueBlocked }}</span>
-                    </span>
-                  </button>
-                </li>
-                <li>
-                  <button
-                    type="button"
-                    z-button
-                    zType="outline"
-                    class="h-auto min-h-14 w-full justify-start py-2.5"
-                    [zDisabled]="working() || d.assignment === null"
-                    (click)="ask('end')"
-                    data-testid="admin-action-end">
-                    <span class="flex flex-col items-start text-left">
-                      <span i18n>Encerrar vínculo</span>
-                      <span class="text-[13px] font-normal text-muted-foreground">{{ d.assignment === null ? endBlocked : endHint }}</span>
-                    </span>
-                  </button>
-                </li>
-                <li>
-                  <button type="button" z-button zType="outline" class="h-auto min-h-14 w-full justify-start py-2.5" [zDisabled]="true" data-testid="admin-action-reprint">
-                    <span class="flex flex-col items-start text-left">
-                      <span i18n>Reimprimir QR</span>
-                      <span class="text-[13px] font-normal text-muted-foreground">{{ reprintHint }}</span>
-                    </span>
-                  </button>
-                </li>
-                <li>
-                  <button type="button" z-button zType="outline" class="h-auto min-h-14 w-full justify-start py-2.5" [zDisabled]="working()" (click)="ask('swap')" data-testid="admin-action-swap">
-                    <span class="flex flex-col items-start text-left">
-                      <span i18n>Trocar código (2ª via)</span>
-                      <span class="text-[13px] font-normal text-muted-foreground" i18n>Tag perdida: código novo, o antigo é anulado</span>
-                    </span>
-                  </button>
-                </li>
-                <li>
-                  <button type="button" z-button zType="danger" class="h-auto min-h-14 w-full justify-start py-2.5" [zDisabled]="working()" (click)="ask('void')" data-testid="admin-action-void">
-                    <span class="flex flex-col items-start text-left">
-                      <span i18n>Anular código</span>
-                      <span class="text-[13px] font-normal text-muted-foreground" i18n>Definitivo; o histórico fica guardado</span>
-                    </span>
-                  </button>
-                </li>
-              </ul>
-            }
-          </section>
         </div>
       }
 
-      <z-alert-dialog [(zVisible)]="visible">
+      <z-alert-dialog [(zVisible)]="visible" (zAfterClose)="onDialogClosed()">
         <z-alert-dialog-header>
           <z-alert-dialog-title data-testid="admin-confirm-title">{{ confirmTitle() }}</z-alert-dialog-title>
           <z-alert-dialog-description data-testid="admin-confirm-text">{{ confirmText() }}</z-alert-dialog-description>
@@ -344,6 +342,7 @@ export class AdminCodeDetailPage {
   /** PIN novo, em claro, uma vez. Apagado ao concluir, ao trocar de código e ao destruir a tela. */
   protected readonly pin = signal<string | null>(null);
   private loadId = 0;
+  private readonly reveal = viewChild(AdminPinReveal);
 
   protected readonly displayCode = computed(() => this.detail()?.code ?? this.code());
   protected readonly shownScans = computed(() => {
@@ -513,6 +512,11 @@ export class AdminCodeDetailPage {
   protected onEndReason(value: string | string[]): void {
     const v = Array.isArray(value) ? value[0] : value;
     if (v === 'admin' || v === 'damaged' || v === 'lost') this.endReason.set(v);
+  }
+
+  /** O diálogo terminou de fechar: se há PIN novo, a caixa dele vai para a tela de novo (o overlay devolve a rolagem). */
+  protected onDialogClosed(): void {
+    this.reveal()?.show();
   }
 
   protected clearPin(): void {

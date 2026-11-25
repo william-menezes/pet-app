@@ -278,7 +278,7 @@ export class AdminBatches {
   });
   protected readonly doneTitle = computed(() => (this.doneBatch() === '' ? $localize`Lote criado` : $localize`${this.doneBatch()}:batch: criado`));
   protected readonly doneText = computed(() => {
-    const file = this.doneBatch() === '' ? $localize`O arquivo com os PINs` : $localize`O arquivo ${this.doneBatch()}:batch:.zip`;
+    const file = this.doneBatch() === '' ? $localize`O arquivo` : $localize`O arquivo ${this.doneBatch()}:batch:.zip`;
     return $localize`${file}:file: foi baixado e tem os PINs dos cartões. Confira a pasta de downloads agora: ele não aparece de novo. Se não encontrar, reemita o PIN de cada código na tela do código.`;
   });
   protected readonly batchesCaption = computed(() => {
