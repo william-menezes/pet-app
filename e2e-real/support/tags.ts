@@ -2,16 +2,18 @@
  * Apoio do E2E real da spec 003 (tag com QR Code). So fala com o stack LOCAL (o global-setup recusa outro host).
  *
  * Codigos e PINs: o `global-setup` cria UM lote pelo mesmo caminho do admin (Edge Function `admin-create-batch`) e grava
- * os pares codigo/PIN em `test-results-real/pool.json` (pasta ignorada pelo git). Cada teste que muda uma tag pega um
+ * os pares codigo/PIN num arquivo temporario do sistema (fora do repositorio). Cada teste que muda uma tag pega um
  * par novo com `takeTag()`: assim a segunda tentativa de um teste (retries) nunca encontra a tag ja vinculada, e o
  * seed (`e2e/fixtures/seed-codes.json`) fica so para leitura. Os PINs de desenvolvimento do seed so entram aqui nos
  * testes que conferem o proprio seed. Nada disto e PIN real: o stack e descartavel e o lote e sintetico.
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { dirname } from 'node:path';
+import { tmpdir } from 'node:os';
+import { dirname, join } from 'node:path';
 import { adminCreateUser, apiSignIn, confirmPhoneAsService, rest, SEED, stack, uniqueEmail, uniquePhoneDigits } from './stack';
 
-export const POOL_FILE = 'test-results-real/pool.json';
+// fora de test-results-real: o Playwright limpa essa pasta a cada rodada, e o reuso local (E2E_REUSE_POOL=1) precisa do arquivo
+export const POOL_FILE = join(tmpdir(), 'faro-e2e-pool.json');
 /** Chave do servidor do app: sorteada pelo e2e-prepare.sh (CI) ou definida por quem roda localmente. */
 export const SSR_KEY = process.env['E2E_SSR_KEY'] ?? '';
 
