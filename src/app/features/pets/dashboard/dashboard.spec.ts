@@ -65,7 +65,7 @@ describe('Dashboard (T069)', () => {
     await fixture.whenStable();
   };
 
-  async function create(opts: { pets?: DashboardPet[]; pending?: string | null; fails?: boolean; scans?: unknown[] } = {}) {
+  async function create(opts: { pets?: DashboardPet[]; pending?: string | null; fails?: boolean | { error: string; retryAfterSeconds?: number }; scans?: unknown[] } = {}) {
     scanList = vi.fn().mockResolvedValue({ ok: true, scans: opts.scans ?? [] });
     TestBed.configureTestingModule({
       providers: [
@@ -77,7 +77,7 @@ describe('Dashboard (T069)', () => {
           useValue: {
             myDashboard: vi.fn().mockResolvedValue(
               opts.fails
-                ? { ok: false, error: 'network' }
+                ? { ok: false, ...(typeof opts.fails === 'object' ? opts.fails : { error: 'network' }) }
                 : { ok: true, dashboard: { pets: opts.pets ?? [PACOCA, MEL], pendingActivation: opts.pending ?? null } },
             ),
           },
@@ -128,6 +128,24 @@ describe('Dashboard (T069)', () => {
     expect(byId('pets-home')).not.toBeNull();
     expect(byId('dashboard-error')).not.toBeNull();
     expect(byId('dashboard-retry')).not.toBeNull();
+  });
+
+  it('limite de chamadas (too_many_requests): o painel diz para aguardar, não para verificar a conexão, e tem "Tentar de novo"', async () => {
+    await create({ fails: { error: 'too_many_requests', retryAfterSeconds: 30 } });
+    const text = byId('dashboard-error')?.textContent ?? '';
+    expect(text).toContain('Muitas ações em pouco tempo. Aguarde 30 segundos.');
+    expect(text).not.toContain('Verifique sua conexão');
+    expect(byId('dashboard-retry')).not.toBeNull();
+  });
+
+  it('sem o tempo do servidor, o limite usa o texto do contrato: "Aguarde um minuto."', async () => {
+    await create({ fails: { error: 'too_many_requests' } });
+    expect(byId('dashboard-error')?.textContent).toContain('Muitas ações em pouco tempo. Aguarde um minuto.');
+  });
+
+  it('falha de rede continua com o texto de conexão', async () => {
+    await create({ fails: true });
+    expect(byId('dashboard-error')?.textContent).toContain('Verifique sua conexão');
   });
 
   describe('com pets e scan recente', () => {

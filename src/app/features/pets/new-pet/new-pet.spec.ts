@@ -211,6 +211,14 @@ describe('NewPet', () => {
       expect(navigateByUrl).toHaveBeenCalledWith('/app');
     });
 
+    it('21º pet (pet_limit): diz que chegou ao limite e manda falar com o suporte; não segue para o painel', async () => {
+      create.mockResolvedValueOnce({ ok: false, error: 'pet_limit' });
+      await click(byId('new-pet-save'));
+      expect(byId('new-pet-error')?.textContent).toContain('Você chegou ao limite de pets desta conta. Fale com o suporte.');
+      expect(byId('new-pet-error')?.textContent).not.toContain('Verifique sua conexão');
+      expect(navigateByUrl).not.toHaveBeenCalled();
+    });
+
     it('foto que falha depois do pet salvo: tentar de novo só envia a foto; ou continuar sem ela', async () => {
       await pickPhoto(new File(['x'], 'foto.jpg', { type: 'image/jpeg' }));
       uploadPhoto.mockResolvedValueOnce({ ok: false, error: 'network' });

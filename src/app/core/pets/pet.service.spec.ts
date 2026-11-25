@@ -99,6 +99,12 @@ describe('PetService', () => {
     expect(await t.service.create({ name: 'Mel', species: 'cat' })).toEqual({ ok: false, error: 'network' });
   });
 
+  it('create: o 21º pet (gatilho do banco, exceção P0001 com a mensagem pet_limit) vira pet_limit, não network', async () => {
+    const t = setup();
+    t.setResult({ data: null, error: { code: 'P0001', message: 'pet_limit', details: null, hint: 'No maximo 20 pets por conta' } });
+    expect(await t.service.create({ name: 'Mel', species: 'cat' })).toEqual({ ok: false, error: 'pet_limit' });
+  });
+
   it('update: nenhuma linha (pet de outro tutor) vira not_found; sucesso filtra pelo id', async () => {
     const t = setup();
     t.setResult({ data: [], error: null });

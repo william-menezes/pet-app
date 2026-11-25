@@ -21,8 +21,8 @@ const row = (id: string, event: string, over: Partial<AdminAuditRow> = {}): Admi
 });
 
 const ROWS = [
-  row('1', 'pin_reissued', { detail: { reason: 'cartão perdido' } }),
-  row('2', 'activation_failed', { actorRole: 'tutor', detail: { fail_count: 2 } }),
+  row('1', 'pin_reissued', { actorRole: 'authenticated', detail: { reason: 'lost' } }),
+  row('2', 'activation_failed', { actorRole: 'authenticated', detail: { fail_count: 2 } }),
   row('3', 'batch_created', { entity: 'batch', entityId: 'lote-900', detail: { count: 54 } }),
   row('4', 'evento_novo_que_ninguem_mapeou', { actorRole: null }),
 ];
@@ -62,10 +62,9 @@ describe('AdminAuditPage (T082)', () => {
     expect(rows[0].textContent).toContain('PIN reemitido');
     expect(rows[0].textContent).toContain('pin_reissued');
     expect(rows[0].textContent).toContain('7K3M-Q9XA-C');
-    expect(rows[0].textContent).toContain('admin');
-    expect(rows[0].textContent).toContain('cartão perdido');
+    expect(rows[0].textContent).toContain('conta logada');
+    expect(rows[0].textContent).toContain('tag perdida');
     expect(rows[1].textContent).toContain('PIN errado');
-    expect(rows[1].textContent).toContain('tutor');
     expect(rows[1].textContent).toContain('tentativa 2');
     expect(rows[2].textContent).toContain('lote-900');
     expect(rows[2].textContent).toContain('54 códigos');
@@ -73,6 +72,25 @@ describe('AdminAuditPage (T082)', () => {
     expect(rows[3].textContent).toContain('evento_novo_que_ninguem_mapeou');
     expect(rows[3].textContent).toContain('sistema');
     expect(byId('admin-audit-count')?.textContent).toContain('4 eventos');
+  });
+
+  it('o detalhe de mudança de situação vira "disponível → bloqueado"; evento de pet não mostra o identificador interno', async () => {
+    await create(
+      vi.fn().mockResolvedValue({
+        ok: true,
+        rows: [
+          row('7', 'tag_status_changed', { detail: { from: 'available', to: 'blocked', note: 'teste' } }),
+          row('8', 'lost_mode_on', { entity: 'pet', entityId: '11111111-1111-4111-8111-111111111111' }),
+          row('9', 'replacement_resolved', { detail: { request_id: 'x', status: 'done' } }),
+        ],
+      }),
+    );
+    const rows = all('admin-audit-row');
+    expect(rows[0].textContent).toContain('disponível → bloqueado · teste');
+    expect(rows[1].textContent).toContain('Pet');
+    expect(el.textContent).not.toContain('11111111-1111');
+    expect(rows[2].textContent).toContain('resolvido');
+    expect(el.textContent).not.toContain('available');
   });
 
   it('nunca mostra o identificador da conta nem PIN, telefone ou IP', async () => {

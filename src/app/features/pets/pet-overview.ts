@@ -1,4 +1,5 @@
 import type { PetService } from '../../core/pets/pet.service';
+import type { TagError } from '../../core/tags/tag-errors';
 import type { TagService } from '../../core/tags/tag.service';
 import type { DashboardPet, Pet } from '../../models';
 
@@ -12,7 +13,7 @@ export interface PetOverviewItem {
 
 export type PetOverview =
   | { ok: true; items: PetOverviewItem[]; pendingActivation: string | null }
-  | { ok: false };
+  | { ok: false; error: TagError; retryAfterSeconds?: number };
 
 /**
  * Carrega o que o painel e a lista de pets mostram: `my_dashboard` (situação da tag, modo perdido, scans) mais os
@@ -21,7 +22,11 @@ export type PetOverview =
  */
 export async function loadPetOverview(tags: TagService, pets: PetService): Promise<PetOverview> {
   const [dashboard, rows] = await Promise.all([tags.myDashboard(), pets.list()]);
-  if (!dashboard.ok) return { ok: false };
+  if (!dashboard.ok) {
+    return dashboard.retryAfterSeconds === undefined
+      ? { ok: false, error: dashboard.error }
+      : { ok: false, error: dashboard.error, retryAfterSeconds: dashboard.retryAfterSeconds };
+  }
   const byId = new Map<string, Pet>(rows.ok ? rows.pets.map((p) => [p.id, p]) : []);
   const urls = await pets.photoUrls(dashboard.dashboard.pets.map((p) => p.photoPath));
   return {

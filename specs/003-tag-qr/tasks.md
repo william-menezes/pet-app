@@ -466,9 +466,9 @@ Igual à `004`: a máquina não tem Docker nem a CLI do Supabase. Todo "Feito qu
   segredos em `dist/` e a checagem dos chunks do bundle público. **Feito quando**: tudo verde.
 - [ ] T093 [P] [QA] axe em todas as telas desta spec, três larguras, claro e escuro onde houver.
   **Feito quando**: zero violações AA.
-- [ ] T094 [P] [FE] Revisão de textos: todos os textos de UI passam por i18n; nenhum texto fixo em
+- [x] T094 [P] [FE] Revisão de textos: todos os textos de UI passam por i18n; nenhum texto fixo em
   componente. **Feito quando**: `ng extract-i18n` não deixa texto de fora.
-- [ ] T095 [P] [FE] Estados vazios, de carregamento e de erro em todas as listas, cada um
+- [x] T095 [P] [FE] Estados vazios, de carregamento e de erro em todas as listas, cada um
   terminando com um próximo passo. **Feito quando**: checklist por tela no PR.
 - [x] T096 [BE] Atualizar a memória do agente de backend com a matriz de RLS final e os contratos
   expostos. **Feito quando**: arquivo em `.claude/agent-memory/backend-supabase/`.
@@ -517,7 +517,7 @@ os dois contratos antes da primeira tarefa.
 - [x] T103 [BE] `register-scan`: limites `scan_ip_min` e `scan_ip_hour` (contrato §3).
   **Feito quando**: o 21º pedido do mesmo `ip_hash` em um minuto devolve `200` e não grava scan
   nem envia e-mail.
-- [ ] T104 [FE] `POST /api/scan` e `/api/scan/location` no servidor do app: só JSON, até 2 KB,
+- [x] T104 [FE] `POST /api/scan` e `/api/scan/location` no servidor do app: só JSON, até 2 KB,
   chave desconhecida recusada, IP só dos cabeçalhos da Vercel (contrato §3). Política `tag` de
   cabeçalhos nas rotas públicas da tag e piso de 150 ms nos três estados (contrato §1).
   **Feito quando**: teste do servidor cobre `413`, `415` e `400`, e `npm run check:headers` passa.
@@ -525,7 +525,7 @@ os dois contratos antes da primeira tarefa.
   de `admin-create-batch`, `admin_reissue_pin` e `admin_end_assignment`.
   **Feito quando**: pgTAP e `deno test` cobrem `forbidden` para tutor e `too_many_requests` no
   estouro.
-- [ ] T106 [P] [FE] Texto e tratamento de `too_many_requests` e de `pet_limit` nas telas do
+- [x] T106 [P] [FE] Texto e tratamento de `too_many_requests` e de `pet_limit` nas telas do
   tutor; todo link da página da tag para o app como `<a href>` comum (contrato §1).
   **Feito quando**: teste de componente cobre os dois erros e um teste prova que a página da tag
   não usa `routerLink` para fora dela.

@@ -20,6 +20,14 @@ import { SERVER_TAG_RESOLVER } from './tag-resolver.token';
 /** Tempo limite da chamada ao `resolve-tag` (contrato: 2,5 s). */
 export const RESOLVE_TIMEOUT_MS = 2500;
 
+/**
+ * Piso de tempo de resposta no servidor (`security-hardening.contract.md` §1): os estados que não são a página de resgate
+ * (`not_found`, `available` e a contingência, que é o `rate_limited` visto daqui) levam pelo menos isto, para o tempo não
+ * distinguir um do outro nem um código com dígito errado (que nem chama a rede) de um válido. A função `resolve-tag` já
+ * aplica o mesmo piso por dentro; este cobre o caminho que não chega a ela.
+ */
+export const RESPONSE_FLOOR_MS = 150;
+
 const CONTINGENCY: TagResolution = { state: 'contingency' };
 const NOT_FOUND: TagResolution = { state: 'not_found' };
 
@@ -34,6 +42,17 @@ export class PublicTagService {
 
   /** `raw` é o segmento da URL como veio (qualquer caixa, com ou sem hífen). */
   async resolve(raw: string, timeoutMs: number = RESOLVE_TIMEOUT_MS): Promise<TagResolution> {
+    const started = Date.now();
+    const result = await this.resolveNow(raw, timeoutMs);
+    // Só no servidor, e só fora da página de resgate: a página do pet achado não espera nada.
+    if (this.isServer && result.state !== 'assigned') {
+      const rest = RESPONSE_FLOOR_MS - (Date.now() - started);
+      if (rest > 0) await new Promise<void>((resolve) => setTimeout(resolve, rest));
+    }
+    return result;
+  }
+
+  private async resolveNow(raw: string, timeoutMs: number): Promise<TagResolution> {
     const code = normalize(raw);
     if (!isValid(code)) return NOT_FOUND;
 

@@ -157,11 +157,8 @@ type Panel = 'closed' | 'form' | 'confirm' | 'working' | 'done';
                 </p>
               }
               @case ('done') {
-                <h2 id="admin-batches-panel-title" class="font-display text-[22px] font-semibold text-foreground" i18n>{{ doneBatch() }} criado</h2>
-                <p class="max-w-[640px] text-[15px] leading-[1.45] text-text" role="status" data-testid="admin-batches-done" i18n>
-                  O arquivo {{ doneBatch() }}.zip foi baixado e tem os PINs dos cartões. Confira a pasta de downloads agora: ele não aparece de novo.
-                  Se não encontrar, reemita o PIN de cada código na tela do código.
-                </p>
+                <h2 id="admin-batches-panel-title" class="font-display text-[22px] font-semibold text-foreground">{{ doneTitle() }}</h2>
+                <p class="max-w-[640px] text-[15px] leading-[1.45] text-text" role="status" data-testid="admin-batches-done">{{ doneText() }}</p>
                 <div>
                   <button type="button" z-button zType="outline" zSize="lg" (click)="closePanel()" data-testid="admin-batches-done-close" i18n>Concluir</button>
                 </div>
@@ -279,6 +276,11 @@ export class AdminBatches {
     const n = Number(text);
     return !/^\d{1,3}$/.test(text) || !Number.isInteger(n) || n < BATCH_MIN || n > BATCH_MAX;
   });
+  protected readonly doneTitle = computed(() => (this.doneBatch() === '' ? $localize`Lote criado` : $localize`${this.doneBatch()}:batch: criado`));
+  protected readonly doneText = computed(() => {
+    const file = this.doneBatch() === '' ? $localize`O arquivo com os PINs` : $localize`O arquivo ${this.doneBatch()}:batch:.zip`;
+    return $localize`${file}:file: foi baixado e tem os PINs dos cartões. Confira a pasta de downloads agora: ele não aparece de novo. Se não encontrar, reemita o PIN de cada código na tela do código.`;
+  });
   protected readonly batchesCaption = computed(() => {
     const n = this.batches().length;
     return n === 1 ? $localize`1 lote` : $localize`${n}:count: lotes`;
@@ -360,8 +362,8 @@ export class AdminBatches {
       return;
     }
     // Salva na hora; depois disto `result` (e o Blob dentro dele) não é mais lido nem guardado.
-    this.files.save(result.blob, `${result.batchId}.zip`);
-    this.doneBatch.set(result.batchId);
+    this.files.save(result.blob, `${result.batchId ?? 'lote-novo'}.zip`);
+    this.doneBatch.set(result.batchId ?? '');
     this.panel.set('done');
     void this.refreshLists();
   }

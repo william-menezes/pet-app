@@ -83,3 +83,55 @@ describe('PublicTagService (T029)', () => {
     });
   });
 });
+
+describe('PublicTagService: piso de 150 ms (T104)', () => {
+  afterEach(() => vi.useRealTimers());
+
+  /** Tempo que `resolve` leva, com o relógio simulado. */
+  async function elapsed(platform: 'server' | 'browser', raw: string, resolver?: ServerTagResolver): Promise<number> {
+    vi.useFakeTimers();
+    const { service } = setup(platform, resolver);
+    const started = Date.now();
+    let done = false;
+    const pending = service.resolve(raw).then(() => {
+      done = true;
+    });
+    await vi.advanceTimersByTimeAsync(0);
+    for (let step = 0; step < 400 && !done; step++) await vi.advanceTimersByTimeAsync(1);
+    await pending;
+    return Date.now() - started;
+  }
+
+  it('no servidor, "não encontrada" por dígito errado (sem rede) também leva 150 ms', async () => {
+    const resolver = vi.fn<ServerTagResolver>();
+    expect(await elapsed('server', '7K3M-Q9XA-D', resolver)).toBeGreaterThanOrEqual(150);
+    expect(resolver).not.toHaveBeenCalled();
+  });
+
+  it('no servidor, "não encontrada", "não ativada" e contingência levam pelo menos 150 ms', async () => {
+    const states: TagResolution[] = [{ state: 'not_found' }, { state: 'available', code: '7K3M-Q9XA-C' }, { state: 'contingency' }];
+    for (const state of states) {
+      TestBed.resetTestingModule();
+      expect(await elapsed('server', CODE, vi.fn<ServerTagResolver>().mockResolvedValue(state)), state.state).toBeGreaterThanOrEqual(150);
+    }
+  });
+
+  it('a página de resgate não espera nada além do que a chamada levou', async () => {
+    expect(await elapsed('server', CODE, vi.fn<ServerTagResolver>().mockResolvedValue(rescue))).toBeLessThan(50);
+  });
+
+  it('no navegador não há espera: ele só lê o estado transferido', async () => {
+    expect(await elapsed('browser', CODE)).toBeLessThan(50);
+  });
+
+  it('quem já demorou mais que o piso não espera mais', async () => {
+    vi.useFakeTimers();
+    const slow: ServerTagResolver = () => new Promise((resolve) => setTimeout(() => resolve({ state: 'not_found' }), 400));
+    const { service } = setup('server', slow);
+    const started = Date.now();
+    const pending = service.resolve(CODE);
+    await vi.advanceTimersByTimeAsync(400);
+    await pending;
+    expect(Date.now() - started).toBe(400);
+  });
+});

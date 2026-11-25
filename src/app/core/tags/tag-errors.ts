@@ -65,10 +65,22 @@ export function tagErrorMessage(error: TagError, retryAfterSeconds?: number): st
     case 'no_active_tag':
       return $localize`Vincule uma tag a este pet primeiro.`;
     case 'too_many_requests':
-      return $localize`Muitos pedidos em pouco tempo. Tente de novo em ${formatRetry(retryAfterSeconds)}:time:.`;
+      // Texto do contrato (`security-hardening.contract.md` §4): "Muitas ações em pouco tempo. Aguarde um minuto.". Com o
+      // tempo que o servidor informou, o "um minuto" vira esse tempo.
+      return retryAfterSeconds === undefined
+        ? $localize`Muitas ações em pouco tempo. Aguarde um minuto.`
+        : $localize`Muitas ações em pouco tempo. Aguarde ${formatRetry(retryAfterSeconds)}:time:.`;
     case 'replacement_limit':
       return $localize`Você já tem pedidos demais em aberto. Fale com o suporte.`;
     case 'network':
       return $localize`Não conseguimos conectar. Verifique sua conexão e tente de novo.`;
   }
+}
+
+/**
+ * Texto do erro de CARGA de uma tela do tutor: o limite de chamadas (`too_many_requests`) tem texto próprio (e diz que
+ * é para esperar, não para verificar a conexão); qualquer outra falha usa o texto genérico da tela.
+ */
+export function loadErrorText(res: { ok: true } | { ok: false; error: TagError; retryAfterSeconds?: number }, generic: string): string {
+  return !res.ok && res.error === 'too_many_requests' ? tagErrorMessage('too_many_requests', res.retryAfterSeconds) : generic;
 }

@@ -11,9 +11,12 @@ import { ZardTextareaComponent } from '@/shared/components/textarea';
 import { ScreenHeader } from '@/shared/shells/screen-header/screen-header';
 
 import { RescueProfileService } from '../../../core/pets/rescue-profile.service';
-import { tagErrorMessage } from '../../../core/tags/tag-errors';
+import { loadErrorText, tagErrorMessage } from '../../../core/tags/tag-errors';
 import { LOST_MESSAGE_MAX, TagService } from '../../../core/tags/tag.service';
 import type { DashboardPet } from '../../../models';
+
+/** Texto de erro de carga desta tela; o do limite de chamadas vem de `loadErrorText`. */
+const LOAD_FAILED = $localize`Não conseguimos carregar os dados do pet. Verifique sua conexão e tente de novo.`;
 
 type State = 'loading' | 'ready' | 'error' | 'missing';
 
@@ -51,6 +54,7 @@ export class LostMode {
   readonly petId = input.required<string>();
 
   protected readonly state = signal<State>('loading');
+  protected readonly errorText = signal(LOAD_FAILED);
   protected readonly pet = signal<DashboardPet | null>(null);
   protected readonly message = signal('');
   protected readonly showSince = signal(true);
@@ -84,6 +88,7 @@ export class LostMode {
     const [dashboard, profile] = await Promise.all([this.tags.myDashboard(), this.profiles.get(petId)]);
     if (id !== this.loadId) return;
     if (!dashboard.ok || (!profile.ok && profile.error !== 'not_found')) {
+      this.errorText.set(loadErrorText(dashboard, LOAD_FAILED));
       this.state.set('error');
       return;
     }

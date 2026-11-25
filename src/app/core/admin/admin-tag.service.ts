@@ -90,8 +90,11 @@ export const CODES_PAGE_SIZE = 25;
 export const AUDIT_PAGE_SIZE = 50;
 
 export interface BatchPackage {
-  /** Id do lote criado (`lote-NNN`); não é segredo. */
-  batchId: string;
+  /**
+   * Id do lote criado (`lote-NNN`; não é segredo), lido do cabeçalho `X-Batch-Id`. Nulo quando o navegador não deixa ler o
+   * cabeçalho: um 200 nunca joga fora o pacote, porque os PINs só existem nele.
+   */
+  batchId: string | null;
   /** O zip com `pins.csv`. Contém PINs: baixar e soltar, nunca guardar. */
   blob: Blob;
 }
@@ -105,6 +108,8 @@ export interface NewPin {
 const failure = (error: AdminError): AdminFailure => ({ ok: false, error });
 const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
 const str = (v: unknown): string | null => (typeof v === 'string' ? v : null);
+/** Identificador que o banco devolve como texto (uuid) ou como número (`audit_log.id` é bigint): vira texto. */
+const idOf = (v: unknown): string | null => (typeof v === 'string' ? v : typeof v === 'number' && Number.isFinite(v) ? String(v) : null);
 const num = (v: unknown, fallback = 0): number => (typeof v === 'number' && Number.isFinite(v) ? v : fallback);
 const isStatus = (v: unknown): v is TagStatus => v === 'available' || v === 'assigned' || v === 'blocked' || v === 'void';
 const geo = (v: unknown): GeoMethod => (v === 'ip' || v === 'gps' ? v : 'none');
@@ -158,7 +163,7 @@ function toCodeRow(raw: unknown): AdminCodeRow | null {
 
 function toAssignment(raw: unknown): { id: string; startedAt: string; petName: string | null; tutor: string | null } | null {
   if (!isRecord(raw)) return null;
-  const id = str(raw['id']);
+  const id = idOf(raw['id']);
   const startedAt = str(raw['started_at']);
   if (id === null || startedAt === null) return null;
   return { id, startedAt, petName: str(raw['pet_name']), tutor: str(raw['tutor']) };
@@ -179,7 +184,7 @@ function toHistory(raw: unknown): AdminHistoryEntry | null {
 
 function toScan(raw: unknown): AdminScan | null {
   if (!isRecord(raw)) return null;
-  const id = str(raw['id']);
+  const id = idOf(raw['id']);
   const occurredAt = str(raw['occurred_at']);
   const status = raw['status_at_scan'];
   if (id === null || occurredAt === null || !isStatus(status)) return null;
@@ -192,13 +197,13 @@ function toScan(raw: unknown): AdminScan | null {
     accuracyM: typeof accuracy === 'number' && Number.isFinite(accuracy) ? accuracy : null,
     city: str(raw['city']),
     region: str(raw['region']),
-    assignmentId: str(raw['assignment_id']),
+    assignmentId: idOf(raw['assignment_id']),
   };
 }
 
 function toReplacement(raw: unknown): AdminReplacementRequest | null {
   if (!isRecord(raw)) return null;
-  const id = str(raw['id']);
+  const id = idOf(raw['id']);
   const kind = raw['kind'];
   const status = raw['status'];
   const createdAt = str(raw['created_at']);
@@ -342,7 +347,7 @@ export class AdminTagService {
     if (!res.ok) return res;
     const scans = all(arr(res.data['scans']), (raw): AdminQueueScan | null => {
       if (!isRecord(raw)) return null;
-      const id = str(raw['id']);
+      const id = idOf(raw['id']);
       const code = str(raw['code']);
       const at = str(raw['occurred_at']);
       const status = raw['status_at_scan'];
@@ -351,7 +356,7 @@ export class AdminTagService {
     });
     const replacements = all(arr(res.data['replacements']), (raw): AdminQueueReplacement | null => {
       if (!isRecord(raw)) return null;
-      const id = str(raw['id']);
+      const id = idOf(raw['id']);
       const code = str(raw['code']);
       const at = str(raw['created_at']);
       const kind = raw['kind'];
@@ -380,7 +385,7 @@ export class AdminTagService {
     if (!res.ok) return res;
     const rows = all(arr(res.data['rows']), (raw): AdminAuditRow | null => {
       if (!isRecord(raw)) return null;
-      const id = str(raw['id']);
+      const id = idOf(raw['id']);
       const at = str(raw['at']);
       const event = str(raw['event']);
       if (id === null || at === null || event === null) return null;
@@ -426,8 +431,8 @@ export class AdminTagService {
         body: JSON.stringify(trimmed === '' ? { quantity } : { quantity, notes: trimmed }),
       });
       if (response.status === 200) {
-        const batchId = response.headers.get('X-Batch-Id');
-        if (batchId === null || !BATCH_PATTERN.test(batchId)) return failure('network');
+        const header = response.headers.get('X-Batch-Id');
+        const batchId = header !== null && BATCH_PATTERN.test(header) ? header : null;
         return { ok: true, batchId, blob: await response.blob() };
       }
       if (response.status === 401 || response.status === 403) return failure('forbidden');

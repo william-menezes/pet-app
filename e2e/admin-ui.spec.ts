@@ -60,8 +60,9 @@ for (const size of SIZES) {
 
       const download = page.waitForEvent('download');
       await page.locator(tid('admin-batches-generate')).click();
-      expect((await download).suggestedFilename()).toBe('lote-901.zip');
-      await expect(page.locator(tid('admin-batches-done'))).toContainText('lote-901.zip');
+      // O id do lote não é legível (cabeçalho não exposto): o pacote é salvo mesmo assim, com nome de reserva.
+      expect((await download).suggestedFilename()).toBe('lote-novo.zip');
+      await expect(page.locator(tid('admin-batches-done'))).toContainText('O arquivo com os PINs foi baixado');
       expect(state.batchBodies).toEqual([{ quantity: 10, notes: 'Segunda leva' }]);
       await shot(page, `admin-lotes-pronto-${size.name}`);
     });

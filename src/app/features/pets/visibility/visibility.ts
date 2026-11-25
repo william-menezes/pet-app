@@ -14,7 +14,7 @@ import { PetService } from '../../../core/pets/pet.service';
 import { RescueProfileService } from '../../../core/pets/rescue-profile.service';
 import { lostElapsed } from '../../../core/tags/server/resolve-response';
 import { phoneConfirmationRoute } from '../../../core/tags/activation-links';
-import { tagErrorMessage } from '../../../core/tags/tag-errors';
+import { loadErrorText, tagErrorMessage } from '../../../core/tags/tag-errors';
 import { TagService } from '../../../core/tags/tag.service';
 import type { DashboardPet, Pet, RescueProfile } from '../../../models';
 import {
@@ -25,6 +25,9 @@ import {
   type Visibility,
 } from './preview-profile';
 import { VisibilityPreview } from './visibility-preview';
+
+/** Texto de erro de carga desta tela; o do limite de chamadas vem de `loadErrorText`. */
+const LOAD_FAILED = $localize`Não conseguimos carregar as escolhas. Verifique sua conexão e tente de novo.`;
 
 type State = 'loading' | 'ready' | 'error' | 'missing';
 type ContactKey = 'showWhatsapp' | 'showPhone';
@@ -59,6 +62,7 @@ export class VisibilityPage {
   private readonly previewButton = viewChild('previewButton', { read: ElementRef<HTMLButtonElement> });
 
   protected readonly state = signal<State>('loading');
+  protected readonly errorText = signal(LOAD_FAILED);
   protected readonly dashboardPet = signal<DashboardPet | null>(null);
   protected readonly pet = signal<Pet | null>(null);
   protected readonly profile = signal<RescueProfile | null>(null);
@@ -138,6 +142,7 @@ export class VisibilityPage {
     ]);
     if (id !== this.loadId) return;
     if (!dashboard.ok || (!pet.ok && pet.error !== 'not_found') || (!profile.ok && profile.error !== 'not_found')) {
+      this.errorText.set(loadErrorText(dashboard, LOAD_FAILED));
       this.state.set('error');
       return;
     }

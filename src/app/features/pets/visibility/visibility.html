@@ -16,8 +16,7 @@
             class="w-full"
             zType="danger"
             [zRole]="'status'"
-            zDescription="Não conseguimos carregar as escolhas. Verifique sua conexão e tente de novo."
-            i18n-zDescription />
+            [zDescription]="errorText()" />
           <button type="button" z-button zType="outline" (click)="load()" data-testid="visibility-retry" i18n>Tentar de novo</button>
         </div>
       }

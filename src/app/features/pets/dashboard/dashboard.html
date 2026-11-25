@@ -26,8 +26,7 @@
             class="w-full"
             zType="danger"
             [zRole]="'status'"
-            zDescription="Não conseguimos carregar o painel. Verifique sua conexão e tente de novo."
-            i18n-zDescription />
+            [zDescription]="errorText()" />
           <button type="button" z-button zType="outline" (click)="load()" data-testid="dashboard-retry" i18n>Tentar de novo</button>
         </div>
       }

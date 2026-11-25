@@ -161,6 +161,13 @@ describe('AdminTagService', () => {
       expect(res.ok && res.queue.lockedTags[0]).toEqual({ code: CODE, lockedUntil: '2026-11-26T09:15:00Z' });
     });
 
+    it('auditoria: o id vem como número do banco (bigint) e vira texto; fila aceita id numérico', async () => {
+      rpc.mockResolvedValueOnce({ data: { ok: true, rows: [{ id: 42, at: '2026-11-25T14:32:00Z', actor_id: null, actor_role: 'authenticated', event: 'pin_reissued', entity: 'tag', entity_id: '7K3MQ9XAC', detail: {} }] }, error: null });
+      const res = await service.audit();
+      expect(res.ok && res.rows[0].id).toBe('42');
+      expect(res.ok && res.rows[0].actorRole).toBe('authenticated');
+    });
+
     it('resolveReplacement manda o pedido e o desfecho', async () => {
       rpc.mockResolvedValue({ data: { ok: true }, error: null });
       expect(await service.resolveReplacement('r1', 'done')).toEqual({ ok: true });
@@ -229,9 +236,17 @@ describe('AdminTagService', () => {
       expect(await service.createBatch(10)).toEqual({ ok: false, error });
     });
 
-    it('200 sem X-Batch-Id válido ou queda de rede viram network', async () => {
+    it('200 sem X-Batch-Id legível NUNCA joga o pacote fora (os PINs só existem nele): batchId nulo', async () => {
       vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('PK', { status: 200 })));
-      expect(await service.createBatch(10)).toEqual({ ok: false, error: 'network' });
+      const res = await service.createBatch(10);
+      expect(res.ok && res.batchId).toBeNull();
+      expect(res.ok && res.blob.size).toBe(2);
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('PK', { status: 200, headers: { 'X-Batch-Id': 'qualquer coisa' } })));
+      const odd = await service.createBatch(10);
+      expect(odd.ok && odd.batchId).toBeNull();
+    });
+
+    it('queda de rede vira network', async () => {
       vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('offline')));
       expect(await service.createBatch(10)).toEqual({ ok: false, error: 'network' });
     });

@@ -110,8 +110,8 @@ describe('ManageTag (T088 a T090)', () => {
       expect(tags.releaseTag).not.toHaveBeenCalled();
       await clickDialog('manage-tag-confirm');
       expect(tags.releaseTag).toHaveBeenCalledWith(CODE, 'transferred');
-      expect(inDialog('manage-tag-pin')?.textContent?.trim()).toBe('K47Q9M');
-      expect(inDialog('manage-tag-pin-warning')?.textContent).toContain('Anote agora. Ele não aparece de novo.');
+      expect(byId('manage-tag-pin')?.textContent?.trim()).toBe('K47Q9M');
+      expect(byId('manage-tag-pin-warning')?.textContent).toContain('Anote agora. Ele não aparece de novo.');
     });
 
     it('desvincular: libera como "released"', async () => {
@@ -120,15 +120,15 @@ describe('ManageTag (T088 a T090)', () => {
       expect(inDialog('manage-tag-confirm-text')?.textContent).toContain('Quem escanear não vê mais os dados de Paçoca');
       await clickDialog('manage-tag-confirm');
       expect(tags.releaseTag).toHaveBeenCalledWith(CODE, 'released');
-      expect(inDialog('manage-tag-pin-title')?.textContent).toContain('desvinculada');
+      expect(byId('manage-tag-pin-title')?.textContent).toContain('desvinculada');
     });
 
     it('o PIN não fica em nenhum estado depois de concluir', async () => {
       await create();
       await clickEl('manage-tag-transfer');
       await clickDialog('manage-tag-confirm');
-      expect(inDialog('manage-tag-pin')).not.toBeNull();
-      await clickDialog('manage-tag-done');
+      expect(byId('manage-tag-pin')).not.toBeNull();
+      await clickEl('manage-tag-done');
       expect((fixture.componentInstance as unknown as { pin: () => string | null }).pin()).toBeNull();
       expect(document.body.textContent).not.toContain('K47Q9M');
       expect(navigate).toHaveBeenCalledWith(['/app/pets', 'p1']);
@@ -152,9 +152,9 @@ describe('ManageTag (T088 a T090)', () => {
       await create();
       await clickEl('manage-tag-transfer');
       await clickDialog('manage-tag-confirm');
-      await clickDialog('manage-tag-copy');
+      await clickEl('manage-tag-copy');
       expect(writeText).toHaveBeenCalledWith('K47Q9M');
-      expect(inDialog('manage-tag-copied')).not.toBeNull();
+      expect(byId('manage-tag-copied')).not.toBeNull();
     });
 
     it('cancelar a confirmação não libera nada', async () => {
@@ -168,8 +168,8 @@ describe('ManageTag (T088 a T090)', () => {
       await create({ releaseTag: vi.fn().mockResolvedValue({ ok: false, error: 'too_many_requests', retryAfterSeconds: 60 }) });
       await clickEl('manage-tag-transfer');
       await clickDialog('manage-tag-confirm');
-      expect(inDialog('manage-tag-problem')?.textContent).toContain('Muitos pedidos em pouco tempo');
-      expect(inDialog('manage-tag-pin')).toBeNull();
+      expect(inDialog('manage-tag-problem')?.textContent).toContain('Muitas ações em pouco tempo. Aguarde 1 minuto.');
+      expect(byId('manage-tag-pin')).toBeNull();
       expect(navigate).not.toHaveBeenCalled();
     });
   });
@@ -181,10 +181,10 @@ describe('ManageTag (T088 a T090)', () => {
       expect(inDialog('manage-tag-confirm-text')?.textContent).toContain('A tag continua funcionando');
       await clickDialog('manage-tag-confirm');
       expect(tags.requestReplacement).toHaveBeenCalledWith(CODE, 'damaged');
-      expect(inDialog('manage-tag-registered-title')?.textContent).toContain('Pedido registrado');
-      expect(inDialog('manage-tag-registered-text')?.textContent).toContain('A tag continua funcionando');
+      expect(byId('manage-tag-registered-title')?.textContent).toContain('Pedido registrado');
+      expect(byId('manage-tag-registered-text')?.textContent).toContain('A tag continua funcionando');
       expect(tags.releaseTag).not.toHaveBeenCalled();
-      await clickDialog('manage-tag-registered-done');
+      await clickEl('manage-tag-registered-done');
       expect(navigate).toHaveBeenCalledWith(['/app/pets', 'p1']);
     });
 
@@ -197,7 +197,7 @@ describe('ManageTag (T088 a T090)', () => {
       expect(tags.requestReplacement).not.toHaveBeenCalled();
       await clickDialog('manage-tag-confirm');
       expect(tags.requestReplacement).toHaveBeenCalledWith(CODE, 'lost');
-      expect(inDialog('manage-tag-registered-text')?.textContent).toContain('O código antigo foi anulado');
+      expect(byId('manage-tag-registered-text')?.textContent).toContain('O código antigo foi anulado');
     });
 
     it('replacement_limit mostra o limite com um próximo passo e não registra', async () => {
@@ -205,7 +205,7 @@ describe('ManageTag (T088 a T090)', () => {
       await clickEl('manage-tag-damaged');
       await clickDialog('manage-tag-confirm');
       expect(inDialog('manage-tag-problem')?.textContent).toContain('Fale com o suporte');
-      expect(inDialog('manage-tag-registered-title')).toBeNull();
+      expect(byId('manage-tag-registered-title')).toBeNull();
     });
   });
 
@@ -221,6 +221,12 @@ describe('ManageTag (T088 a T090)', () => {
     expect(byId('manage-tag-link')?.getAttribute('href')).toBe('/vincular/p1');
   });
 
+  it('limite de chamadas ao carregar: diz para aguardar e mantém "Tentar de novo"', async () => {
+    await create({ myDashboard: vi.fn().mockResolvedValue({ ok: false, error: 'too_many_requests', retryAfterSeconds: 60 }) });
+    expect(byId('manage-tag-error')?.textContent).toContain('Muitas ações em pouco tempo. Aguarde 1 minuto.');
+    expect(byId('manage-tag-retry')).not.toBeNull();
+  });
+
   it('pet que não é do tutor: "Não encontramos este pet"; erro de rede tem "Tentar de novo"', async () => {
     await create({ myDashboard: vi.fn().mockResolvedValue({ ok: true, dashboard: { pets: [], pendingActivation: null } }) });
     expect(byId('manage-tag-missing')).not.toBeNull();
@@ -231,5 +237,48 @@ describe('ManageTag (T088 a T090)', () => {
     expect(byId('manage-tag-error')).not.toBeNull();
     await clickEl('manage-tag-retry');
     expect(byId('manage-tag-code')).not.toBeNull();
+  });
+});
+
+describe('ManageTag: o PIN novo não está num diálogo (Esc não o tira da tela)', () => {
+  it('Esc depois de liberar a tag não esconde o PIN: ele continua na página até o tutor concluir', async () => {
+    const tags = {
+      myDashboard: vi.fn().mockResolvedValue({ ok: true, dashboard: { pets: [pet()], pendingActivation: null } }),
+      assignmentStart: vi.fn().mockResolvedValue(null),
+      releaseTag: vi.fn().mockResolvedValue({ ok: true, code: CODE, newPin: 'K47Q9M' }),
+      requestReplacement: vi.fn(),
+    };
+    TestBed.configureTestingModule({
+      providers: [
+        provideZonelessChangeDetection(),
+        provideRouter([]),
+        provideIcons(faroIcons),
+        { provide: TagService, useValue: tags },
+        { provide: ZardSonnerService, useValue: { success: vi.fn() } },
+      ],
+    });
+    const fixture = TestBed.createComponent(ManageTag);
+    fixture.componentRef.setInput('petId', 'p1');
+    const el = fixture.nativeElement as HTMLElement;
+    const settle = async () => {
+      await fixture.whenStable();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      fixture.detectChanges();
+      await fixture.whenStable();
+    };
+    fixture.detectChanges();
+    await settle();
+    await settle();
+    el.querySelector<HTMLElement>('[data-testid="manage-tag-transfer"]')!.click();
+    await settle();
+    document.querySelector<HTMLElement>('[data-testid="manage-tag-confirm"]')!.click();
+    await settle();
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    await settle();
+    expect(el.querySelector('[data-testid="manage-tag-pin"]')?.textContent?.trim()).toBe('K47Q9M');
+    // O PIN está na página, dentro do componente, e não em overlay: nada de `document.body` o carrega.
+    expect(el.contains(el.querySelector('[data-testid="manage-tag-pin"]'))).toBe(true);
+    fixture.destroy();
   });
 });

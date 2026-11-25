@@ -6,6 +6,10 @@ import { ZardButtonComponent } from '@/shared/components/button';
 
 import { normalize } from '../../../core/tag-code';
 import { TagService } from '../../../core/tags/tag.service';
+import { loadErrorText } from '../../../core/tags/tag-errors';
+
+/** Texto de erro de carga desta tela; o do limite de chamadas vem de `loadErrorText`. */
+const LOAD_FAILED = $localize`Não conseguimos abrir os dados da tag. Verifique sua conexão e tente de novo.`;
 
 type State = 'loading' | 'error';
 
@@ -26,8 +30,7 @@ type State = 'loading' | 'error';
             class="w-full"
             zType="danger"
             [zRole]="'status'"
-            zDescription="Não conseguimos abrir os dados da tag. Verifique sua conexão e tente de novo."
-            i18n-zDescription />
+            [zDescription]="errorText()" />
           <button type="button" z-button zType="outline" (click)="go()" data-testid="tag-redirect-retry" i18n>Tentar de novo</button>
           <a z-button zType="ghost" routerLink="/app/pets" data-testid="tag-redirect-pets" i18n>Ver meus pets</a>
         </div>
@@ -44,6 +47,7 @@ export class TagRedirect {
   /** Parâmetro de rota `:code` (ligado por `withComponentInputBinding`). */
   readonly code = input('');
   protected readonly state = signal<State>('loading');
+  protected readonly errorText = signal(LOAD_FAILED);
 
   constructor() {
     effect(() => {
@@ -57,6 +61,7 @@ export class TagRedirect {
     const wanted = normalize(this.code());
     const res = await this.tags.myDashboard();
     if (!res.ok) {
+      this.errorText.set(loadErrorText(res, LOAD_FAILED));
       this.state.set('error');
       return;
     }

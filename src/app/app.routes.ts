@@ -36,7 +36,7 @@ export const routes: Routes = [
   {
     path: '',
     loadComponent: () => import('./features/public/landing/landing').then((m) => m.Landing),
-    title: 'Faro — O caminho de volta para casa',
+    title: $localize`Faro — O caminho de volta para casa`,
   },
 
   // ── Editar pet: os formulários do novo pet, na casca de fluxo (sempre clara). Fica antes de `app` para o caminho
@@ -59,7 +59,7 @@ export const routes: Routes = [
         pathMatch: 'full',
         loadComponent: () => import('./features/pets/dashboard/dashboard').then((m) => m.Dashboard),
         data: { hub: true },
-        title: 'Início — Faro',
+        title: $localize`Início — Faro`,
       },
       {
         path: 'pets',
@@ -114,7 +114,7 @@ export const routes: Routes = [
         path: '**',
         loadComponent: shellFallback,
         data: { home: '/app' },
-        title: 'Em construção — Faro',
+        title: $localize`Em construção — Faro`,
       },
     ],
   },
@@ -129,7 +129,7 @@ export const routes: Routes = [
         path: '',
         pathMatch: 'full',
         loadComponent: () => import('./features/admin/batches/batches').then((m) => m.AdminBatches),
-        title: 'Administração — Faro',
+        title: $localize`Lotes — Faro`,
       },
       {
         path: 'codigos',
@@ -156,7 +156,7 @@ export const routes: Routes = [
         path: '**',
         loadComponent: shellFallback,
         data: { home: '/admin' },
-        title: 'Em construção — Faro',
+        title: $localize`Em construção — Faro`,
       },
     ],
   },

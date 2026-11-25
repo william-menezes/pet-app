@@ -110,6 +110,6 @@ describe('loadPetOverview', () => {
   it('sem o my_dashboard não há lista', async () => {
     const tags = { myDashboard: vi.fn().mockResolvedValue({ ok: false, error: 'network' }) };
     const pets = { list: vi.fn().mockResolvedValue({ ok: true, pets: [] }), photoUrls: vi.fn() };
-    expect(await loadPetOverview(tags as unknown as TagService, pets as unknown as PetService)).toEqual({ ok: false });
+    expect(await loadPetOverview(tags as unknown as TagService, pets as unknown as PetService)).toEqual({ ok: false, error: 'network' });
   });
 });

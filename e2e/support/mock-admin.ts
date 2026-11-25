@@ -71,12 +71,12 @@ export function newAdminState(over: Partial<AdminState> = {}): AdminState {
       locked_tags: [{ code: '2FX8CN73F', locked_until: new Date(Date.now() + 36_000_000).toISOString() }],
     },
     audit: [
-      { id: '6', at: new Date(Date.now() - 600_000).toISOString(), actor_id: null, actor_role: 'anon', event: 'scan_recorded', entity: 'tag', entity_id: '7K3MQ9XAC', detail: null },
-      { id: '5', at: '2026-11-25T14:05:00Z', actor_id: null, actor_role: 'tutor', event: 'activation_failed', entity: 'tag', entity_id: '2FX8CN73F', detail: { fail_count: 2 } },
-      { id: '4', at: '2026-11-20T19:20:00Z', actor_id: null, actor_role: 'admin', event: 'pin_reissued', entity: 'tag', entity_id: '2FX8CN73F', detail: { reason: 'cartão perdido' } },
-      { id: '3', at: '2026-11-19T12:41:00Z', actor_id: null, actor_role: 'admin', event: 'tag_status_changed', entity: 'tag', entity_id: '5QQWQ2MM4', detail: { status: 'blocked' } },
-      { id: '2', at: '2026-11-17T13:00:00Z', actor_id: null, actor_role: 'admin', event: 'batch_created', entity: 'batch', entity_id: 'lote-900', detail: { count: 54 } },
-      { id: '1', at: '2026-11-02T21:40:00Z', actor_id: null, actor_role: 'tutor', event: 'tag_activated', entity: 'tag', entity_id: '7K3MQ9XAC', detail: null },
+      { id: 6, at: new Date(Date.now() - 600_000).toISOString(), actor_id: null, actor_role: 'anon', event: 'scan_recorded', entity: 'tag', entity_id: '7K3MQ9XAC', detail: null },
+      { id: 5, at: '2026-11-25T14:05:00Z', actor_id: null, actor_role: 'authenticated', event: 'activation_failed', entity: 'tag', entity_id: '2FX8CN73F', detail: { fail_count: 2 } },
+      { id: 4, at: '2026-11-20T19:20:00Z', actor_id: null, actor_role: 'authenticated', event: 'pin_reissued', entity: 'tag', entity_id: '2FX8CN73F', detail: { reason: 'lost' } },
+      { id: 3, at: '2026-11-19T12:41:00Z', actor_id: null, actor_role: 'authenticated', event: 'tag_status_changed', entity: 'tag', entity_id: '5QQWQ2MM4', detail: { from: 'available', to: 'blocked' } },
+      { id: 2, at: '2026-11-17T13:00:00Z', actor_id: null, actor_role: 'authenticated', event: 'batch_created', entity: 'batch', entity_id: 'lote-900', detail: { count: 54 } },
+      { id: 1, at: '2026-11-02T21:40:00Z', actor_id: null, actor_role: 'authenticated', event: 'tag_activated', entity: 'tag', entity_id: '7K3MQ9XAC', detail: null },
     ],
     calls: {},
     batchBodies: [],
@@ -147,8 +147,10 @@ export async function mockAdminBackend(page: Page, state: AdminState): Promise<A
   await page.route('**/functions/v1/admin-create-batch', (route) => {
     state.batchBodies.push((route.request().postDataJSON() ?? {}) as Json);
     return route.fulfill({
+      // Sem `Access-Control-Expose-Headers`: como o navegador entrega a resposta de outra origem, `X-Batch-Id` não é legível
+      // pelo app (o pior caso para o serviço, que não pode jogar o pacote fora). Hoje a função nem tem CORS (bloqueio de [BE]).
       status: 200,
-      headers: { 'Content-Type': 'application/zip', 'X-Batch-Id': 'lote-901', 'Cache-Control': 'no-store', 'Access-Control-Expose-Headers': 'X-Batch-Id', 'Access-Control-Allow-Origin': '*' },
+      headers: { 'Content-Type': 'application/zip', 'X-Batch-Id': 'lote-901', 'Cache-Control': 'no-store', 'Access-Control-Allow-Origin': '*' },
       body: 'PK-simulado',
     });
   });

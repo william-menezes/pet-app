@@ -17,7 +17,7 @@ import { AuthStore } from '../auth/auth.store';
 import { SupabaseService } from '../supabase/supabase.service';
 import { PHOTO_PROCESSOR } from './image-resize';
 
-export type PetError = 'invalid' | 'too_large' | 'unsupported' | 'not_found' | 'network';
+export type PetError = 'invalid' | 'too_large' | 'unsupported' | 'not_found' | 'pet_limit' | 'network';
 export type PetResult<T> = ({ ok: true } & T) | { ok: false; error: PetError };
 
 export interface PetDraft {
@@ -164,6 +164,8 @@ export class PetService {
         .select('id')
         .single();
       const id = (data as { id?: unknown } | null)?.id;
+      // O 21º pet: o gatilho do banco recusa com a exceção `pet_limit` (tabela não devolve `{ ok: false }`).
+      if (error?.message === 'pet_limit') return { ok: false, error: 'pet_limit' };
       if (error || typeof id !== 'string') return { ok: false, error: 'network' };
       return { ok: true, petId: id };
     } catch {

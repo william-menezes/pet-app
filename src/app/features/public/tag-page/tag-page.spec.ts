@@ -3,7 +3,8 @@ import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { TestBed } from '@angular/core/testing';
-import { Meta } from '@angular/platform-browser';
+import { By, Meta } from '@angular/platform-browser';
+import { RouterLink } from '@angular/router';
 import { provideIcons } from '@ng-icons/core';
 
 import { faroIcons } from '@/shared/icons/faro-icons';
@@ -237,5 +238,24 @@ describe('features/public/tag-page: links para o app', () => {
     for (const file of sources) {
       expect(readFileSync(file, 'utf8'), file).not.toMatch(/\brouterLink\s*=|\[routerLink\]|import[^;]*RouterLink/);
     }
+  });
+});
+
+describe('features/public/tag-page: nenhuma diretiva RouterLink nos quatro estados renderizados (T106)', () => {
+  const states: [string, TagResolution][] = [
+    ['assigned', { state: 'assigned', profile }],
+    ['available', { state: 'available', code: '7K3M-Q9XA-C' }],
+    ['not_found', { state: 'not_found' }],
+    ['contingency', { state: 'contingency' }],
+  ];
+
+  it.each(states)('%s: nenhum elemento tem RouterLink e todo link tem href comum', (_name, resolution) => {
+    const { fixture, el } = render(resolution);
+    expect(fixture.debugElement.queryAll(By.directive(RouterLink))).toHaveLength(0);
+    for (const link of Array.from(el.querySelectorAll('a'))) {
+      expect(link.getAttribute('href'), link.outerHTML).not.toBeNull();
+    }
+    fixture.destroy();
+    TestBed.resetTestingModule();
   });
 });

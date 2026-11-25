@@ -12,11 +12,14 @@ import { ScreenHeader } from '@/shared/shells/screen-header/screen-header';
 import { PetService } from '../../../core/pets/pet.service';
 import { RescueProfileService } from '../../../core/pets/rescue-profile.service';
 import { TagService } from '../../../core/tags/tag.service';
-import { tagErrorMessage } from '../../../core/tags/tag-errors';
+import { loadErrorText, tagErrorMessage } from '../../../core/tags/tag-errors';
 import type { DashboardPet, Pet, RescueProfile } from '../../../models';
 import { formatScanTime } from '../../scans/scan-format';
 import { petChips, petCoverLine } from '../pet-format';
 import { PetLostRow } from './lost-row/lost-row';
+
+/** Texto de erro de carga desta tela; o do limite de chamadas vem de `loadErrorText`. */
+const LOAD_FAILED = $localize`Não conseguimos carregar o pet. Verifique sua conexão e tente de novo.`;
 
 type State = 'loading' | 'ready' | 'error' | 'missing';
 
@@ -53,6 +56,7 @@ export class PetPage {
   readonly petId = input.required<string>();
 
   protected readonly state = signal<State>('loading');
+  protected readonly errorText = signal(LOAD_FAILED);
   protected readonly dash = signal<DashboardPet | null>(null);
   protected readonly pet = signal<Pet | null>(null);
   protected readonly profile = signal<RescueProfile | null>(null);
@@ -121,6 +125,7 @@ export class PetPage {
     const [dashboard, pet, profile] = await Promise.all([this.tags.myDashboard(), this.pets.get(petId), this.profiles.get(petId)]);
     if (id !== this.loadId) return;
     if (!dashboard.ok || (!pet.ok && pet.error !== 'not_found')) {
+      this.errorText.set(loadErrorText(dashboard, LOAD_FAILED));
       this.state.set('error');
       return;
     }

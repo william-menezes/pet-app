@@ -46,7 +46,7 @@ describe('app.routes (T024)', () => {
     ['/app/pets/abc/tag', 'pets/:petId/tag', undefined],
     ['/app/scans', 'scans', undefined],
     ['/app/conta', 'conta', undefined],
-    ['/admin', '', 'Administração — Faro'],
+    ['/admin', '', 'Lotes — Faro'],
     ['/admin/codigos', 'codigos', undefined],
     ['/admin/codigos/7K3M-Q9XA-C', 'codigos/:code', undefined],
     ['/admin/fila', 'fila', undefined],

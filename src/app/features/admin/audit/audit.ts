@@ -214,7 +214,7 @@ export class AdminAuditPage {
   }
 
   protected entity(row: AdminAuditRow): string {
-    return entityText(row.entityId);
+    return entityText(row.entity, row.entityId);
   }
 
   protected actor(row: AdminAuditRow): string {

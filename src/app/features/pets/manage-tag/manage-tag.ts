@@ -11,14 +11,18 @@ import { ZardSonnerService } from '@/shared/components/sonner';
 import type { FaroIconName } from '@/shared/icons/faro-icons';
 import { ScreenHeader } from '@/shared/shells/screen-header/screen-header';
 
-import { tagErrorMessage } from '../../../core/tags/tag-errors';
+import { loadErrorText, tagErrorMessage } from '../../../core/tags/tag-errors';
 import { TagService } from '../../../core/tags/tag.service';
 import type { DashboardPet } from '../../../models';
 import { formatScanDay } from '../../scans/scan-format';
 
+/** Texto de erro de carga desta tela; o do limite de chamadas vem de `loadErrorText`. */
+const LOAD_FAILED = $localize`Não conseguimos carregar a tag. Verifique sua conexão e tente de novo.`;
+
 type State = 'loading' | 'ready' | 'error' | 'missing';
 type Kind = 'transfer' | 'release' | 'damaged' | 'lost';
-type Phase = 'confirm' | 'pin' | 'registered';
+/** O que a página mostra depois de uma ação: nada (as ações), o PIN novo ou o pedido de 2ª via registrado. */
+type Outcome = 'none' | 'pin' | 'registered';
 
 interface Action {
   kind: Kind;
@@ -52,7 +56,7 @@ interface Action {
           }
           @case ('error') {
             <div class="flex flex-col items-start gap-3" data-testid="manage-tag-error">
-              <z-alert class="w-full" zType="danger" [zRole]="'status'" zDescription="Não conseguimos carregar a tag. Verifique sua conexão e tente de novo." i18n-zDescription />
+              <z-alert class="w-full" zType="danger" [zRole]="'status'" [zDescription]="errorText()" />
               <button type="button" z-button zType="outline" (click)="load()" data-testid="manage-tag-retry" i18n>Tentar de novo</button>
             </div>
           }
@@ -65,7 +69,33 @@ interface Action {
         }
       </div>
 
-      @if (state() === 'ready' && dash(); as d) {
+      @if (outcome() === 'pin') {
+        <section class="flex flex-col gap-3 rounded-2xl bg-card p-5" aria-labelledby="manage-tag-pin-title" data-testid="manage-tag-pin-panel">
+          <h2 id="manage-tag-pin-title" class="font-display text-[22px] font-semibold text-foreground" data-testid="manage-tag-pin-title">{{ pinTitle() }}</h2>
+          <p class="text-[15px] leading-[1.45] text-text">{{ pinText() }}</p>
+          <p class="rounded-xl bg-inset px-4 py-3 text-center font-display text-[32px] leading-none font-bold tracking-[0.2em] text-foreground" data-testid="manage-tag-pin">
+            {{ pin() }}
+          </p>
+          <p class="text-center text-[15px] font-semibold text-foreground" data-testid="manage-tag-pin-warning" i18n>Anote agora. Ele não aparece de novo.</p>
+          <div aria-live="polite">
+            @if (copied()) {
+              <p class="text-center text-[13px] font-semibold text-muted-foreground" role="status" data-testid="manage-tag-copied" i18n>PIN copiado.</p>
+            }
+          </div>
+          <div class="flex flex-wrap gap-3">
+            <button type="button" z-button zType="outline" zSize="lg" (click)="copy()" data-testid="manage-tag-copy" i18n>Copiar PIN</button>
+            <button type="button" z-button zSize="lg" (click)="finish()" data-testid="manage-tag-done" i18n>Concluir</button>
+          </div>
+        </section>
+      } @else if (outcome() === 'registered') {
+        <section class="flex flex-col gap-3 rounded-2xl bg-card p-5" aria-labelledby="manage-tag-registered-title" data-testid="manage-tag-registered">
+          <h2 id="manage-tag-registered-title" class="font-display text-[22px] font-semibold text-foreground" data-testid="manage-tag-registered-title" i18n>Pedido registrado</h2>
+          <p class="text-[15px] leading-[1.45] text-text" data-testid="manage-tag-registered-text">{{ registeredText() }}</p>
+          <div>
+            <button type="button" z-button zSize="lg" (click)="finish()" data-testid="manage-tag-registered-done" i18n>Entendi</button>
+          </div>
+        </section>
+      } @else if (state() === 'ready' && dash(); as d) {
         @if (!d.hasTag) {
           <div class="flex flex-col items-start gap-3 rounded-2xl bg-card p-5" data-testid="manage-tag-none">
             <p class="font-display text-[19px] font-semibold text-foreground" i18n>{{ d.name }} ainda não tem tag</p>
@@ -113,62 +143,32 @@ interface Action {
         }
       }
 
+      <!-- O diálogo só confirma. O PIN novo e o "pedido registrado" ficam NA PÁGINA, não num diálogo: Esc fecharia o diálogo
+           e o tutor perderia a única vez em que o PIN aparece. -->
       <z-alert-dialog [(zVisible)]="visible">
-        @switch (phase()) {
-          @case ('confirm') {
-            <z-alert-dialog-header>
-              <z-alert-dialog-title data-testid="manage-tag-confirm-title">{{ confirmTitle() }}</z-alert-dialog-title>
-              <z-alert-dialog-description data-testid="manage-tag-confirm-text">{{ confirmText() }}</z-alert-dialog-description>
-            </z-alert-dialog-header>
-            <div aria-live="polite">
-              @if (problem(); as text) {
-                <z-alert zType="danger" [zRole]="'status'" [zDescription]="text" data-testid="manage-tag-problem" />
-              }
-            </div>
-            <z-alert-dialog-footer>
-              <button type="button" z-button zType="outline" zSize="lg" [zDisabled]="working()" (click)="cancel()" data-testid="manage-tag-cancel" i18n>Cancelar</button>
-              <button
-                type="button"
-                z-button
-                [zType]="kind() === 'lost' || kind() === 'release' ? 'destructive' : 'default'"
-                zSize="lg"
-                [zLoading]="working()"
-                [zDisabled]="working()"
-                (click)="confirm()"
-                data-testid="manage-tag-confirm">
-                {{ confirmLabel() }}
-              </button>
-            </z-alert-dialog-footer>
+        <z-alert-dialog-header>
+          <z-alert-dialog-title data-testid="manage-tag-confirm-title">{{ confirmTitle() }}</z-alert-dialog-title>
+          <z-alert-dialog-description data-testid="manage-tag-confirm-text">{{ confirmText() }}</z-alert-dialog-description>
+        </z-alert-dialog-header>
+        <div aria-live="polite">
+          @if (problem(); as text) {
+            <z-alert zType="danger" [zRole]="'status'" [zDescription]="text" data-testid="manage-tag-problem" />
           }
-          @case ('pin') {
-            <z-alert-dialog-header>
-              <z-alert-dialog-title data-testid="manage-tag-pin-title">{{ pinTitle() }}</z-alert-dialog-title>
-              <z-alert-dialog-description>{{ pinText() }}</z-alert-dialog-description>
-            </z-alert-dialog-header>
-            <p class="rounded-xl bg-inset px-4 py-3 text-center font-display text-[32px] leading-none font-bold tracking-[0.2em] text-foreground" data-testid="manage-tag-pin">
-              {{ pin() }}
-            </p>
-            <p class="text-center text-[15px] font-semibold text-foreground" data-testid="manage-tag-pin-warning" i18n>Anote agora. Ele não aparece de novo.</p>
-            <div aria-live="polite">
-              @if (copied()) {
-                <p class="text-center text-[13px] font-semibold text-muted-foreground" role="status" data-testid="manage-tag-copied" i18n>PIN copiado.</p>
-              }
-            </div>
-            <z-alert-dialog-footer>
-              <button type="button" z-button zType="outline" zSize="lg" (click)="copy()" data-testid="manage-tag-copy" i18n>Copiar PIN</button>
-              <button type="button" z-button zSize="lg" (click)="finish()" data-testid="manage-tag-done" i18n>Concluir</button>
-            </z-alert-dialog-footer>
-          }
-          @case ('registered') {
-            <z-alert-dialog-header>
-              <z-alert-dialog-title data-testid="manage-tag-registered-title" i18n>Pedido registrado</z-alert-dialog-title>
-              <z-alert-dialog-description data-testid="manage-tag-registered-text">{{ registeredText() }}</z-alert-dialog-description>
-            </z-alert-dialog-header>
-            <z-alert-dialog-footer>
-              <button type="button" z-button zSize="lg" (click)="finish()" data-testid="manage-tag-registered-done" i18n>Entendi</button>
-            </z-alert-dialog-footer>
-          }
-        }
+        </div>
+        <z-alert-dialog-footer>
+          <button type="button" z-button zType="outline" zSize="lg" [zDisabled]="working()" (click)="cancel()" data-testid="manage-tag-cancel" i18n>Cancelar</button>
+          <button
+            type="button"
+            z-button
+            [zType]="kind() === 'lost' || kind() === 'release' ? 'destructive' : 'default'"
+            zSize="lg"
+            [zLoading]="working()"
+            [zDisabled]="working()"
+            (click)="confirm()"
+            data-testid="manage-tag-confirm">
+            {{ confirmLabel() }}
+          </button>
+        </z-alert-dialog-footer>
       </z-alert-dialog>
     </div>
   `,
@@ -184,12 +184,13 @@ export class ManageTag {
   protected readonly blockedMessage = $localize`Tag bloqueada. Fale com o suporte.`;
 
   protected readonly state = signal<State>('loading');
+  protected readonly errorText = signal(LOAD_FAILED);
   protected readonly dash = signal<DashboardPet | null>(null);
   protected readonly startedAt = signal<string | null>(null);
 
   protected readonly visible = signal(false);
   protected readonly kind = signal<Kind>('transfer');
-  protected readonly phase = signal<Phase>('confirm');
+  protected readonly outcome = signal<Outcome>('none');
   protected readonly working = signal(false);
   protected readonly problem = signal<string | null>(null);
   protected readonly copied = signal(false);
@@ -275,6 +276,7 @@ export class ManageTag {
       this.petId();
       untracked(() => {
         this.pin.set(null);
+        this.outcome.set('none');
         void this.load();
       });
     });
@@ -286,6 +288,7 @@ export class ManageTag {
     const res = await this.tags.myDashboard();
     if (id !== this.loadId) return;
     if (!res.ok) {
+      this.errorText.set(loadErrorText(res, LOAD_FAILED));
       this.state.set('error');
       return;
     }
@@ -305,7 +308,6 @@ export class ManageTag {
   protected ask(kind: Kind): void {
     this.kind.set(kind);
     this.problem.set(null);
-    this.phase.set('confirm');
     this.visible.set(true);
   }
 
@@ -328,7 +330,8 @@ export class ManageTag {
       }
       this.copied.set(false);
       this.pin.set(res.newPin);
-      this.phase.set('pin');
+      this.visible.set(false);
+      this.outcome.set('pin');
       return;
     }
     const res = await this.tags.requestReplacement(code, kind);
@@ -337,7 +340,8 @@ export class ManageTag {
       this.problem.set(tagErrorMessage(res.error, res.retryAfterSeconds));
       return;
     }
-    this.phase.set('registered');
+    this.visible.set(false);
+    this.outcome.set('registered');
   }
 
   protected async copy(): Promise<void> {
@@ -351,15 +355,24 @@ export class ManageTag {
     }
   }
 
+  private doneMessage(): string {
+    switch (this.kind()) {
+      case 'transfer':
+        return $localize`Tag liberada para o próximo dono.`;
+      case 'release':
+        return $localize`Tag desvinculada.`;
+      default:
+        return $localize`Pedido de 2ª via registrado.`;
+    }
+  }
+
   /** Concluir: o PIN sai da memória e a tela segue para a página do pet (a tag mudou de estado). */
   protected finish(): void {
     this.pin.set(null);
     this.copied.set(false);
     this.visible.set(false);
-    const kind = this.kind();
-    this.sonner.success(
-      kind === 'transfer' ? $localize`Tag liberada para o próximo dono.` : kind === 'release' ? $localize`Tag desvinculada.` : $localize`Pedido de 2ª via registrado.`,
-    );
+    this.outcome.set('none');
+    this.sonner.success(this.doneMessage());
     void this.router.navigate(['/app/pets', this.petId()]);
   }
 }

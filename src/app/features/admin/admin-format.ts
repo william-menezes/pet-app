@@ -171,13 +171,18 @@ export function auditEventLabel(event: string): string {
   }
 }
 
-/** "visitante", "admin", "tutor" ou "sistema" a partir do papel gravado. Nunca o identificador da conta. */
+/**
+ * Quem fez, pelo papel gravado no banco. O banco grava o papel de conexão (`authenticated` para qualquer conta logada,
+ * admin ou tutor; `anon` para visitante; `service_role` para o servidor): não dá para distinguir admin de tutor por
+ * aqui, e a tela não inventa. Nunca mostra o identificador da conta.
+ */
 export function actorLabel(role: string | null): string {
   switch (role) {
     case 'admin':
       return $localize`admin`;
     case 'tutor':
-      return $localize`tutor`;
+    case 'authenticated':
+      return $localize`conta logada`;
     case 'anon':
       return $localize`visitante`;
     default:
@@ -185,9 +190,46 @@ export function actorLabel(role: string | null): string {
   }
 }
 
+function statusWord(value: string): string {
+  switch (value) {
+    case 'available':
+    case 'assigned':
+    case 'blocked':
+    case 'void':
+      return statusLabel(value).toLowerCase();
+    case 'done':
+      return $localize`resolvido`;
+    case 'cancelled':
+      return $localize`cancelado`;
+    default:
+      return value;
+  }
+}
+
+function reasonWord(value: string): string {
+  switch (value) {
+    case 'replaced':
+      return $localize`troca de tag`;
+    case 'lost':
+      return $localize`tag perdida`;
+    case 'damaged':
+      return $localize`tag danificada`;
+    case 'released':
+      return $localize`liberada pelo tutor`;
+    case 'transferred':
+      return $localize`passada adiante`;
+    case 'admin':
+      return $localize`encerrado pelo admin`;
+    case 'account_deleted':
+      return $localize`conta excluída`;
+    default:
+      return value;
+  }
+}
+
 /**
- * Resumo do `detail` do evento, só com o que é seguro e útil. O banco já não grava PIN, telefone nem IP; mesmo assim
- * só entram chaves conhecidas, com valor simples.
+ * Resumo do `detail` do evento, só com chaves conhecidas e valores simples (os valores em inglês do banco viram
+ * palavras em português). O banco já não grava PIN, telefone nem IP; mesmo assim nada fora desta lista aparece.
  */
 export function auditDetailText(detail: Record<string, unknown> | null): string {
   if (detail === null) return '';
@@ -196,21 +238,29 @@ export function auditDetailText(detail: Record<string, unknown> | null): string 
     const value = detail[key];
     return typeof value === 'string' || typeof value === 'number' ? String(value) : null;
   };
+  const from = text('from');
+  const to = text('to');
+  if (to !== null) parts.push(from === null ? `→ ${statusWord(to)}` : `${statusWord(from)} → ${statusWord(to)}`);
   const status = text('status');
-  if (status !== null) parts.push(status);
+  if (status !== null) parts.push(statusWord(status));
   const reason = text('reason');
-  if (reason !== null) parts.push(reason);
+  if (reason !== null) parts.push(reasonWord(reason));
   const kind = text('kind');
-  if (kind !== null) parts.push(kind);
+  if (kind === 'damaged' || kind === 'lost') parts.push(replacementLabel(kind).toLowerCase());
+  const note = text('note');
+  if (note !== null) parts.push(note);
   const count = text('count');
   if (count !== null) parts.push($localize`${count}:count: códigos`);
   const failCount = text('fail_count');
   if (failCount !== null) parts.push($localize`tentativa ${failCount}:count:`);
+  const failCount24 = text('fail_count_24h');
+  if (failCount24 !== null) parts.push($localize`${failCount24}:count: erros em 24 h`);
   return parts.join(' · ');
 }
 
-/** Código na forma de exibição; `lote-NNN` e outras entidades ficam como vieram. */
-export function entityText(entityId: string | null): string {
+/** Código na forma de exibição; `lote-NNN` fica como veio; evento de pet não mostra o identificador interno. */
+export function entityText(entity: string | null, entityId: string | null): string {
+  if (entity === 'pet') return $localize`Pet`;
   if (entityId === null) return '—';
   const code = normalize(entityId);
   return isValid(code) ? format(code) : entityId;

@@ -26,13 +26,16 @@ import { PetService } from '../../../core/pets/pet.service';
 import { format, isValid, normalize } from '../../../core/tag-code';
 import { codeFromQr } from '../../../core/tag-code/qr-payload';
 import { phoneConfirmationRoute } from '../../../core/tags/activation-links';
-import { tagErrorMessage } from '../../../core/tags/tag-errors';
+import { loadErrorText, tagErrorMessage } from '../../../core/tags/tag-errors';
 import { TagService, type ActivationResult } from '../../../core/tags/tag.service';
 import { DoneStep } from '../../activation/done-step/done-step';
 import type { PetOption } from '../../activation/pet-option';
 import { speciesLabel } from '../../activation/pet-option';
 import { PinStep, type PinProblem, type PinSubmission } from '../../activation/pin-step/pin-step';
 import { QrScanner, type CameraFailure } from './qr-scanner';
+
+/** Texto de erro de carga desta tela; o do limite de chamadas vem de `loadErrorText`. */
+const LOAD_FAILED = $localize`Não conseguimos carregar seus pets. Verifique sua conexão e tente de novo.`;
 
 type View = 'loading' | 'error' | 'missing' | 'taken' | 'code' | 'pin' | 'done';
 type Tab = 'scan' | 'type';
@@ -78,6 +81,7 @@ export class LinkTag {
   readonly petId = input.required<string>();
 
   protected readonly view = signal<View>('loading');
+  protected readonly errorText = signal(LOAD_FAILED);
   protected readonly pets = signal<PetOption[]>([]);
   protected readonly selectedId = signal<string | null>(null);
   protected readonly tab = signal<Tab>('type');
@@ -135,6 +139,7 @@ export class LinkTag {
     this.view.set('loading');
     const res = await this.tags.myDashboard();
     if (!res.ok) {
+      this.errorText.set(loadErrorText(res, LOAD_FAILED));
       this.view.set('error');
       return;
     }

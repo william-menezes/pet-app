@@ -10,6 +10,10 @@ import { PetService } from '../../../core/pets/pet.service';
 import { TagService } from '../../../core/tags/tag.service';
 import { PetCard } from '../pet-card/pet-card';
 import { loadPetOverview, type PetOverviewItem } from '../pet-overview';
+import { loadErrorText } from '../../../core/tags/tag-errors';
+
+/** Texto de erro de carga desta tela; o do limite de chamadas vem de `loadErrorText`. */
+const LOAD_FAILED = $localize`Não conseguimos carregar os pets. Verifique sua conexão e tente de novo.`;
 
 type State = 'loading' | 'ready' | 'error';
 
@@ -36,8 +40,7 @@ type State = 'loading' | 'ready' | 'error';
                 class="w-full"
                 zType="danger"
                 [zRole]="'status'"
-                zDescription="Não conseguimos carregar os pets. Verifique sua conexão e tente de novo."
-                i18n-zDescription />
+                [zDescription]="errorText()" />
               <button type="button" z-button zType="outline" (click)="load()" data-testid="pet-list-retry" i18n>Tentar de novo</button>
             </div>
           }
@@ -67,6 +70,7 @@ export class PetList implements OnInit {
   private readonly pets = inject(PetService);
 
   protected readonly state = signal<State>('loading');
+  protected readonly errorText = signal(LOAD_FAILED);
   protected readonly items = signal<PetOverviewItem[]>([]);
 
   /** "2 pets · 1 tag ativa". */
@@ -86,6 +90,7 @@ export class PetList implements OnInit {
     this.state.set('loading');
     const overview = await loadPetOverview(this.tags, this.pets);
     if (!overview.ok) {
+      this.errorText.set(loadErrorText(overview, LOAD_FAILED));
       this.state.set('error');
       return;
     }

@@ -195,6 +195,8 @@ export class NewPet {
         return $localize`O pet foi salvo, mas a foto não foi enviada. Tente de novo ou continue sem ela.`;
       case 'invalid':
         return $localize`Confira os dados do pet e tente de novo.`;
+      case 'pet_limit':
+        return $localize`Você chegou ao limite de pets desta conta. Fale com o suporte.`;
       default:
         return $localize`Não conseguimos salvar agora. Verifique sua conexão e tente de novo.`;
     }
@@ -382,7 +384,7 @@ export class NewPet {
       });
       if (!created.ok) {
         this.saving.set(false);
-        this.problem.set(created.error === 'invalid' ? 'invalid' : 'create_failed');
+        this.problem.set(created.error === 'invalid' || created.error === 'pet_limit' ? created.error : 'create_failed');
         return;
       }
       petId = created.petId;

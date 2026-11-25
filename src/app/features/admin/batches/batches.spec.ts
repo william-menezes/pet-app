@@ -150,6 +150,16 @@ describe('AdminBatches (T078)', () => {
       expect(admin.listBatches.mock.calls.length).toBeGreaterThanOrEqual(2);
     });
 
+    it('200 sem o id do lote legível: o pacote é salvo mesmo assim, com nome de reserva, e a tela diz o que fazer', async () => {
+      const blob = new Blob(['code,pin\n']);
+      await create({ createBatch: vi.fn().mockResolvedValue({ ok: true, batchId: null, blob }) });
+      await click('admin-batches-create');
+      await click('admin-batches-continue');
+      await click('admin-batches-generate');
+      expect(save).toHaveBeenCalledWith(blob, 'lote-novo.zip');
+      expect(byId('admin-batches-done')?.textContent).toContain('O arquivo com os PINs foi baixado');
+    });
+
     it('"Voltar" na confirmação não gera nada', async () => {
       await create();
       await click('admin-batches-create');
