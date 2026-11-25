@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   Injector,
+  type OnInit,
   afterNextRender,
   computed,
   effect,
@@ -38,9 +39,10 @@ export interface PinSubmission {
  * Passo 2 da ativação: o PIN do cartão (T046; referência `V2-ativacao-pin*.dc.html`).
  *
  * O PIN vive só no `FormControl`: ao enviar, a tela entrega o valor a quem chamou e apaga as células na hora.
- * Nunca vai para signal, storage, URL ou log. A opção de WhatsApp vem MARCADA (exceção registrada no Princípio II
- * da constituição, decisão do William em 2026-11-21), com o aviso logo abaixo, e é sempre enviada de forma
- * explícita.
+ * Nunca vai para signal, storage, URL ou log. Na ativação pela tag (`activate`) a opção de WhatsApp vem MARCADA
+ * (exceção registrada no Princípio II da constituição, decisão do William em 2026-11-21), com o aviso logo abaixo.
+ * Ao vincular pelo app (`link`) ela começa DESLIGADA ("em qualquer outro lugar, começa desligada"). Nos dois casos é
+ * enviada de forma explícita.
  */
 @Component({
   selector: 'app-activation-pin-step',
@@ -57,14 +59,14 @@ export interface PinSubmission {
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './pin-step.html',
 })
-export class PinStep {
+export class PinStep implements OnInit {
   readonly pet = input.required<PetOption>();
   /** Código na forma de exibição, `XXXX-XXXX-X`. */
   readonly code = input.required<string>();
   /**
    * `activate` (`/ativar/:code`, a tag foi lida do QR) ou `link` (`/vincular/:petId`, o tutor escolheu a tag pelo app: T073,
    * referência `V2-vincular-pin*.dc.html`). Mudam só a barra, o título, o apoio e a linha do resumo; o PIN, o WhatsApp
-   * (marcado, com o aviso: as duas telas do PIN foram desenhadas assim) e os erros são os mesmos.
+   * e os erros são os mesmos. O WhatsApp começa marcado só em `activate`.
    */
   readonly variant = input<'activate' | 'link'>('activate');
   readonly submitting = input(false);
@@ -80,6 +82,11 @@ export class PinStep {
   private readonly pinLength = signal(0);
   private readonly otp = viewChild(ZardInputOtpComponent);
   private readonly injector = inject(Injector);
+
+  ngOnInit(): void {
+    // Princípio II: marcado só na ativação pela tag; em qualquer outro lugar começa desligado.
+    this.whatsapp.setValue(this.variant() === 'activate');
+  }
 
   constructor() {
     this.pin.valueChanges.subscribe((value) => this.pinLength.set(value.length));

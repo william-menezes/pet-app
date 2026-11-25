@@ -258,20 +258,22 @@ describe('LinkTag (T072, T073)', () => {
       expect((byId('link-code') as HTMLInputElement).value).toBe(CODE);
     });
 
-    it('vincula: manda o código normalizado, o pet, sem troca e o WhatsApp explícito (marcado, com o aviso)', async () => {
+    it('vincula: manda o código normalizado, o pet, sem troca e o WhatsApp explícito (começa desligado: Princípio II)', async () => {
       await create();
       await toPinStep();
-      expect(byId('activation-whatsapp-notice')?.textContent).toContain('Você pode desligar depois em O que estranhos veem');
+      expect((el.querySelector('[data-testid="activation-whatsapp"] input') as HTMLInputElement).checked).toBe(false);
+      expect(byId('activation-whatsapp-notice')?.textContent).toContain('Se você marcar');
+      expect(byId('activation-whatsapp-notice')?.textContent).not.toContain('Você pode desligar');
       await typePin('K47Q9M');
       el.querySelector('form')!.dispatchEvent(new Event('submit'));
       await settle();
       await settle();
-      expect(activate).toHaveBeenCalledWith({ code: CODE, pin: 'K47Q9M', petId: 'p1', replace: false, enableWhatsapp: true });
+      expect(activate).toHaveBeenCalledWith({ code: CODE, pin: 'K47Q9M', petId: 'p1', replace: false, enableWhatsapp: false });
       expect(text()).toContain('tem como');
       expect(byId('activation-done-page')?.getAttribute('href') ?? el.querySelector('a[href="/7K3MQ9XAC"]')?.getAttribute('href')).toBe('/7K3MQ9XAC');
     });
 
-    it('desmarcar o WhatsApp manda false', async () => {
+    it('marcar o WhatsApp manda true', async () => {
       await create();
       await toPinStep();
       (el.querySelector('[data-testid="activation-whatsapp"] input') as HTMLInputElement).click();
@@ -279,7 +281,7 @@ describe('LinkTag (T072, T073)', () => {
       await typePin('K47Q9M');
       el.querySelector('form')!.dispatchEvent(new Event('submit'));
       await settle();
-      expect(activate).toHaveBeenCalledWith(expect.objectContaining({ enableWhatsapp: false }));
+      expect(activate).toHaveBeenCalledWith(expect.objectContaining({ enableWhatsapp: true }));
     });
 
     it('PIN errado: mensagem do contrato, continua no passo do PIN', async () => {

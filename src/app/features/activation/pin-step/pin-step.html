@@ -54,9 +54,15 @@
     <z-checkbox [formControl]="whatsapp" zId="activation-whatsapp-input" data-testid="activation-whatsapp">
       <span i18n>Quero que quem achar {{ pet().name }} possa me chamar no WhatsApp</span>
     </z-checkbox>
-    <p class="pl-[34px] text-[13px] leading-[1.45] text-muted-foreground" data-testid="activation-whatsapp-notice" i18n>
-      Seu WhatsApp vai aparecer na página de {{ pet().name }} para quem escanear a tag. Você pode desligar depois em O que estranhos veem.
-    </p>
+    @if (variant() === 'link') {
+      <p class="pl-[34px] text-[13px] leading-[1.45] text-muted-foreground" data-testid="activation-whatsapp-notice" i18n>
+        Se você marcar, seu WhatsApp vai aparecer na página de {{ pet().name }} para quem escanear a tag. Você pode mudar depois em O que estranhos veem.
+      </p>
+    } @else {
+      <p class="pl-[34px] text-[13px] leading-[1.45] text-muted-foreground" data-testid="activation-whatsapp-notice" i18n>
+        Seu WhatsApp vai aparecer na página de {{ pet().name }} para quem escanear a tag. Você pode desligar depois em O que estranhos veem.
+      </p>
+    }
   </div>
 
   <app-note icon="lock" i18n>Por segurança, a tag é travada por alguns minutos depois de várias tentativas erradas.</app-note>

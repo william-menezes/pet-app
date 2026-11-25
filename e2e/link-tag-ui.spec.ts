@@ -89,7 +89,7 @@ for (const size of SIZES) {
       await expect(page.locator('h1, [data-testid="flow-shell"]').first()).toBeVisible();
       await expect(page.locator('body')).toContainText('tem como');
       expect(state.activateBodies).toEqual([
-        { p_code: '5P8NMRXYW', p_pin: 'K47Q9M', p_pet_id: 'p2', p_replace: false, p_enable_whatsapp: true },
+        { p_code: '5P8NMRXYW', p_pin: 'K47Q9M', p_pet_id: 'p2', p_replace: false, p_enable_whatsapp: false },
       ]);
       await page.waitForTimeout(300);
       await shot(page, `vincular-pronto-${size.name}`);

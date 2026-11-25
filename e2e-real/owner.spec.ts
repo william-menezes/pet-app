@@ -31,7 +31,7 @@ async function visitAsStranger(browser: import('@playwright/test').Browser, code
   await ctx.close();
 }
 
-test('T074: vincular pelo app (codigo e PIN); o WhatsApp vem marcado nesta tela (comportamento registrado)', async ({ page }) => {
+test('T074: vincular pelo app (codigo e PIN); o WhatsApp comeca desligado nesta tela (Principio II)', async ({ page }) => {
   const t = await newTutor();
   const petId = await createPet(t, 'Mel', 'cat');
   const tag = takeTag();
@@ -42,9 +42,8 @@ test('T074: vincular pelo app (codigo e PIN); o WhatsApp vem marcado nesta tela 
   await expectNoSeriousA11y(page);
   await page.locator(tid('link-continue')).click();
   await expect(page.locator('h1')).toContainText('Digite o PIN do cartão');
-  // (b) WhatsApp pre-marcado tambem aqui: o CLAUDE.md diz "marcada so na ativacao". Apenas registrado, sem corrigir.
-  await expect(page.locator(`${tid('activation-whatsapp')} input`)).toBeChecked();
-  await page.locator(`${tid('activation-whatsapp')} input`).uncheck({ force: true });
+  // Principio II: a opcao vem marcada so na ativacao pela tag; ao vincular pelo app comeca desligada e o tutor nao marca.
+  await expect(page.locator(`${tid('activation-whatsapp')} input`)).not.toBeChecked();
   await page.locator(tid('activation-pin-cell-1')).click();
   await page.keyboard.type(tag.pin);
   await page.locator(tid('activation-submit')).click();
@@ -53,7 +52,7 @@ test('T074: vincular pelo app (codigo e PIN); o WhatsApp vem marcado nesta tela 
 
   const html = (await resolveAsServer(tag.code)).text;
   expect(html).toContain('Mel');
-  expect(html, 'WhatsApp desmarcado: sem link wa.me').not.toContain('wa.me');
+  expect(html, 'WhatsApp nao marcado: sem link wa.me').not.toContain('wa.me');
   // codigo de outra tag, o do app com o PIN errado nunca vincula: o mesmo codigo agora esta vinculado (mensagem unica)
   const again = await rpc(t, 'check_tag_for_link', { p_code: tag.code });
   expect(again.body).toMatchObject({ ok: false, error: 'tag_unavailable' });
