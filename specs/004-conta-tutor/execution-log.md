@@ -733,3 +733,16 @@ Progresso registrado a cada passo (a sessão caiu mais de uma vez). Nenhum teste
 - **Desvio de caminho**: os testes ficam em `e2e-real/` (nao em `e2e/...` como no `tasks.md`), porque `npm run e2e` (testDir `e2e/`) roda na maquina de
   desenvolvimento, onde o ambiente aponta para o projeto hospedado. `e2e-real/global-setup.ts` ABORTA se `E2E_SUPABASE_URL` ou `environment.e2e.ts` nao forem locais.
 - `workers: 1`: os limites de taxa (IP, conta) sao compartilhados no runner; cada teste usa e-mail e celular unicos.
+
+## QA, retomada (2026-11-25): CI do job `e2e`
+
+- Run 45520627830 (vermelho, 12 falhas): causas, as duas **de teste ou de produto**, nao do workflow.
+  1. **Teste**: `typeSmsCode` testava `isEnabled()` do botao "Confirmar" logo depois de digitar; o valor chega ao formulario um instante depois,
+     o clique era pulado e o codigo nunca ia ao servidor (o trace de T060b nao tem nenhum `phone-verify-confirm`). Agora espera `toBeEnabled()`.
+  2. **Produto, DEF-001**: entrar **sem** "Manter conectado" grava a sessao no `sessionStorage` (`AuthService.setRememberMe` troca `auth.storage`),
+     mas o cliente Supabase criado a cada carga da pagina (`SupabaseService`) so le o `localStorage`. Recarregar ou `page.goto` na mesma aba
+     perde a sessao e cai em `/auth/login?reason=session_expired`. O login do teste agora marca "Manter conectado" (padrao), e
+     `session-and-isolation.spec.ts` ganhou o teste `DEF-001` como `test.fail` com o motivo, que passa a falhar (e avisa) quando o frontend corrigir.
+  3. **Teste**: T060b esperava "restam 4"; o texto real (e o do contrato) e "Voce tem mais 4 tentativas". T086 usava `account-phone-badge`; o
+     `data-testid` real e `account-phone-status`.
+- Run 45525027303: job `e2e` com 27 passando e T086 (corrigido no commit seguinte); `supabase` e `app` verdes.
