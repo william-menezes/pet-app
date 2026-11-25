@@ -1,0 +1,187 @@
+<!--
+  Painel do tutor. Referência: design/telas-v2/V2-painel{,-tablet,-desktop}{,-escuro}.dc.html.
+  O tema escuro vem dos tokens da casca do tutor. `pets-home` fica na raiz em todos os estados.
+-->
+<div class="flex w-full flex-col gap-3 md:gap-4 xl:gap-5" data-testid="pets-home">
+  <header class="flex items-center gap-3 pt-1 md:pt-0">
+    <span
+      class="flex size-11 shrink-0 items-center justify-center rounded-full bg-foreground font-display text-lg font-semibold text-background md:hidden"
+      aria-hidden="true">
+      {{ initial() }}
+    </span>
+    <h1 class="min-w-0 flex-1 font-display text-foreground md:text-[28px] md:leading-[1.1] md:font-bold md:tracking-[-0.03em] xl:text-4xl">
+      <span class="block text-[13px] font-normal text-muted-foreground md:inline md:text-[length:inherit] md:font-bold md:text-foreground">{{ greeting() }}<span class="hidden md:inline">, </span></span>
+      <span class="block text-[19px] font-semibold md:inline md:text-[length:inherit] md:font-bold">{{ firstName() }}</span>
+    </h1>
+  </header>
+
+  <div aria-live="polite">
+    @switch (state()) {
+      @case ('loading') {
+        <p class="py-6 text-center text-text" role="status" aria-busy="true" data-testid="dashboard-loading" i18n>Um instante…</p>
+      }
+      @case ('error') {
+        <div class="flex flex-col items-start gap-3" data-testid="dashboard-error">
+          <z-alert
+            class="w-full"
+            zType="danger"
+            [zRole]="'status'"
+            zDescription="Não conseguimos carregar o painel. Verifique sua conexão e tente de novo."
+            i18n-zDescription />
+          <button type="button" z-button zType="outline" (click)="load()" data-testid="dashboard-retry" i18n>Tentar de novo</button>
+        </div>
+      }
+    }
+  </div>
+
+  @if (state() === 'ready') {
+    @if (pending(); as code) {
+      <div class="flex flex-col items-start gap-3 rounded-2xl bg-card p-[18px]" data-testid="dashboard-pending">
+        <div class="flex flex-col gap-1">
+          <p class="font-display text-[19px] font-semibold text-foreground" i18n>Falta ativar uma tag</p>
+          <p class="text-sm leading-[1.45] text-text" i18n>Você começou a ativar a tag {{ code }}. Falta escolher o pet e digitar o PIN do cartão.</p>
+        </div>
+        <a z-button zSize="md" [routerLink]="pendingPath()" data-testid="dashboard-pending-continue" i18n>Continuar a ativação</a>
+      </div>
+    }
+
+    @if (selected(); as current) {
+      <div class="flex flex-col gap-3 md:gap-4 xl:grid xl:grid-cols-[440px_minmax(0,1fr)] xl:items-start xl:gap-5">
+        <div class="flex flex-col gap-3 md:gap-4 xl:gap-5">
+          <div class="relative">
+            <a class="block" [routerLink]="['/app/pets', current.dash.id]" data-testid="dashboard-cover">
+              <app-pet-hero
+                class="h-[236px] md:h-[320px] xl:h-[400px] xl:rounded-[28px]"
+                [name]="current.dash.name"
+                [subtitle]="coverLine()"
+                [photoUrl]="current.photoUrl"
+                [alt]="photoAlt()"
+                [priority]="true"
+                [heading]="'h2'" />
+            </a>
+            @if (many()) {
+              <span class="absolute top-3.5 left-3.5 z-20 inline-flex">
+                <select
+                  class="h-9 cursor-pointer appearance-none rounded-full bg-card pr-9 pl-3.5 text-sm font-semibold text-foreground"
+                  aria-label="Escolher o pet"
+                  i18n-aria-label
+                  [value]="current.dash.id"
+                  (change)="select($event)"
+                  data-testid="dashboard-pet-select">
+                  @for (item of items(); track item.dash.id) {
+                    <option [value]="item.dash.id" [selected]="item.dash.id === current.dash.id">{{ item.dash.name }}</option>
+                  }
+                </select>
+                <ng-icon name="down" size="18" class="pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 text-foreground" aria-hidden="true" />
+              </span>
+            }
+          </div>
+
+          @if (current.dash.hasTag) {
+            <a
+              class="flex min-h-14 items-center gap-3 rounded-2xl bg-card px-3.5 py-3 text-foreground"
+              [routerLink]="['/app/pets', current.dash.id, 'modo-perdido']"
+              data-testid="dashboard-lost-link">
+              <app-icon-tile icon="warn" tone="warning" />
+              <span class="flex min-w-0 flex-1 flex-col gap-0.5">
+                @if (current.dash.lostMode) {
+                  <span class="text-[15px] font-semibold" i18n>Modo perdido ligado</span>
+                  <span class="text-[13px] text-muted-foreground" data-testid="dashboard-lost-hint">{{ lostLabel() }}</span>
+                } @else {
+                  <span class="text-[15px] font-semibold" i18n>{{ current.dash.name }} sumiu?</span>
+                  <span class="text-[13px] text-muted-foreground" i18n>Ative o modo perdido</span>
+                }
+              </span>
+              <ng-icon name="chev" size="20" class="shrink-0 text-muted-foreground" aria-hidden="true" />
+            </a>
+          } @else {
+            <a
+              class="flex min-h-14 items-center gap-3 rounded-2xl bg-card px-3.5 py-3 text-foreground"
+              [routerLink]="['/vincular', current.dash.id]"
+              data-testid="dashboard-link-tag">
+              <app-icon-tile icon="tag" />
+              <span class="flex min-w-0 flex-1 flex-col gap-0.5">
+                <span class="text-[15px] font-semibold" i18n>Vincular tag a {{ current.dash.name }}</span>
+                <span class="text-[13px] text-muted-foreground" i18n>Sem a tag, quem achar não tem como avisar você</span>
+              </span>
+              <ng-icon name="chev" size="20" class="shrink-0 text-muted-foreground" aria-hidden="true" />
+            </a>
+          }
+        </div>
+
+        <div class="flex flex-col gap-3 md:gap-4 xl:gap-5">
+          @if (recentScan()) {
+            <app-action-card [title]="scanTitle()" data-testid="dashboard-scan-card">
+              <span data-testid="dashboard-scan-text">{{ recentScanText() }}</span>
+              <a action z-button zType="ink" zSize="md" [routerLink]="['/app/scans']" [queryParams]="{ pet: current.dash.id }" data-testid="dashboard-scan-map">
+                <ng-icon name="pin" size="18" aria-hidden="true" />
+                <span i18n>Ver no mapa</span>
+              </a>
+            </app-action-card>
+          }
+
+          <div class="grid grid-cols-2 gap-3 md:gap-4 xl:gap-5">
+            <app-stat-tile
+              label="Scans este mês"
+              i18n-label
+              [value]="'' + current.dash.scansMonth"
+              [caption]="scansCaption()"
+              [link]="'/app/scans'"
+              data-testid="dashboard-scans-tile" />
+            <app-stat-tile
+              label="Estranhos veem"
+              i18n-label
+              [value]="current.dash.visibleShown + ' de ' + current.dash.visibleTotal"
+              [caption]="'Dados de ' + current.dash.name"
+              [link]="'/app/pets/' + current.dash.id + '/visibilidade'"
+              data-testid="dashboard-visible-tile" />
+          </div>
+
+          @if (lastScans().length > 0) {
+            <section class="hidden flex-col gap-1.5 rounded-2xl bg-card px-5 pt-[18px] pb-3 xl:flex" data-testid="dashboard-last-scans">
+              <div class="flex items-center">
+                <h2 class="flex-1 font-display text-xl font-semibold text-foreground" i18n>Últimos scans</h2>
+                <a class="text-sm font-semibold text-link underline underline-offset-[3px]" routerLink="/app/scans" data-testid="dashboard-all-scans" i18n>Ver todos</a>
+              </div>
+              <ul class="m-0 flex list-none flex-col divide-y divide-divider p-0">
+                @for (scan of lastScans(); track scan.id) {
+                  <li class="flex items-center gap-3 py-2.5" data-testid="dashboard-last-scan">
+                    <app-icon-tile [icon]="scan.geoMethod === 'none' ? 'scan' : 'pin'" />
+                    <span class="flex min-w-0 flex-col gap-0.5">
+                      <span class="text-[15px] font-semibold text-foreground">{{ scanTime(scan) }}</span>
+                      <span class="text-[13px] text-muted-foreground">{{ scanWhat(scan) }}</span>
+                    </span>
+                  </li>
+                }
+              </ul>
+            </section>
+          }
+        </div>
+      </div>
+
+      <section class="flex flex-col gap-3" aria-labelledby="dashboard-pets-title">
+        <h2 id="dashboard-pets-title" class="font-display text-xl font-semibold text-foreground" i18n>Seus pets</h2>
+        <div class="grid gap-3 md:grid-cols-2 md:gap-4 xl:grid-cols-3 xl:gap-5">
+          @for (item of items(); track item.dash.id) {
+            <app-pet-card [item]="item" />
+          }
+          <a
+            class="flex min-h-[72px] items-center justify-center gap-2 rounded-2xl border-[1.5px] border-dashed border-input text-[15px] font-semibold text-foreground"
+            routerLink="/novo-pet"
+            data-testid="dashboard-add-pet">
+            <ng-icon name="plus" size="20" aria-hidden="true" />
+            <span i18n>Adicionar pet</span>
+          </a>
+        </div>
+      </section>
+    } @else {
+      <div class="flex flex-col items-start gap-3 rounded-2xl bg-card p-5" data-testid="dashboard-empty">
+        <p class="font-display text-[22px] leading-[1.15] font-semibold text-foreground" i18n>Cadastre o seu primeiro pet</p>
+        <p class="text-[15px] leading-[1.45] text-text" i18n>
+          Com o pet cadastrado e uma tag vinculada, quem achar ele escaneia o QR e fala direto com você.
+        </p>
+        <a z-button zSize="lg" routerLink="/novo-pet" data-testid="dashboard-empty-add" i18n>Cadastrar pet</a>
+      </div>
+    }
+  }
+</div>

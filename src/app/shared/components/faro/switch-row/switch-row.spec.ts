@@ -61,5 +61,7 @@ describe('SwitchRow', () => {
     await fixture.whenStable();
     expect(switchButton(fixture.nativeElement)!.getAttribute('aria-checked')).toBe('true');
     expect(fixture.componentInstance.on()).toBe(true);
+    // Só o toque da pessoa emite; o setChecked da tela não.
+    expect(fixture.componentInstance.log).toEqual([false]);
   });
 });

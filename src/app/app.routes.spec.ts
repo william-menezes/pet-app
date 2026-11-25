@@ -36,10 +36,11 @@ describe('app.routes (T024)', () => {
   beforeEach(() => TestBed.configureTestingModule({ providers: [provideRouter(stripped(routes))] }));
 
   it.each([
-    ['/app', '', 'Meus pets — Faro'],
+    ['/app', '', 'Início — Faro'],
     ['/app/pets', 'pets', undefined],
     ['/app/pets/abc', 'pets/:petId', undefined],
-    ['/app/pets/abc/editar', 'pets/:petId/editar', undefined],
+    ['/app/pets/abc/editar', 'app/pets/:petId/editar', undefined],
+    ['/app/tag/7K3M-Q9XA-C', 'tag/:code', undefined],
     ['/app/pets/abc/visibilidade', 'pets/:petId/visibilidade', undefined],
     ['/app/pets/abc/modo-perdido', 'pets/:petId/modo-perdido', undefined],
     ['/app/pets/abc/tag', 'pets/:petId/tag', undefined],

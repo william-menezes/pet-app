@@ -78,6 +78,8 @@ describe('PetLostRow (T062)', () => {
     expect(sw().getAttribute('aria-checked')).toBe('true');
     expect(inDialog('lost-row-dialog-title')?.textContent).toContain('Paçoca foi encontrado?');
     expect(setLostMode).not.toHaveBeenCalled();
+    // Desfazer o toque por dentro do interruptor não pode virar um segundo toque (que levaria à tela de ligar).
+    expect(navigate).not.toHaveBeenCalled();
   });
 
   it('"Pet encontrado" desliga o modo perdido no servidor e avisa a tela', async () => {

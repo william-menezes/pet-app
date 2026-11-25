@@ -1,5 +1,5 @@
 import type { Scan } from '../../models';
-import { formatRadius, formatScanTime, groupByMonth, monthLabel, scanHasLocation, scanRadiusMeters } from './scan-format';
+import { formatRadius, formatScanDay, formatScanTime, formatScanWhen, groupByMonth, monthLabel, scanHasLocation, scanRadiusMeters } from './scan-format';
 
 const scan = (over: Partial<Scan> & Pick<Scan, 'id' | 'occurredAt'>): Scan => ({
   tagCode: '7K3MQ9XAC',
@@ -15,6 +15,20 @@ const scan = (over: Partial<Scan> & Pick<Scan, 'id' | 'occurredAt'>): Scan => ({
 
 // 24 de novembro de 2026, 15:00 em Brasília.
 const NOW = new Date('2026-11-24T18:00:00Z');
+
+describe('formatScanWhen e formatScanDay (painel)', () => {
+  it('frase do cartão do último scan', () => {
+    expect(formatScanWhen('2026-11-24T17:32:00Z', NOW)).toBe('Hoje às 14:32');
+    expect(formatScanWhen('2026-11-23T21:47:00Z', NOW)).toBe('Ontem às 18:47');
+    expect(formatScanWhen('2026-11-16T12:10:00Z', NOW)).toBe('16 nov às 09:10');
+  });
+
+  it('só o dia', () => {
+    expect(formatScanDay('2026-11-24T17:32:00Z', NOW)).toBe('hoje');
+    expect(formatScanDay('2026-11-23T21:47:00Z', NOW)).toBe('ontem');
+    expect(formatScanDay('2026-11-16T12:10:00Z', NOW)).toBe('16 nov');
+  });
+});
 
 describe('formatScanTime', () => {
   it('hoje, ontem e uma data, no horário de Brasília', () => {

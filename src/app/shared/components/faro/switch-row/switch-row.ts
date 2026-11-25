@@ -44,20 +44,28 @@ export class SwitchRow {
   /** Item sem interruptor: aparece "Sempre". */
   readonly locked = input(false);
   private readonly control = viewChild(ZardSwitchComponent);
+  private silent = false;
 
   /** Emitido a cada toque, com o valor novo. */
   readonly toggled = output<boolean>();
 
   /**
    * Põe o valor à força, também no interruptor por dentro. Serve para desfazer um toque que a tela recusou
-   * (o interruptor já virou sozinho; sem isto ele ficaria diferente do valor que a tela guarda).
+   * (o interruptor já virou sozinho; sem isto ele ficaria diferente do valor que a tela guarda). NÃO emite `toggled`:
+   * é a tela mandando, não a pessoa tocando (o `zCheckedChange` do interruptor por dentro dispara na hora do `set`).
    */
   setChecked(value: boolean): void {
-    this.checked.set(value);
-    this.control()?.zChecked.set(value);
+    this.silent = true;
+    try {
+      this.checked.set(value);
+      this.control()?.zChecked.set(value);
+    } finally {
+      this.silent = false;
+    }
   }
 
   protected onToggle(value: boolean): void {
+    if (this.silent) return;
     this.checked.set(value);
     this.toggled.emit(value);
   }

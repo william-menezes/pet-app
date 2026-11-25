@@ -70,6 +70,20 @@ describe('ScanService', () => {
     expect(calls.some((c) => c.op === 'gte' || c.op === 'eq')).toBe(false);
   });
 
+  it('limit pede só os N mais novos, e nunca mais que o teto', async () => {
+    const a = setup({ data: [], error: null });
+    await a.service.list({ limit: 3 });
+    expect(a.calls.find((c) => c.op === 'limit')?.args).toEqual([3]);
+    TestBed.resetTestingModule();
+    const b = setup({ data: [], error: null });
+    await b.service.list({ limit: 10_000 });
+    expect(b.calls.find((c) => c.op === 'limit')?.args).toEqual([SCAN_LIMIT]);
+    TestBed.resetTestingModule();
+    const c = setup({ data: [], error: null });
+    await c.service.list({ limit: 0 });
+    expect(c.calls.find((x) => x.op === 'limit')?.args).toEqual([1]);
+  });
+
   it('filtros: este mês, localização precisa e pet', async () => {
     const { service, calls } = setup({ data: [], error: null });
     await service.list({ period: 'month', preciseOnly: true, petId: 'p1' }, new Date('2026-11-24T15:00:00Z'));

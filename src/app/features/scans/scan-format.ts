@@ -26,6 +26,20 @@ export function formatScanTime(iso: string, now: Date = new Date()): string {
   return `${day}, ${hour}`;
 }
 
+/** "Hoje às 14:32", "Ontem às 18:47" ou "16 nov às 09:10" (horário de Brasília). */
+export function formatScanWhen(iso: string, now: Date = new Date()): string {
+  return formatScanTime(iso, now).replace(', ', ' às ');
+}
+
+/** "hoje", "ontem" ou "16 nov" (horário de Brasília). */
+export function formatScanDay(iso: string, now: Date = new Date()): string {
+  const at = new Date(iso);
+  const key = dayKey(at);
+  if (key === dayKey(now)) return $localize`hoje`;
+  if (key === dayKey(new Date(now.getTime() - MS_DAY))) return $localize`ontem`;
+  return new Intl.DateTimeFormat('pt-BR', { timeZone: TIME_ZONE, day: '2-digit', month: 'short' }).format(at).replace(' de ', ' ').replace('.', '');
+}
+
 /** "Novembro 2026". */
 export function monthLabel(iso: string): string {
   const text = new Intl.DateTimeFormat('pt-BR', { timeZone: TIME_ZONE, month: 'long', year: 'numeric' }).format(new Date(iso));

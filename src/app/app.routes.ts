@@ -39,6 +39,15 @@ export const routes: Routes = [
     title: 'Faro — O caminho de volta para casa',
   },
 
+  // ── Editar pet: os formulários do novo pet, na casca de fluxo (sempre clara). Fica antes de `app` para o caminho
+  // `/app/pets/:petId/editar` não cair nas filhas dentro da casca do tutor. ──
+  {
+    path: 'app/pets/:petId/editar',
+    canMatch: [authGuard, termsGuard],
+    loadComponent: () => import('./features/pets/new-pet/new-pet').then((m) => m.NewPet),
+    title: $localize`Editar pet — Faro`,
+  },
+
   // ── Painel autenticado (CSR lazy, protegido por authGuard) ──
   {
     path: 'app',
@@ -48,29 +57,23 @@ export const routes: Routes = [
       {
         path: '',
         pathMatch: 'full',
-        loadComponent: () => import('./features/pets/pets/pets').then((m) => m.Pets),
+        loadComponent: () => import('./features/pets/dashboard/dashboard').then((m) => m.Dashboard),
         data: { hub: true },
-        title: 'Meus pets — Faro',
+        title: 'Início — Faro',
       },
       {
         path: 'pets',
         pathMatch: 'full',
-        loadComponent: shellFallback,
+        loadComponent: () => import('./features/pets/pet-list/pet-list').then((m) => m.PetList),
         data: { hub: true, home: '/app' },
         title: $localize`Seus pets — Faro`,
       },
       {
         path: 'pets/:petId',
         pathMatch: 'full',
-        loadComponent: shellFallback,
+        loadComponent: () => import('./features/pets/pet-page/pet-page').then((m) => m.PetPage),
         data: { home: '/app/pets' },
         title: $localize`Pet — Faro`,
-      },
-      {
-        path: 'pets/:petId/editar',
-        loadComponent: shellFallback,
-        data: { home: '/app/pets' },
-        title: $localize`Editar pet — Faro`,
       },
       {
         path: 'pets/:petId/visibilidade',

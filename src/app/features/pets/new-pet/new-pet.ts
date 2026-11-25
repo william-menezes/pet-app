@@ -6,6 +6,7 @@ import {
   Injector,
   afterNextRender,
   effect,
+  untracked,
   PLATFORM_ID,
   computed,
   inject,
@@ -19,6 +20,7 @@ import { NgIcon } from '@ng-icons/core';
 import { ZardAlertComponent } from '@/shared/components/alert';
 import { ZardButtonComponent } from '@/shared/components/button';
 import { PetAvatar } from '@/shared/components/faro/pet-avatar/pet-avatar';
+import { ZardSonnerService } from '@/shared/components/sonner';
 import { ZardFieldComponent, ZardFieldErrorComponent, ZardFieldLabelComponent } from '@/shared/components/field';
 import { ZardInputComponent } from '@/shared/components/input';
 import { ZardTextareaComponent } from '@/shared/components/textarea';
@@ -36,10 +38,13 @@ import {
   type PetError,
 } from '../../../core/pets/pet.service';
 import { withPetParam } from '../../../core/tags/activation-links';
-import type { PetSex, PetSize, PetSpecies } from '../../../models';
+import { TagService } from '../../../core/tags/tag.service';
+import type { Pet, PetSex, PetSize, PetSpecies } from '../../../models';
+import { RemovePet } from '../remove-pet/remove-pet';
 
 type Step = 1 | 2;
 type Problem = 'create_failed' | 'photo_failed' | PetError;
+type LoadState = 'idle' | 'loading' | 'ready' | 'missing' | 'error';
 
 /** Foto escolhida antes do redimensionamento: acima disto nem tentamos (o navegador travaria). */
 const PHOTO_PICK_MAX_BYTES = 25 * 1024 * 1024;
@@ -50,6 +55,9 @@ const PHOTO_PICK_MAX_BYTES = 25 * 1024 * 1024;
  * O pet só é gravado no fim ("Salvar pet" ou "Pular por enquanto"); voltar ao passo 1 não perde o que foi
  * digitado. `?returnUrl=` (caminho interno) diz para onde voltar: a ativação recebe o pet criado em
  * `?pet=<id>`; sem destino, o painel. A foto só sobe depois que o pet existe (o caminho do arquivo leva o id).
+ *
+ * Editar (`/app/pets/:petId/editar`, T071): os MESMOS dois passos, com os dados do pet já preenchidos. Salvar grava as
+ * alterações (e a foto nova, se houve) e volta para a página do pet; "Remover pet" fica no passo 1.
  */
 @Component({
   selector: 'app-new-pet',
@@ -57,6 +65,7 @@ const PHOTO_PICK_MAX_BYTES = 25 * 1024 * 1024;
     NgIcon,
     FlowShell,
     PetAvatar,
+    RemovePet,
     ZardAlertComponent,
     ZardButtonComponent,
     ZardFieldComponent,
@@ -75,7 +84,11 @@ export class NewPet {
   private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly injector = inject(Injector);
+  private readonly tags = inject(TagService);
+  private readonly sonner = inject(ZardSonnerService);
 
+  /** `:petId` da rota de edição (ligado por `withComponentInputBinding`); ausente em `/novo-pet`. */
+  readonly petId = input<string | undefined>(undefined);
   /** `?returnUrl=` (ligado por `withComponentInputBinding`). */
   readonly returnUrl = input<string | undefined>(undefined);
 
@@ -90,6 +103,15 @@ export class NewPet {
   protected readonly step2Sub = $localize`Uma foto clara e duas linhas sobre o jeito do seu pet fazem diferença para quem achou.`;
 
   protected readonly step = signal<Step>(1);
+  protected readonly editing = computed(() => this.petId() !== undefined);
+  protected readonly loadState = signal<LoadState>('idle');
+  /** Foto que o pet já tem (URL assinada) e o caminho dela, para apagar a antiga ao trocar. */
+  protected readonly existingPhotoUrl = signal<string | null>(null);
+  private existingPhotoPath: string | null = null;
+  /** Tag ativa do pet (`XXXX-XXXX-X`), para a confirmação de remover. */
+  protected readonly activeTagCode = signal<string | null>(null);
+  protected readonly barTitle = computed(() => (this.editing() ? $localize`Editar pet` : $localize`Novo pet`));
+  protected readonly avatarUrl = computed(() => this.photoPreview() ?? this.existingPhotoUrl());
 
   // Passo 1
   protected readonly species = signal<PetSpecies | null>(null);
@@ -161,7 +183,9 @@ export class NewPet {
   );
 
   /** Destino do "fechar" do passo 1: de onde o tutor veio, ou o painel. */
-  protected readonly closeLink = computed(() => sanitizeReturnUrl(this.returnUrl()) ?? '/app');
+  protected readonly closeLink = computed(() =>
+    this.editing() ? `/app/pets/${this.petId()}` : (sanitizeReturnUrl(this.returnUrl()) ?? '/app'),
+  );
 
   protected readonly problemMessage = computed(() => {
     switch (this.problem()) {
@@ -178,6 +202,12 @@ export class NewPet {
 
   constructor() {
     inject(DestroyRef).onDestroy(() => this.revokePreview());
+    // Edição: carrega o pet e preenche os campos.
+    effect(() => {
+      const id = this.petId();
+      if (id === undefined) return;
+      untracked(() => void this.loadExisting(id));
+    });
     // Trocar de passo recria a casca e o foco cairia no body: leva o foco ao título do passo novo.
     let first = true;
     effect(() => {
@@ -188,6 +218,39 @@ export class NewPet {
       }
       afterNextRender(() => this.host.nativeElement.querySelector<HTMLElement>('h1')?.focus(), { injector: this.injector });
     });
+  }
+
+  /** Edição: lê o pet, a foto e a tag e preenche os campos. */
+  protected async loadExisting(id: string): Promise<void> {
+    this.loadState.set('loading');
+    const [pet, dashboard] = await Promise.all([this.petService.get(id), this.tags.myDashboard()]);
+    if (!pet.ok) {
+      this.loadState.set(pet.error === 'not_found' ? 'missing' : 'error');
+      return;
+    }
+    this.fill(pet.pet);
+    this.existingPhotoPath = pet.pet.photoPath;
+    if (dashboard.ok) this.activeTagCode.set(dashboard.dashboard.pets.find((p) => p.id === id)?.tagCode ?? null);
+    const urls = await this.petService.photoUrls([pet.pet.photoPath]);
+    this.existingPhotoUrl.set(pet.pet.photoPath === null ? null : (urls[pet.pet.photoPath] ?? null));
+    this.loadState.set('ready');
+  }
+
+  private fill(pet: Pet): void {
+    this.species.set(pet.species);
+    this.name.set(pet.name);
+    this.breed.set(pet.breed ?? '');
+    this.sex.set(pet.sex);
+    this.size.set(pet.size);
+    this.careNotes.set(pet.careNotes ?? '');
+    this.temperament.set([...pet.temperament]);
+    // Jeitos que o tutor escreveu à mão ficam como opções, para poderem ser desmarcados.
+    this.customOptions.set(pet.temperament.filter((t) => !this.presetTemperament.includes(t)));
+  }
+
+  /** Remover pet concluído (e o PIN novo, se houve, já foi visto): volta para a lista. */
+  protected onRemoved(): void {
+    void this.router.navigateByUrl('/app/pets');
   }
 
   // ── Passo 1 ──────────────────────────────────────────────────────────────
@@ -287,6 +350,10 @@ export class NewPet {
 
   /** Depois de um pet salvo com foto que falhou: segue sem a foto. */
   protected onContinueWithoutPhoto(): void {
+    if (this.editing()) {
+      void this.router.navigateByUrl(`/app/pets/${this.petId()}`);
+      return;
+    }
     const id = this.createdPetId();
     if (id !== null) this.finish(id);
   }
@@ -296,6 +363,12 @@ export class NewPet {
     if (this.saving() || species === null) return;
     this.saving.set(true);
     this.problem.set(null);
+
+    const editId = this.petId();
+    if (editId !== undefined) {
+      await this.persistEdit(editId, species);
+      return;
+    }
 
     let petId = this.createdPetId();
     if (petId === null) {
@@ -327,6 +400,37 @@ export class NewPet {
     }
     this.saving.set(false);
     this.finish(petId);
+  }
+
+  /** Edição: grava os campos e, se escolheu foto nova, envia a foto (apagando a antiga). */
+  private async persistEdit(petId: string, species: PetSpecies): Promise<void> {
+    const updated = await this.petService.update(petId, {
+      name: this.name(),
+      species,
+      breed: this.breed(),
+      sex: this.sex(),
+      size: this.size(),
+      temperament: this.temperament(),
+      careNotes: this.careNotes(),
+    });
+    if (!updated.ok) {
+      this.saving.set(false);
+      this.problem.set(updated.error === 'invalid' ? 'invalid' : 'create_failed');
+      return;
+    }
+    const photo = this.photoFile();
+    if (photo !== null) {
+      const up = await this.petService.uploadPhoto(petId, photo, this.existingPhotoPath);
+      if (!up.ok) {
+        this.saving.set(false);
+        this.problem.set('photo_failed');
+        return;
+      }
+      this.photoFile.set(null);
+    }
+    this.saving.set(false);
+    this.sonner.success($localize`Alterações salvas.`);
+    void this.router.navigateByUrl(`/app/pets/${petId}`);
   }
 
   /** Volta para onde veio: a ativação recebe `?pet=<id>`; sem destino, o painel. */

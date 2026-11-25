@@ -47,6 +47,15 @@ export interface ActivationResult {
   whatsappEnabled: boolean;
 }
 
+export type ReleaseReason = 'released' | 'transferred';
+
+export interface ReleaseResult {
+  /** Código na forma de exibição. */
+  code: string;
+  /** PIN novo, em claro, uma única vez. */
+  newPin: string;
+}
+
 export interface LostModeInput {
   petId: string;
   on: boolean;
@@ -197,6 +206,21 @@ export class TagService {
       p_show_reward: input.showReward,
     });
     return res.ok ? { ok: true } : res;
+  }
+
+  /**
+   * `release_tag`: encerra o vínculo do tutor com a tag (`released`: libera; `transferred`: passa adiante), desliga o
+   * modo perdido do pet e devolve o PIN NOVO, que existe em claro só nesta resposta. Quem chama mostra o PIN uma vez,
+   * em estado da tela que morre com ela: nunca em signal compartilhado, storage, URL ou log.
+   */
+  async releaseTag(code: string, reason: ReleaseReason): Promise<TagResult<ReleaseResult>> {
+    const normalized = normalize(code);
+    if (!isValid(normalized)) return failure('invalid_code');
+    const res = await this.call('release_tag', { p_code: normalized, p_reason: reason });
+    if (!res.ok) return res;
+    const newPin = str(res.data['new_pin']);
+    if (newPin === null) return failure('network');
+    return { ok: true, code: str(res.data['code']) ?? format(normalized), newPin };
   }
 
   /** `my_dashboard`: pets do tutor com a situação da tag (e a ativação pendente). */

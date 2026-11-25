@@ -2,10 +2,40 @@
   Novo pet. Referência: design/telas-v2/V2-novo-pet-dados{,-tablet,-desktop}.dc.html e V2-novo-pet-resgate*.dc.html.
   Cada elemento projetado em [footer] fica num bloco de raiz única (regra da projeção com @if).
 -->
-@if (step() === 1) {
+@if (editing() && loadState() !== 'ready') {
+  <app-flow-shell [barTitle]="barTitle()" [back]="'close'" [backLink]="closeLink()">
+    <div aria-live="polite">
+      @switch (loadState()) {
+        @case ('missing') {
+          <div class="flex flex-col items-start gap-3" data-testid="new-pet-missing">
+            <h1 tabindex="-1" class="font-display text-[32px] leading-[1.04] font-bold tracking-[-0.03em] text-foreground md:text-[42px]" i18n>
+              Não encontramos este pet
+            </h1>
+            <a z-button zType="outline" href="/app/pets" data-testid="new-pet-missing-pets" i18n>Ver meus pets</a>
+          </div>
+        }
+        @case ('error') {
+          <div class="flex flex-col items-start gap-3" data-testid="new-pet-load-error">
+            <z-alert
+              class="w-full"
+              zType="danger"
+              [zRole]="'status'"
+              zDescription="Não conseguimos carregar os dados do pet. Verifique sua conexão e tente de novo."
+              i18n-zDescription />
+            <button type="button" z-button zType="outline" (click)="loadExisting(petId() ?? '')" data-testid="new-pet-retry-load" i18n>
+              Tentar de novo
+            </button>
+          </div>
+        }
+        @default {
+          <p class="py-6 text-center text-text" role="status" aria-busy="true" data-testid="new-pet-loading" i18n>Um instante…</p>
+        }
+      }
+    </div>
+  </app-flow-shell>
+} @else if (step() === 1) {
   <app-flow-shell
-    barTitle="Novo pet"
-    i18n-barTitle
+    [barTitle]="barTitle()"
     [back]="'close'"
     [backLink]="closeLink()"
     [step]="{ current: 1, total: 2 }"
@@ -101,11 +131,14 @@
       i18n>
       Continuar
     </button>
+
+    @if (editing()) {
+      <app-remove-pet footer [petId]="petId() ?? ''" [petName]="name().trim()" [tagCode]="activeTagCode()" (removed)="onRemoved()" />
+    }
   </app-flow-shell>
 } @else {
   <app-flow-shell
-    barTitle="Novo pet"
-    i18n-barTitle
+    [barTitle]="barTitle()"
     [back]="'back'"
     [step]="{ current: 2, total: 2 }"
     [headline]="step2Headline"
@@ -121,7 +154,7 @@
     </div>
 
     <div class="flex items-center gap-4" data-testid="new-pet-photo-block">
-      <app-pet-avatar [photoUrl]="photoPreview()" [sizeClass]="'size-20'" />
+      <app-pet-avatar [photoUrl]="avatarUrl()" [sizeClass]="'size-20'" />
       <div class="flex flex-col items-start gap-1">
         <button
           type="button"
@@ -131,7 +164,7 @@
           (click)="photoInput.click()"
           data-testid="new-pet-photo-button">
           <ng-icon name="camera" size="18" aria-hidden="true" />
-          @if (photoFile()) {
+          @if (photoFile() || existingPhotoUrl()) {
             <span i18n>Trocar foto</span>
           } @else {
             <span i18n>Escolher foto</span>
@@ -252,9 +285,12 @@
         [zLoading]="saving()"
         [zDisabled]="careError() !== null"
         (click)="onSave()"
-        data-testid="new-pet-save"
-        i18n>
-        Salvar pet
+        data-testid="new-pet-save">
+        @if (editing()) {
+          <span i18n>Salvar alterações</span>
+        } @else {
+          <span i18n>Salvar pet</span>
+        }
       </button>
     }
 
@@ -270,7 +306,7 @@
         i18n>
         Continuar sem a foto
       </button>
-    } @else {
+    } @else if (!editing()) {
       <button
         footer
         type="button"

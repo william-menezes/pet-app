@@ -21,6 +21,8 @@ export interface ScanFilters {
   preciseOnly?: boolean;
   /** Só os de um pet. */
   petId?: string;
+  /** No máximo isto (os mais novos). Sem valor: `SCAN_LIMIT`. */
+  limit?: number;
 }
 
 export type ScanListResult = { ok: true; scans: Scan[] } | { ok: false; error: 'network' };
@@ -83,7 +85,7 @@ export class ScanService {
         .from('my_scans')
         .select('id, tag_code, pet_id, occurred_at, geo_method, lat, lng, accuracy_m, city, region')
         .order('occurred_at', { ascending: false })
-        .limit(SCAN_LIMIT);
+        .limit(Math.min(Math.max(1, Math.floor(filters.limit ?? SCAN_LIMIT)), SCAN_LIMIT));
       if (filters.period === 'month') query = query.gte('occurred_at', startOfMonthIso(now));
       if (filters.preciseOnly) query = query.eq('geo_method', 'gps');
       if (filters.petId) query = query.eq('pet_id', filters.petId);

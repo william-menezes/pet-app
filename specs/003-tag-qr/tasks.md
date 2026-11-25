@@ -358,7 +358,7 @@ Igual à `004`: a máquina não tem Docker nem a CLI do Supabase. Todo "Feito qu
 - [x] T061 [US4] [FE] Página de resgate em modo perdido conforme `V2-resgate-perdido*.dc.html`:
   bloco âmbar, "Perdido há N" calculado no servidor, selo de recompensa, recado rotulado; cada item
   só aparece se veio na projeção. **Feito quando**: teste de componente cobre as combinações.
-- [ ] T062 [US4] [FE] Desativar ("Pet encontrado") a partir da página do pet, com confirmação
+- [x] T062 [US4] [FE] Desativar ("Pet encontrado") a partir da página do pet, com confirmação
   simples. **Feito quando**: teste de componente.
 - [ ] T063 [US4] [QA] e2e: ativar → página pública muda → desativar → volta ao normal; item
   desligado não aparece no HTML. **Feito quando**: passa.
@@ -384,16 +384,16 @@ Igual à `004`: a máquina não tem Docker nem a CLI do Supabase. Todo "Feito qu
 
 - [x] T068 [US6] [BE] `my_dashboard()` em `0031_rpc_tutor.sql`. **Feito quando**: pgTAP confere o
   conteúdo para a Ana do seed e que não traz nada de outro tutor.
-- [ ] T069 [US6] [FE] Painel conforme `V2-painel*.dc.html` (claro e escuro, três larguras): capa do
+- [x] T069 [US6] [FE] Painel conforme `V2-painel*.dc.html` (claro e escuro, três larguras): capa do
   pet com seletor quando há mais de um, cartão lima do último scan (só se houver scan nas últimas
   48 h), cartões de número, atalho do modo perdido, "Seus pets", "Últimos scans" (desktop),
   "Adicionar pet", cartão de ativação pendente. Estado sem pets: convite para cadastrar o primeiro.
   **Feito quando**: teste de componente cobre com e sem pets, com e sem scan recente.
-- [ ] T070 [US6] [FE] Página do pet conforme `V2-pet*.dc.html`: capa, chips, linha do modo perdido,
+- [x] T070 [US6] [FE] Página do pet conforme `V2-pet*.dc.html`: capa, chips, linha do modo perdido,
   cartões da tag e do último scan, menu. Pet sem tag: botão "Vincular tag" no lugar do cartão da
   tag. Tag bloqueada: aviso "Tag bloqueada. Fale com o suporte." **Feito quando**: teste cobre os
   três estados da tag.
-- [ ] T071 [P] [US6] [FE] Editar dados do pet (reutiliza os formulários do novo pet) e remover pet,
+- [x] T071 [P] [US6] [FE] Editar dados do pet (reutiliza os formulários do novo pet) e remover pet,
   com a confirmação de liberar a tag. **Feito quando**: teste de componente.
 - [ ] T072 [US6] [FE] Vincular tag, passo 1, conforme `V2-vincular-codigo*.dc.html`: abas "Escanear
   QR" e "Digitar código"; leitura com `BarcodeDetector` e reserva `jsQR` sob demanda; falha de

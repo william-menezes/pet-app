@@ -219,6 +219,27 @@ describe('TagService', () => {
     });
   });
 
+  describe('releaseTag (T071)', () => {
+    it('normaliza o código, manda o motivo e devolve o PIN novo uma vez', async () => {
+      rpc.mockResolvedValue({ data: { ok: true, code: CODE, new_pin: 'K47Q9M' }, error: null });
+      const res = await service.releaseTag('7k3m q9xa c', 'released');
+      expect(rpc).toHaveBeenCalledWith('release_tag', { p_code: '7K3MQ9XAC', p_reason: 'released' });
+      expect(res).toEqual({ ok: true, code: CODE, newPin: 'K47Q9M' });
+    });
+
+    it('código inválido não chama a RPC; not_owner chega como erro de negócio', async () => {
+      expect(await service.releaseTag('xx', 'released')).toEqual({ ok: false, error: 'invalid_code' });
+      expect(rpc).not.toHaveBeenCalled();
+      rpc.mockResolvedValue({ data: { ok: false, error: 'not_owner' }, error: null });
+      expect(await service.releaseTag(CODE, 'transferred')).toEqual({ ok: false, error: 'not_owner' });
+    });
+
+    it('sucesso sem PIN é resposta fora do formato (network): nunca finge que liberou sem PIN', async () => {
+      rpc.mockResolvedValue({ data: { ok: true, code: CODE }, error: null });
+      expect(await service.releaseTag(CODE, 'released')).toEqual({ ok: false, error: 'network' });
+    });
+  });
+
   describe('PIN', () => {
     it('normaliza como o código', () => {
       expect(normalizePin(' k47q-9m ')).toBe('K47Q9M');

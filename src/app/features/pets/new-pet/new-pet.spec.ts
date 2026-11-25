@@ -3,6 +3,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 
 import { PetService } from '../../../core/pets/pet.service';
+import { TagService } from '../../../core/tags/tag.service';
 import { NewPet } from './new-pet';
 
 describe('NewPet', () => {
@@ -248,5 +249,161 @@ describe('NewPet', () => {
       await click(byId('new-pet-skip'));
       expect(navigateByUrl).toHaveBeenCalledWith('/app');
     });
+  });
+});
+
+describe('NewPet: editar (T071)', () => {
+  const PET_ID = '11111111-1111-4111-8111-111111111111';
+  const existing = {
+    id: PET_ID,
+    tutorId: 'u1',
+    name: 'Paçoca',
+    species: 'dog' as const,
+    breed: 'SRD caramelo',
+    sex: 'male' as const,
+    size: 'medium' as const,
+    neutered: null,
+    birthMonth: null,
+    temperament: ['Dócil com pessoas', 'Gosta de bola'],
+    careNotes: 'Remédio de manhã',
+    photoPath: 'u1/p/a.webp',
+    createdAt: 'a',
+    updatedAt: 'b',
+  };
+
+  let fixture: ComponentFixture<NewPet>;
+  let el: HTMLElement;
+  let update: ReturnType<typeof vi.fn>;
+  let uploadPhoto: ReturnType<typeof vi.fn>;
+  let navigateByUrl: ReturnType<typeof vi.spyOn>;
+
+  const byId = (id: string) => el.querySelector<HTMLElement>(`[data-testid="${id}"]`);
+  const settle = async () => {
+    await fixture.whenStable();
+    fixture.detectChanges();
+    await fixture.whenStable();
+  };
+
+  async function create(opts: { get?: unknown; tagCode?: string | null } = {}) {
+    update = vi.fn().mockResolvedValue({ ok: true });
+    uploadPhoto = vi.fn().mockResolvedValue({ ok: true, path: 'u1/p/b.webp' });
+    TestBed.configureTestingModule({
+      providers: [
+        provideZonelessChangeDetection(),
+        provideRouter([]),
+        {
+          provide: PetService,
+          useValue: {
+            get: vi.fn().mockResolvedValue(opts.get ?? { ok: true, pet: existing }),
+            update,
+            uploadPhoto,
+            remove: vi.fn(),
+            photoUrls: vi.fn().mockResolvedValue({ 'u1/p/a.webp': 'https://x.test/a.webp' }),
+          },
+        },
+        {
+          provide: TagService,
+          useValue: {
+            myDashboard: vi.fn().mockResolvedValue({
+              ok: true,
+              dashboard: {
+                pets: [{ id: PET_ID, tagCode: opts.tagCode === undefined ? '7K3M-Q9XA-C' : opts.tagCode }],
+                pendingActivation: null,
+              },
+            }),
+            releaseTag: vi.fn(),
+          },
+        },
+      ],
+    });
+    navigateByUrl = vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
+    fixture = TestBed.createComponent(NewPet);
+    el = fixture.nativeElement;
+    fixture.componentRef.setInput('petId', PET_ID);
+    fixture.detectChanges();
+    await settle();
+    await settle();
+  }
+
+  beforeEach(() => {
+    URL.createObjectURL = vi.fn(() => 'blob:preview');
+    URL.revokeObjectURL = vi.fn();
+  });
+
+  afterEach(() => fixture?.destroy());
+
+  it('abre com os dados do pet nos mesmos formulários, e o título da barra é "Editar pet"', async () => {
+    await create();
+    expect(el.textContent).toContain('Editar pet');
+    expect((byId('new-pet-name') as HTMLInputElement).value).toBe('Paçoca');
+    expect((byId('new-pet-breed') as HTMLInputElement).value).toBe('SRD caramelo');
+    expect(byId('new-pet-species')?.querySelector('[data-state="on"]')?.textContent).toContain('Cão');
+    expect(byId('screen-header-back') ?? el.querySelector('a[aria-label="Fechar"]')).not.toBeNull();
+  });
+
+  it('o passo 2 traz jeito, cuidados e a foto de agora; sem "Pular por enquanto"; o botão é "Salvar alterações"', async () => {
+    await create();
+    byId('new-pet-continue')!.click();
+    await settle();
+    expect((byId('new-pet-care') as HTMLTextAreaElement).value).toBe('Remédio de manhã');
+    expect(el.textContent).toContain('Gosta de bola');
+    expect(el.querySelector('[data-testid="new-pet-photo-block"] img')?.getAttribute('src')).toBe('https://x.test/a.webp');
+    expect(byId('new-pet-photo-button')?.textContent).toContain('Trocar foto');
+    expect(byId('new-pet-skip')).toBeNull();
+    expect(byId('new-pet-save')?.textContent).toContain('Salvar alterações');
+  });
+
+  it('salvar grava as alterações no pet (não cria outro) e volta para a página do pet', async () => {
+    await create();
+    const name = byId('new-pet-name') as HTMLInputElement;
+    name.value = 'Paçoca Jr.';
+    name.dispatchEvent(new Event('input'));
+    await settle();
+    byId('new-pet-continue')!.click();
+    await settle();
+    byId('new-pet-save')!.click();
+    await settle();
+    expect(update).toHaveBeenCalledWith(PET_ID, {
+      name: 'Paçoca Jr.',
+      species: 'dog',
+      breed: 'SRD caramelo',
+      sex: 'male',
+      size: 'medium',
+      temperament: ['Dócil com pessoas', 'Gosta de bola'],
+      careNotes: 'Remédio de manhã',
+    });
+    expect(uploadPhoto).not.toHaveBeenCalled();
+    expect(navigateByUrl).toHaveBeenCalledWith(`/app/pets/${PET_ID}`);
+  });
+
+  it('foto nova: sobe com o caminho da antiga para ela ser apagada', async () => {
+    await create();
+    byId('new-pet-continue')!.click();
+    await settle();
+    const input = byId('new-pet-photo-input') as HTMLInputElement;
+    const file = new File(['x'], 'nova.png', { type: 'image/png' });
+    Object.defineProperty(input, 'files', { value: { item: () => file }, configurable: true });
+    input.dispatchEvent(new Event('change'));
+    await settle();
+    byId('new-pet-save')!.click();
+    await settle();
+    expect(uploadPhoto).toHaveBeenCalledWith(PET_ID, file, 'u1/p/a.webp');
+    expect(navigateByUrl).toHaveBeenCalledWith(`/app/pets/${PET_ID}`);
+  });
+
+  it('o passo 1 oferece "Remover pet", que sabe da tag ativa', async () => {
+    await create();
+    expect(byId('remove-pet-open')).not.toBeNull();
+  });
+
+  it('pet que não é do tutor e falha de rede terminam num próximo passo', async () => {
+    await create({ get: { ok: false, error: 'not_found' } });
+    expect(byId('new-pet-missing')).not.toBeNull();
+    expect(byId('new-pet-missing-pets')?.getAttribute('href')).toBe('/app/pets');
+    fixture.destroy();
+    TestBed.resetTestingModule();
+    await create({ get: { ok: false, error: 'network' } });
+    expect(byId('new-pet-load-error')).not.toBeNull();
+    expect(byId('new-pet-retry-load')).not.toBeNull();
   });
 });

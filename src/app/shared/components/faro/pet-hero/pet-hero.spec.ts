@@ -54,6 +54,18 @@ describe('PetHero', () => {
     expect(lazy.getAttribute('loading')).toBe('lazy');
   });
 
+  it('o nome é h1 por padrão, h2 quando a tela já tem o h1 e só texto escondido do leitor quando é o título da tela', () => {
+    const tag = (heading?: string) =>
+      render(heading === undefined ? { name: 'Paçoca' } : { name: 'Paçoca', heading }).querySelector('[data-testid="pet-hero-name"]') as HTMLElement;
+    expect(tag().tagName).toBe('H1');
+    expect(tag('h2').tagName).toBe('H2');
+    const none = tag('none');
+    expect(none.tagName).toBe('P');
+    expect(none.getAttribute('aria-hidden')).toBe('true');
+    expect(none.textContent).toContain('Paçoca');
+    expect(none.classList.contains('font-display')).toBe(true);
+  });
+
   it('o nome usa a receita Display', () => {
     const name = render({ name: 'Paçoca' }).querySelector('[data-testid="pet-hero-name"]') as HTMLElement;
     for (const cls of ['font-display', 'font-bold', 'leading-none', 'text-[36px]', 'md:text-[48px]', 'xl:text-[56px]']) {
