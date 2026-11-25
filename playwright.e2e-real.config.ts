@@ -34,7 +34,16 @@ export default defineConfig({
   webServer: {
     command: 'npx ng serve --configuration e2e --port 4200',
     url: 'http://localhost:4200',
-    reuseExistingServer: false,
+    // No CI sempre sobe um servidor novo; na maquina de desenvolvimento reaproveita o `ng serve` ja no ar.
+    reuseExistingServer: !process.env['CI'],
     timeout: 300_000,
+    // Spec 003: o servidor SSR da pagina da tag fala com as Edge Functions do stack LOCAL com a chave do servidor.
+    // Valores de teste, os mesmos que o `e2e-prepare.sh` grava no ambiente das funcoes.
+    env: {
+      SUPABASE_URL: process.env['E2E_SUPABASE_URL'] ?? '',
+      SUPABASE_FUNCTIONS_URL: `${process.env['E2E_SUPABASE_URL'] ?? ''}/functions/v1`,
+      FARO_SSR_KEY: process.env['E2E_SSR_KEY'] ?? '',
+      IP_HASH_SECRET: process.env['E2E_IPHASH_SECRET'] ?? '',
+    },
   },
 });

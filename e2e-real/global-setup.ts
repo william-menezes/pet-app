@@ -1,4 +1,6 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
+
+import { createPool, POOL_FILE } from './support/tags';
 
 /**
  * Trava de seguranca: o E2E real so pode falar com um Supabase LOCAL. Aborta se E2E_SUPABASE_URL ou o
@@ -6,7 +8,7 @@ import { readFileSync } from 'node:fs';
  */
 const LOCAL = /^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?(\/|$)/i;
 
-export default function globalSetup(): void {
+export default async function globalSetup(): Promise<void> {
   const url = process.env['E2E_SUPABASE_URL'] ?? '';
   if (!LOCAL.test(url)) {
     throw new Error('E2E real recusado: E2E_SUPABASE_URL ausente ou nao e local (127.0.0.1 ou localhost).');
@@ -24,4 +26,7 @@ export default function globalSetup(): void {
   if (/supabase\.co/i.test(envFile)) {
     throw new Error('E2E real recusado: environment.e2e.ts menciona supabase.co.');
   }
+  // Spec 003: um lote (pelo mesmo caminho do admin) com os codigos e PINs que os testes consomem. Uma volta por rodada.
+  // E2E_REUSE_POOL=1 (so em desenvolvimento): reaproveita o pool da rodada anterior (o limite do admin e de 10 lotes por hora).
+  if (process.env['E2E_REUSE_POOL'] !== '1' || !existsSync(POOL_FILE)) await createPool(48);
 }
