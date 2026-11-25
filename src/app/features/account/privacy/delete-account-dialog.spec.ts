@@ -3,6 +3,9 @@ import { provideZonelessChangeDetection } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 
+import { TURNSTILE_SITE_KEY } from '@/shared/components/faro/turnstile/turnstile-script';
+import { FakeTurnstile, TEST_TURNSTILE_SITE_KEY } from '@/shared/components/faro/turnstile/turnstile-testing';
+
 import { Account, AccountStore } from '../../../core/account/account.store';
 import { PrivacyService } from '../../../core/account/privacy.service';
 import { AuthService } from '../../../core/auth/auth.service';
@@ -82,6 +85,49 @@ describe('DeleteAccountDialog', () => {
   afterEach(() => {
     fixture?.destroy();
     TestBed.inject(OverlayContainer).ngOnDestroy();
+  });
+
+  describe('desafio anti-robô', () => {
+    let fake: FakeTurnstile;
+    beforeEach(() => {
+      fake = new FakeTurnstile().install();
+      TestBed.overrideProvider(TURNSTILE_SITE_KEY, { useValue: TEST_TURNSTILE_SITE_KEY });
+    });
+    afterEach(() => fake.uninstall());
+
+    async function fill() {
+      await create(PASSWORD_ACCOUNT);
+      expect(fake.renders).toHaveLength(0); // fechado: nada é criado nem carregado
+      await open();
+      await vi.waitFor(() => expect(fake.renders).toHaveLength(1));
+      await type('account-delete-confirm-text', 'EXCLUIR');
+      await type('account-delete-password', 'SenhaSegura1');
+    }
+
+    it('o botão espera o token; a exclusão leva o captchaToken e o desafio é renovado', async () => {
+      await fill();
+      expect(submit().disabled).toBe(true);
+      fake.solve('tok-1');
+      await settle();
+      expect(submit().disabled).toBe(false);
+      deleteAccount.mockResolvedValue({ ok: false, error: 'invalid_password' });
+      await click('account-delete-submit');
+      expect(deleteAccount).toHaveBeenCalledWith({ password: 'SenhaSegura1', captchaToken: 'tok-1' });
+      expect(fake.resets).toBe(1);
+    });
+
+    it('captcha_failed mostra o texto do contrato e o diálogo continua aberto', async () => {
+      await fill();
+      fake.solve('tok-1');
+      await settle();
+      deleteAccount.mockResolvedValue({ ok: false, error: 'captcha_failed' });
+      await click('account-delete-submit');
+      expect(byId('account-delete-error')?.textContent).toContain(
+        'Não foi possível confirmar que você não é um robô. Tente de novo.',
+      );
+      expect(navigate).not.toHaveBeenCalled();
+      expect(fake.resets).toBe(1);
+    });
   });
 
   it('fechado, não mostra nada', async () => {

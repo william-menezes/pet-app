@@ -32,6 +32,7 @@ export type DeleteError =
   | 'rate_limited'
   | 'deletion_unavailable'
   | 'deletion_incomplete'
+  | 'captcha_failed'
   | 'network';
 
 export type DeleteResult =
@@ -48,6 +49,7 @@ const DELETE_ERRORS: readonly DeleteError[] = [
   'rate_limited',
   'deletion_unavailable',
   'deletion_incomplete',
+  'captcha_failed',
 ];
 
 /** Tempo entre o clique de download e a revogação do endereço do `Blob`. */
@@ -109,9 +111,10 @@ export class PrivacyService {
   }
 
   /** `functions.invoke('account-delete')` com `{ confirm: 'EXCLUIR', password }`. Sucesso encerra a sessão local. */
-  async deleteAccount(input: { password?: string }): Promise<DeleteResult> {
+  async deleteAccount(input: { password?: string; captchaToken?: string }): Promise<DeleteResult> {
     const body: Record<string, string> = { confirm: DELETE_CONFIRMATION };
     if (input.password !== undefined && input.password !== '') body['password'] = input.password;
+    if (input.captchaToken) body['captcha_token'] = input.captchaToken;
 
     let payload: unknown;
     try {

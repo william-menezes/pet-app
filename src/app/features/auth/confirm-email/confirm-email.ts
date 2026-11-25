@@ -8,6 +8,7 @@ import {
   inject,
   signal,
   untracked,
+  viewChild,
 } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Location } from '@angular/common';
@@ -20,6 +21,8 @@ import { ZardButtonComponent } from '@/shared/components/button';
 import { ZardFieldImports } from '@/shared/components/field';
 import { ZardInputComponent } from '@/shared/components/input';
 import { Note } from '@/shared/components/faro/note/note';
+import { CAPTCHA_FAILED_MESSAGE } from '@/shared/components/faro/turnstile/captcha-messages';
+import { Turnstile } from '@/shared/components/faro/turnstile/turnstile';
 import { FlowShell } from '@/shared/shells/flow-shell/flow-shell';
 
 import { AccountService } from '../../../core/account/account.service';
@@ -57,6 +60,7 @@ const EMAIL_FORMAT = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     FlowShell,
     Note,
     AuthStatusBadge,
+    Turnstile,
     ZardAlertComponent,
     ZardButtonComponent,
     ZardFieldImports,
@@ -111,6 +115,13 @@ export class ConfirmEmail implements OnInit {
 
   protected readonly resent = signal(false);
   protected readonly resending = signal(false);
+  /** Desafio anti-robô (Turnstile): o reenvio gasta o token; `reset()` depois de cada pedido. */
+  private readonly captcha = viewChild(Turnstile);
+  protected readonly captchaFailed = signal(false);
+  protected readonly captchaMessage = CAPTCHA_FAILED_MESSAGE;
+  protected readonly resendDisabled = computed(
+    () => this.remaining() > 0 || this.resending() || (this.captcha()?.pending() ?? false),
+  );
 
   // Contagem do reenvio: guarda o instante final e um relógio de 1 s.
   private readonly deadline = signal(0);
@@ -200,10 +211,19 @@ export class ConfirmEmail implements OnInit {
     this.emailError.set(false);
 
     this.resending.set(true);
+    this.captchaFailed.set(false);
+    const captchaToken = this.captcha()?.token() ?? undefined;
+    let result: Awaited<ReturnType<RegistrationService['resendConfirmation']>>;
     try {
-      await this.registration.resendConfirmation(target);
+      result = await this.registration.resendConfirmation(target, captchaToken);
     } finally {
       this.resending.set(false);
+      this.captcha()?.reset();
+    }
+    if (!result.ok) {
+      // Nada foi enviado: sem aviso de "enviamos" e sem espera.
+      this.captchaFailed.set(true);
+      return;
     }
     // Resposta uniforme: nunca revela se há cadastro pendente.
     this.resent.set(true);

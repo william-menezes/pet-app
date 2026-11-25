@@ -5,6 +5,9 @@ import { ActivatedRoute, Router, convertToParamMap, provideRouter } from '@angul
 import type { Session } from '@supabase/supabase-js';
 import { BehaviorSubject } from 'rxjs';
 
+import { TURNSTILE_SITE_KEY } from '@/shared/components/faro/turnstile/turnstile-script';
+import { FakeTurnstile, TEST_TURNSTILE_SITE_KEY } from '@/shared/components/faro/turnstile/turnstile-testing';
+
 import { AccountService } from '../../../core/account/account.service';
 import { PhoneVerificationService } from '../../../core/account/phone-verification.service';
 import { AuthService } from '../../../core/auth/auth.service';
@@ -28,7 +31,7 @@ describe('ConfirmEmail', () => {
   const byId = (id: string) => el.querySelector<HTMLElement>(`[data-testid="${id}"]`);
 
   async function create(opts: { query?: Record<string, string>; state?: unknown; stored?: string } = {}) {
-    resendConfirmation = vi.fn().mockResolvedValue(undefined);
+    resendConfirmation = vi.fn().mockResolvedValue({ ok: true });
     confirmEmail = vi.fn().mockResolvedValue({ ok: true });
     go = vi.fn().mockResolvedValue(true);
     restoreSession = vi.fn().mockResolvedValue(undefined);
@@ -67,6 +70,56 @@ describe('ConfirmEmail', () => {
     vi.useRealTimers();
   });
 
+  describe('desafio anti-robô', () => {
+    let fake: FakeTurnstile;
+    beforeEach(() => {
+      fake = new FakeTurnstile().install();
+      TestBed.overrideProvider(TURNSTILE_SITE_KEY, { useValue: TEST_TURNSTILE_SITE_KEY });
+    });
+    afterEach(() => fake.uninstall());
+
+    async function typeEmail() {
+      const input = byId('confirm-email-input') as HTMLInputElement;
+      input.value = 'ana@email.com';
+      input.dispatchEvent(new Event('input'));
+      await settle();
+    }
+
+    it('o reenvio espera o token, leva o token e renova o desafio', async () => {
+      await create();
+      await vi.waitFor(() => expect(fake.renders).toHaveLength(1));
+      await typeEmail();
+      expect((byId('confirm-email-resend') as HTMLButtonElement).disabled).toBe(true);
+
+      fake.solve('tok-1');
+      await settle();
+      byId('confirm-email-resend')!.click();
+      await settle();
+
+      expect(resendConfirmation).toHaveBeenCalledWith('ana@email.com', 'tok-1');
+      expect(fake.resets).toBe(1);
+      expect(byId('confirm-email-resent-notice')).not.toBeNull();
+    });
+
+    it('captcha_failed mostra o texto do contrato, sem aviso de reenvio nem contagem', async () => {
+      await create();
+      await vi.waitFor(() => expect(fake.renders).toHaveLength(1));
+      await typeEmail();
+      fake.solve('tok-1');
+      await settle();
+      resendConfirmation.mockResolvedValue({ ok: false, reason: 'captcha_failed' });
+      byId('confirm-email-resend')!.click();
+      await settle();
+
+      expect(byId('confirm-email-captcha-error')?.textContent).toContain(
+        'Não foi possível confirmar que você não é um robô. Tente de novo.',
+      );
+      expect(byId('confirm-email-resent-notice')).toBeNull();
+      expect(byId('confirm-email-countdown')).toBeNull();
+      expect(fake.resets).toBe(1);
+    });
+  });
+
   describe('estado de espera (sem token_hash)', () => {
     it('mostra o e-mail do estado do roteador e a contagem inicial de 60 s', async () => {
       await create({ state: { email: 'ana@email.com' } });
@@ -98,7 +151,7 @@ describe('ConfirmEmail', () => {
       byId('confirm-email-resend')!.click();
       await vi.advanceTimersByTimeAsync(0);
       await settle();
-      expect(resendConfirmation).toHaveBeenCalledWith('ana@email.com');
+      expect(resendConfirmation).toHaveBeenCalledWith('ana@email.com', undefined);
       expect(byId('confirm-email-resent-notice')?.textContent).toContain(
         'Se houver um cadastro pendente para este e-mail, enviamos um novo link.',
       );
@@ -121,7 +174,7 @@ describe('ConfirmEmail', () => {
         input.dispatchEvent(new Event('input'));
         byId('confirm-email-resend')!.click();
         await settle();
-        expect(resendConfirmation).toHaveBeenCalledWith('ana@email.com');
+        expect(resendConfirmation).toHaveBeenCalledWith('ana@email.com', undefined);
         expect(byId('confirm-email-resent-notice')).not.toBeNull();
       });
 

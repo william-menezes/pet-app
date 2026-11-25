@@ -7,6 +7,7 @@ import {
   model,
   signal,
   untracked,
+  viewChild,
 } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -17,11 +18,14 @@ import { ZardAlertDialogImports } from '@/shared/components/alert-dialog';
 import { ZardButtonComponent } from '@/shared/components/button';
 import { ZardFieldImports } from '@/shared/components/field';
 import { ZardInputComponent } from '@/shared/components/input';
+import { CAPTCHA_FAILED_MESSAGE } from '@/shared/components/faro/turnstile/captcha-messages';
+import { Turnstile } from '@/shared/components/faro/turnstile/turnstile';
 
 import { DELETE_CONFIRMATION, PrivacyService, type DeleteError } from '../../../core/account/privacy.service';
 import { AccountStore } from '../../../core/account/account.store';
 import { AuthService } from '../../../core/auth/auth.service';
 import { ReturnUrlService } from '../../../core/auth/return-url';
+import { ThemeService } from '../../../core/theme/theme.service';
 import { formatWait } from '../../auth/shared/wait-time';
 import { ACCOUNT_ICONS } from '../shared/account-icons';
 
@@ -48,6 +52,7 @@ type DeleteProblem = DeleteError;
     ZardButtonComponent,
     ZardFieldImports,
     ZardInputComponent,
+    Turnstile,
   ],
   providers: [provideIcons(ACCOUNT_ICONS)],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -59,6 +64,9 @@ export class DeleteAccountDialog {
   private readonly authService = inject(AuthService);
   private readonly returnUrl = inject(ReturnUrlService);
   private readonly router = inject(Router);
+  /** Desafio anti-robô (Turnstile), no tema do app. Só existe com o diálogo aberto e conta com senha. */
+  private readonly captcha = viewChild(Turnstile);
+  protected readonly theme = inject(ThemeService).resolved;
 
   /** Aberto/fechado, em duas vias com a tela. */
   readonly visible = model(false);
@@ -83,7 +91,11 @@ export class DeleteAccountDialog {
   protected readonly needsGoogle = computed(() => this.reauthMethod() === 'google');
   protected readonly confirmed = computed(() => this.typedConfirm().trim() === DELETE_CONFIRMATION);
   protected readonly canSubmit = computed(
-    () => this.confirmed() && (!this.needsPassword() || this.typedPassword() !== '') && !this.deleting(),
+    () =>
+      this.confirmed() &&
+      (!this.needsPassword() || this.typedPassword() !== '') &&
+      !this.deleting() &&
+      !(this.captcha()?.pending() ?? false),
   );
 
   protected readonly showPasswordLabel = $localize`Mostrar senha`;
@@ -105,6 +117,8 @@ export class DeleteAccountDialog {
         return $localize`Não foi possível excluir sua conta agora. Nada foi apagado. Tente mais tarde.`;
       case 'deletion_incomplete':
         return $localize`A exclusão não terminou. Toque em excluir de novo para concluir.`;
+      case 'captcha_failed':
+        return CAPTCHA_FAILED_MESSAGE;
       case 'network':
         return $localize`Não conseguimos conectar. Verifique sua conexão e tente de novo.`;
     }
@@ -141,7 +155,11 @@ export class DeleteAccountDialog {
     this.deleting.set(true);
     try {
       const password = this.needsPassword() ? this.password.value : undefined;
-      const result = await this.privacy.deleteAccount(password === undefined ? {} : { password });
+      const captchaToken = this.captcha()?.token() ?? undefined;
+      const result = await this.privacy.deleteAccount({
+        ...(password === undefined ? {} : { password }),
+        ...(captchaToken ? { captchaToken } : {}),
+      });
       if (result.ok) {
         this.clearFields();
         this.deleting.set(false);
@@ -157,6 +175,7 @@ export class DeleteAccountDialog {
       this.typedPassword.set('');
     } finally {
       this.deleting.set(false);
+      this.captcha()?.reset();
     }
   }
 

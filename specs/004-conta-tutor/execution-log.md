@@ -568,3 +568,168 @@ quatro funções da 001 tinham `search_path = public` (sem `pg_temp`; o portão 
 - `max_rows` em 1000 com a geração de lote de 540 códigos (nenhuma função da 003 existe ainda).
 - Painel do Supabase/hospedado: valores de `contracts/auth-config.contract.md` e proteção contra senha vazada (plano Pro) ficam no checklist.
 - O `statement_timeout` por papel está provado no catálogo (`pg_db_role_setting`), não por uma consulta lenta real.
+
+---
+
+## Frontend — Phases 6 e 7 (T068 a T071, T078 a T081)
+
+Execução de 2026-11-22 pelo subagente `frontend-angular`. Commits: T068 `b24ebdf`; T069 e T070 `50bb763`; T071 `93e2e6f`; T078 `5c75378`; T079 `3d9d1cd`;
+T081 `3c5746c`; T080 `52c7c94`; e2e `recovery-account-ui.spec.ts`. As `[QA]` T072 e T082 não são do frontend.
+
+### Desvios, decisões e textos que o contrato não traz
+
+- **`PasswordService.resetPassword`**: erro de rede em `verifyOtp`/`updateUser` vira `network` (o contrato só cita `invalid_link` para erro do `verifyOtp`); 401/403 no
+  `updateUser` vira `invalid_link`. Não passa por `AuthService.signOut()` (navega para o login com aviso): chama `signOut({ scope: 'global' })` e zera `AuthStore` e
+  `AccountStore`, senão o `anonGuard` desvia `?senha=alterada`. `changePassword` rejeita com "Não implementado" (T087).
+- **Tela "link enviado"**: a referência só tem a contagem e "Voltar para entrar". Acrescentei, quando a contagem zera, o botão de texto "Pedir outro link"
+  (`forgot-password-again`), que reenvia para o mesmo e-mail e reinicia os 60 s. Contrato e referência não dizem como pedir outro link.
+- **Nova senha**: senha com menos de 8 ou mais de 72 caracteres não chama o servidor (textos "Use uma senha com pelo menos 8 caracteres." do contrato e "Use no máximo 72
+  caracteres." do cadastro). Sem `token_hash` ou com `type` diferente de `recovery` abre direto "Este link não vale mais". Texto do corpo do estado inválido, da referência:
+  "Peça um novo. Ele chega no seu e-mail em instantes."
+- **Login**: `?senha=alterada` mostra o aviso e o parâmetro continua na URL (o `loggedOut` é apagado; este não). `onProvisionalLink` saiu.
+- **Rota `conta`** ligada em `app.routes.ts` com `loadChildren: ACCOUNT_ROUTES`. As linhas da Phase 8 (dados, celular, senha, aparência) apontam para rotas que ainda não existem e
+  caem no `**` do `ShellFallback` ("Esta parte ainda está em construção."; provado no e2e).
+- **Conta (lista)**: estados sem contrato, escritos por mim: carregando (esqueleto), "Não conseguimos carregar sua conta. Verifique sua conexão e tente de novo." com "Tentar de
+  novo" (o "Sair" continua), e "Nenhum número cadastrado" (sem número algum). Com só o número pendente do cadastro mostra esse número com o selo "Não confirmado". Ícones de celular,
+  aparência, privacidade, sair e baixar não existem em `faro-icons.ts` (compartilhado): `features/account/shared/account-icons.ts`, com provedor local.
+- **Privacidade**: o título do bloco é "Exportar meus dados" (contrato; a tela diz "Baixar meus dados", que ficou só no botão). **O texto da tela promete pets, tags e scans no arquivo,
+  mas `tags_e_pets` é `null` hoje**: escrevi "Um arquivo com os dados da sua conta, os termos que você aceitou e o histórico de acessos. Os dados dos seus pets, das suas tags e dos scans
+  entram no arquivo quando essas áreas estiverem no app." **A spec 003 precisa trocar essa segunda frase.** Textos novos: "Pronto. O arquivo foi baixado para o seu aparelho." e
+  "Não conseguimos gerar o arquivo agora. Verifique sua conexão e tente de novo.". `not_authenticated` e outros erros da RPC viram `network` (o tipo do contrato só tem
+  `rate_limited` e `network`). O endereço do `Blob` é revogado 1 s depois do clique (não "em seguida" imediato, por causa do Safari); o JSON só vive numa variável local.
+- **Diálogo de exclusão**: `z-alert-dialog` declarativo (o `confirm()` do serviço só aceita texto). A folha ancorada embaixo da referência no celular não foi imitada (o componente
+  compartilhado é um cartão centralizado; não editei). Conta só com Google: o aviso "Sua conta usa o login do Google. Se pedirmos, você entra de novo com o Google para confirmar que é
+  você." aparece sempre e o botão "Entrar de novo com o Google" só aparece depois de `reauth_required` com `method: google` (leitura da T081, que não diz se o botão é permanente).
+  O diálogo não fecha durante a exclusão, a senha é limpa depois de qualquer resposta e ao fechar. O campo EXCLUIR é exato (maiúsculas, após `trim`).
+- Importei `formatWait` de `features/auth/shared/wait-time.ts` (outra feature) em vez de duplicar.
+
+### Verificação
+
+- `npm run lint`: passa. `npm test -- --watch=false`: **74 arquivos, 599 testes** (antes: 67 e 502). `npm run build:stats`: **pacote inicial 413,03 kB** (111,86 kB transferidos; antes 409,06;
+  orçamento 500). `npm run check:ui` e `npm run check:bundle`: ok.
+- E2E, backend 100% simulado (`blocked` vazio nos testes de fluxo): `e2e/recovery-account-ui.spec.ts`, 24 testes. Conjunto completo: 152 passam e 1 falhou em `ui-shells.spec.ts` ("casca
+  dos fluxos: desktop, painel de marca"), que passa sozinho (42 de 42) e não toca nada desta entrega: parece instabilidade de carga com 153 testes em paralelo.
+- **Não verificado**: e-mail e banco reais (T072, T082); o ramo de exclusão com `deletion_unavailable` e `deletion_incomplete` só em testes unitários; Google real; leitor de tela.
+
+---
+
+## Frontend — Phases 8 e 9 (T083, T084, T085, T087, T088, T089, T092)
+
+Execução de 2026-11-22 pelo subagente `frontend-angular`. Commits: T087 `a65c15e`; T083 `13bd462`; T084 `6d2b1b8`; T085 `df2ce8d` (mais o ajuste visual do bloco "celular atual"); T088 `2ba2870`; T089 `0b1a68f`; rotas `8536afe`; e2e das telas; T092 `ce483ea`;
+estabilização do `ui-shells` `29a26c1`. As `[QA]` T086, T090, T091 e T093 a T096 não são do frontend.
+
+### Desvios, decisões e textos que o contrato não traz
+
+- **T087, falha de rede**: o contrato manda `invalid_current` para "outra falha" do `signInPassword`. Falha de conexão ao conferir a senha atual vira `network` (a tela diria "Senha atual incorreta" com a senha certa). `unconfirmed` e `invalid` seguem como `invalid_current`.
+- **T085, campo de senha de saída**: em conta com senha o campo "Senha atual" aparece logo, como na referência `V2-trocar-celular*`; o contrato só pede para mostrá-lo em `reauth_required`. `reauth_required` com `method: password` também o mostra (conta sem a informação de senha na tela). Conta só com o Google recebe o botão `phone-google-reauth` depois do `reauth_required` com `method: google` (guarda `/app/conta/celular` e chama `signInWithGoogle()`). O botão de enviar fica desabilitado enquanto o campo de senha está vazio. A senha é limpa depois de toda resposta do servidor. `method` ausente no `reauth_required` cai em `password` se a conta tem senha e em `google` se não tem.
+- **T085, subtítulo**: o contrato dá o mesmo subtítulo para os dois modos ("É por ele que quem achou…"); a referência do modo troca diz "Vamos confirmar o número novo por SMS.". Vale o contrato. Rótulo do campo no modo troca: "Novo celular" (referência). A barra ganha o botão de fechar para `/app/conta/celular` (referência). "Cancelar" usa `returnUrl` ou `/app/conta/celular`.
+- **T085, `phone-current`**: bloco neutro próprio (não `z-alert`), com o número em `whitespace-nowrap` para não quebrar "(11) 98765-\n4421" no celular. A frase continua uma única mensagem de i18n.
+- **T084, estados**: o contrato não diz quando é "troca pendente": usei `celular` confirmado e `celularPendente` diferente do `celular`. Sem número nenhum: "Nenhum número cadastrado" (mesmo texto da lista). Conta que não carrega: aviso e "Tentar de novo" (texto de rede da lista). Data no formato "02 nov 2026" (fuso de São Paulo). Na troca pendente o botão "Continuar" leva a `/auth/confirmar-celular?returnUrl=…`; não há segundo botão (o `account-phone-change` não existe nesse estado).
+- **T083**: o contrato não traz os erros do campo: "Informe seu nome." e "Use entre 2 e 80 caracteres." (texto do cadastro). Falha de rede: texto de rede do contrato. **"Dados salvos." sai pelo sonner, que não aceita `data-testid` no aviso**: deixei um `<span class="sr-only" aria-hidden="true" data-testid="account-personal-saved">` fora da região `aria-live` (só para o teste, sem leitura dupla do toast). O botão fica habilitado com 1 caractere (há mudança) e o erro aparece ao enviar.
+- **T088**: acrescentei "Informe a senha atual." (campo vazio não chega a enviar: o botão só habilita com os dois campos preenchidos). A dica "Pelo menos 8 caracteres" (do cadastro) fica sob "Nova senha". `isGoogleOnly()` mostra a nota `no_password`; conta sem senha e sem Google (não esperada) mostra a mesma nota. Falha de carga: aviso e "Tentar de novo".
+- **T089**: o segmentado do ZardUI não expõe `data-testid` por item; o componente os põe nos botões depois de renderizar (itens fixos).
+- **T092**: `ng extract-i18n` conclui (571 mensagens); o lint de i18n (texto e atributos) e uma varredura por atributo em português sem `i18n-` nos `.html` de `features/auth`, `account` e `legal` não acharam nada. Acharam-se textos soltos em TypeScript, que vieram da `001`: erros de campo e avisos do `login.ts`, dois textos do `oauth-callback.ts`, os cinco `ERROR_MESSAGES` do `AuthService` (edição fora das nomeadas na regra 11, só troca de aspas por `$localize`) e os títulos das rotas de `/auth`, `/legal` e `/app/conta`. Todos passaram a `$localize`. Ficam de fora (outras specs ou fora das telas desta): títulos das rotas de pets, admin, tag e landing, e os `throw new Error` técnicos.
+- **`data-testid` fora do §5 do contrato**: `account-phone-continue` (o botão "Continuar"; `account-phone-pending` ficou no aviso "Aguardando confirmação de…"), `account-phone-notice`, `-confirmed-on`, `-none`, `-load-error`, `-retry`; `account-personal-name-error`, `account-personal-error`; `account-password-current-toggle`, `-new-toggle`, `-load-error`, `-retry`; `phone-title`, `phone-password-toggle`. Os do contrato existem todos.
+- **Ação principal ancorada embaixo**: as referências de celular, senha e dados prendem o botão no pé da tela no celular (barra com 16 px de lado e 20 de baixo). Não imitei: o botão segue o conteúdo, de largura inteira no celular e automática a partir do `md`. A dica "Pelo menos 8 caracteres" da nova senha é placeholder na referência; ficou como texto sob o campo (não some ao digitar).
+- **"Cancelar" e o X do modo troca** apagam o destino guardado (`ReturnUrlService.clear()`), para ele não sobrar num login futuro da mesma aba. O `signOut` não apaga o `faro.returnUrl` (nenhuma tarefa me deu essa edição): fica registrado.
+- **T092, textos contra os contratos**: conferi 70 frases entre aspas das tabelas dos contratos de recuperação, celular e exclusão e do contrato de frontend contra o `messages.xlf`; faltam só as que a tela escreve de outro jeito: "Este link não vale mais. Peça um novo." (a tela separa em título e corpo, como a referência), "Você poderá reenviar em {mm:ss}." (o contrato da função diz "reenviar", o da tela diz "Você poderá enviar em m:ss"; segui a tela) e as frases do painel de marca, que são arrays ("Só o", "necessário.").
+- **Teste que dependia do fallback**: `recovery-account-ui.spec.ts` esperava a tela "em construção" ao abrir `/app/conta/dados`; agora abre a tela e a prova do fallback usa `/app/conta/inexistente`.
+- **check:ui**: reprova até em `*.spec.ts` a leitura de `classList.contains('dark')` em `html`/`body`; a prova de que o login fica claro fica no e2e.
+
+### O que causava a instabilidade do `ui-shells`
+
+Reproduzido sob carga (`--repeat-each=3 --workers=20` em `ui-shells`, `ui-theme` e `ui-identity`; sozinho, com 16 workers por 40 repetições e com a suíte completa em paralelo normal, o teste de 560 px nunca falhou). O `box()` do arquivo esperava a caixa por 5 s (padrão do `expect.poll`) e depois lia a caixa de novo, sem proteção contra o recarregamento de dev: sob carga o `ng serve` demora a entregar a página e o teste falhava com "sem caixa" (a falha que consegui reproduzir foi `sem caixa: flow-shell-footer`, no teste do celular; **a correção do teste de 560 px é por inferência do mesmo padrão, causa não confirmada**: ele mede a largura uma única vez e nunca falhou nas minhas execuções). Agora `box()` faz uma leitura só, com 20 s, e `expectWidth()` mede de novo até a largura chegar a 480 ou 560 (±2): o teste continua provando a largura final. Depois da correção, o mesmo estresse deixou o `ui-shells` sem falha; falharam 2 testes de `ui-identity` ("o foco por teclado é um anel de 2px em tinta": o primeiro Tab caiu em `BODY`, provavelmente página ainda sem hidratar; e um `newPage` de 30 s), só com 20 workers, que não fazem parte do uso normal. Não mexi neles (fora do pedido); vale registrar.
+
+### Verificação
+
+- `npm run lint`: passa. `npm test -- --watch=false`: **78 arquivos, 648 testes** (antes: 74 e 599). `npm run build:stats`: **pacote inicial 414,40 kB** (112,16 kB transferidos; antes 413,03; orçamento 500). `npm run check:ui` e `npm run check:bundle`: ok. `ng extract-i18n`: ok.
+- E2E, backend 100% simulado (`blocked` vazio): `e2e/account-settings-ui.spec.ts`, 13 testes (nome, celular nos três estados, modo troca com senha e senha errada, senha na ordem token → `updateUser` → `signOut` `others`, aparência escura só na casca e login claro, sem rolagem horizontal em 320, 390, 768 e 1440). Suíte completa duas vezes seguidas: **166 passam, 0 falham, nas duas**.
+- **Não verificado**: SMS, Google, banco e `signOut({ scope: 'others' })` reais (T086, T090); leitor de tela; a troca real de senha contra o Auth (o e2e simula o `token` e o `PUT /user`); o toast "Dados salvos." em leitor de tela.
+
+---
+
+## Frontend — Phase 10 (T103, T104, T105 e o `signOut`)
+
+Execução de 2026-11-22 pelo subagente `frontend-angular`. Commits: `signOut` apaga `faro.returnUrl` `096496d`; T103 `dfc7655`; T104 `722c319`; T105 `e1068de`. As `[QA]` T106 a T108 não são do frontend.
+
+> **ATENÇÃO, T104 ESTÁ PRONTA MAS O DESAFIO ESTÁ DESLIGADO.** As sete telas já mandam o token quando há chave e seguem sem token quando não há. **Não** liguei `[auth.captcha] enabled = true` no `supabase/config.toml` (instrução do dono desta execução; e eu não toco em `supabase/`), e `turnstileSiteKey` é `''` nos dois ambientes. **Ligar o desafio no Auth é o ÚLTIMO passo e se faz junto com a chave real do Turnstile** (conta Cloudflare do William): (1) pôr a site key em `src/environments/environment.ts`; (2) `SUPABASE_AUTH_CAPTCHA_SECRET` no Auth hospedado e `enabled = true` no `config.toml`; (3) ajustar os apoios de E2E que entram pela tela (o `[QA]` T108 usa as chaves de teste); (4) `check:prod-config` (T106) passa a exigir a chave. Até lá, o contrato §1 está implementado no frontend, mas **sem proteção efetiva**. A parte "com o desafio ligado, `signUp` sem token é recusado e a suíte E2E segue verde" da T104 **não foi feita nem verificada**.
+
+### Entregue
+
+- **`signOut`**: `AuthService.signOut()` chama `ReturnUrlService.clear()` (antes só "Cancelar" e o X do modo troca apagavam). Teste em `auth.service.spec.ts`.
+- **T103**: `app-turnstile` (`shared/components/faro/turnstile/`): `turnstile.ts` (componente: `token`, `pending`, `loadFailed`, `reset()`, `theme`), `turnstile-script.ts` (carregador do script, uma vez, `TURNSTILE_SITE_KEY` como `InjectionToken` com padrão em `environment.turnstileSiteKey`), `captcha-messages.ts` (texto de `captcha_failed`), `turnstile-testing.ts` (API falsa e as chaves de teste, só para testes). `turnstileSiteKey: ''` acrescentada aos dois arquivos de ambiente (nada mais mudou neles). `scripts/ui-checks/public-bundle.mjs` (`check:bundle`) agora reprova `challenges.cloudflare.com` em qualquer arquivo do pacote inicial/fecho público e nos `.html`, e a pasta `turnstile/` no fecho público.
+- **T104**: serviços ganharam o token e o `captcha_failed`: `AuthService.signInPassword(email, senha, token?)` e `resendConfirmation(email, token?)` (agora devolve `{ok}`), `RegistrationService.signUp` (`captcha_failed`) e `resendConfirmation`, `PasswordService.requestRecovery(email, token?)` (devolve `{ok}`; `captcha_failed` da função) e `changePassword(atual, nova, token?)`, `PhoneVerificationService.start({captchaToken})` e `PrivacyService.deleteAccount({captchaToken})` (corpo `captcha_token`). Telas: Entrar (e o reenvio da confirmação, que usa o mesmo widget), Criar conta, "Confirme seu e-mail" (reenvio), "Esqueci a senha" (formulário e "Pedir outro link"), Trocar celular (só no modo troca com senha), Senha, diálogo de exclusão (só com o diálogo aberto e conta com senha). Todas: botão desabilitado enquanto `pending()`, token lido uma vez, `reset()` depois de cada envio, `captcha_failed` com o texto do contrato.
+- **T105**: `src/security-headers.ts` (fonte única), `src/server.ts` usando-o com o middleware **antes** do `express.static`, `vercel.json` gerado a partir dele e `scripts/security/check-headers.mjs` (`npm run check:headers`, com `--self-test`).
+
+### Desvios, decisões e textos que o contrato não traz
+
+- **`captcha_failed` no reenvio e em "Esqueci a senha"**: nada foi enviado, então a tela **não** mostra "enviamos" nem inicia a espera de 60 s; mostra o aviso vermelho com o texto do contrato e fica onde está.
+- **`requestRecovery` e `resendConfirmation` deixaram de devolver `void`**: só assim a tela distingue `captcha_failed` do resto. O resto continua uniforme (anti-enumeração).
+- **Trocar celular**: o widget só aparece quando há campo de senha (`needsPassword()`); conta só com o Google não passa por `signInWithPassword` no servidor. Na `/auth/celular` o tema é sempre claro; em `/app/conta/senha` e no diálogo de exclusão o widget segue `ThemeService.resolved()`.
+- **`confirm-phone`**: `captcha_failed` entrou no `switch` (o tipo `StartError` ganhou o código), mas essa tela chama `start()` sem número e o servidor nunca o devolve ali.
+- **Widget `size: 'flexible'`**: tem largura mínima de 300 px e a coluna de 320 px tem 280; o contêiner corta o excesso (`overflow-hidden`). **Não vi o widget real**, então o corte nos 320 px não foi conferido.
+- **Política `tag` e a landing**: a landing (`/`) e `/legal/*` ficam na política **`app`**, não na `tag`. Seus links para `/auth/login` são `routerLink` (navegação dentro do Angular), e uma troca de rota não troca a política; com a política `tag` a tela de entrada herdaria uma CSP sem o Turnstile. Se a 003 passar esses links para `<a href>`, a landing pode mudar para `tag`.
+- **Política `tag` provisória**: vale para o **padrão** de um segmento de 9 a 11 caracteres de `[0-9A-Za-z-]` (código ou código com hífens), com ou sem barra final, e `/<segmento>/perdido`. A rota real é da 003, que ajusta `TAG_SEGMENT`/`TAG_SOURCES` em `src/security-headers.ts` (o `check:headers` confere o `vercel.json`). Um caminho do app com 9 a 11 caracteres de um segmento só colidiria; hoje não existe nenhum.
+- **`connect-src` da política `tag`** mantém `https://*.supabase.co wss://*.supabase.co` (a CSP existente; o contrato diz "a atual"). Não é terceiro, mas é um host fora de `'self'`; a 003 pode apertar se a página de resgate não chamar o Supabase do navegador. `img-src` mantém `https:` (fotos).
+- **`connect-src` do Turnstile**: o contrato libera só `script-src` e `frame-src`. Não conferi na documentação da Cloudflare se o widget também pede `connect-src https://challenges.cloudflare.com`; **confira no preview com a chave real** antes de ligar.
+- **Vercel, regras de cabeçalho sobrepostas**: a documentação (`vercel.com/docs/project-configuration/vercel-json#headers` e `/docs/headers`, lidas em 2026-11-22) **não diz** como o mesmo cabeçalho de duas regras que casam o mesmo caminho se combina (sobrescreve, concatena ou vale a última). Só diz que, em `headers`, a busca não para na primeira regra (`continue` é o padrão). Por isso as regras são mutuamente exclusivas (quatro `source` para a tag e um com *lookahead* negativo para o resto) e o `check:headers` simula isso sobre 25 caminhos de amostra. **A simulação é minha, não o motor da Vercel**: o teste do preview (T037A da 003) é o que vale, em especial a sintaxe `/:code([0-9A-Za-z-]{9,11})` e o *lookahead* com `$` dentro do grupo.
+- **Node carrega o `.ts` direto** no `check:headers` (Node 24, o do CI). O `package.json` não tem `"type": "module"`, então o script usa `--disable-warning=MODULE_TYPELESS_PACKAGE_JSON`.
+- **Unitário do `app-turnstile`**: provado com a API falsa (`window.turnstile`); o script real nunca foi baixado nos testes.
+
+### Verificação
+
+- `npm run lint`: passa. `npm test -- --watch=false`: **80 arquivos, 701 testes** (antes: 78 e 648). `npm run build:stats`: **pacote inicial 414,44 kB** (112,14 kB transferidos; antes 414,40; orçamento 500). `npm run check:ui`, `check:bundle` e `check:headers` (e `check:headers --self-test`, 4 adulterações detectadas): ok.
+- **`challenges.cloudflare.com` fora do pacote inicial**: `grep -c` no `main-*.js` e no `index.csr.html` dá 0; o único chunk que tem o host é um chunk compartilhado só por rotas lazy de `/auth` e `/app/conta`; o `check:bundle` agora reprova o host no fecho público e nos `.html`.
+- **Servidor construído** (`node dist/faro/server/server.mjs`, não `ng serve`): `/`, `/auth/login`, `/favicon.ico` (arquivo estático) e uma rota inexistente saem com a política `app`; `/7K3M-Q9XA-C` sai com a `tag`; com `x-forwarded-proto: https` entram `upgrade-insecure-requests` e HSTS, e sem ele não.
+- E2E (backend simulado, o desafio desligado): suíte completa, **166 passam, 0 falham**, no código antes e depois do ajuste do host oculto do `app-turnstile`.
+- **Não verificado**: o widget real do Turnstile (script baixado, desenho, corte em 320 px, `connect-src`); o desafio ligado no Auth (parte final da T104); o motor da Vercel (sintaxe dos `source`, combinação de regras: só o preview prova); os cabeçalhos em `ng serve` (os e2e atuais não os conferem; o `e2e/security/headers.spec.ts` da T108 pode precisar do servidor construído); leitor de tela.
+
+---
+
+# QA — Phase 10 e gate (agente qa-engineer, 2026-11-22 a 2026-11-25)
+
+Progresso registrado a cada passo (a sessão caiu mais de uma vez). Nenhum teste escreve no projeto hospedado.
+
+## T106, triagem do `npm audit` (`--omit=dev --audit-level=high`)
+
+- Antes: 12 vulnerabilidades de produção (1 critica `proxy-addr`; altas: `@angular/*`, `body-parser`, `fast-uri`, `qs` e outras). Sem `--force`.
+- Atualizado, dentro dos intervalos semver: familia `@angular/*` 21.2.16 para 21.2.26 (`core`, `common`, `compiler`, `forms`, `platform-browser`,
+  `platform-server`, `router`, `compiler-cli`, `localize`), `@angular/ssr`, `@angular/build` e `@angular/cli` 21.2.31, mais as correcoes transitivas
+  do `npm audit fix` (`body-parser`, `fast-uri`, `proxy-addr`, `qs`, `vite`, `zod` etc.). `package.json` teve só o piso das faixas subido.
+- Os pacotes do Angular têm pares exatos entre si; o `npm install` comum devolve ERESOLVE por causa do lock antigo. O lock foi regenerado com
+  `--package-lock-only --legacy-peer-deps` e depois normalizado por `npm install --package-lock-only` (sem a flag), e `npm ci` funciona.
+- Depois: `npm audit --omit=dev --audit-level=high` = 0 vulnerabilidades. Prova: `npm run lint`, `npm test` (80 arquivos, 701 testes), `npm run build`,
+  `check:ui`, `check:headers` e os 166 e2e simulados passaram com as versoes novas.
+
+## T106 e T107 (parte de CI do job `app`)
+
+- `scripts/security/`: `check-secrets.mjs`, `check-templates.mjs`, `check-prod-config.mjs` e `checks.test.mjs` (9 testes com `node --test`, `npm run test:scripts`).
+  Scripts npm: `check:secrets`, `check:audit`, `check:templates`, `check:prod-config`, `test:scripts`, `prepare` (liga `.githooks`). Gancho `.githooks/pre-commit`
+  (modo executavel; varre so o conteudo preparado). **Nao rodei `npm run prepare` na maquina**: o `core.hooksPath` e do repositorio compartilhado e afetaria o
+  worktree da `003`; o gancho sai do `exit 0` se o script nao existir.
+- `check:secrets`: ao rodar pela primeira vez acusou valores de TESTE ja versionados (`HASH_SALT`/`PHONE_OTP_PEPPER` em `supabase-checks.sh`, `quickstart.md`,
+  `.env.local.example` e `env.test.ts`). Lista de excecoes por (arquivo, valor exato), nunca por pasta; teste prova que valor novo no mesmo arquivo reprova.
+  `:` conta so com valor entre aspas (evita texto corrido). `secret = "env(...)"` e as chaves publicas do Turnstile nao sao acusadas (teste). JWT service_role
+  e `pins.csv`/`lote*.csv`/`activation_pin` reprovam (arquivos criados em diretorio temporario e apagados pelo teste; os literais sao montados em tempo de execucao).
+- `check:templates`: **achado**: `src/app/shared/components/alert-dialog/alert-dialog-container.component.ts:110` usa `[innerHTML]="config.zDescription"` (ZardUI). O
+  Angular sanitiza e todo `zDescription` do Faro e texto fixo ou mensagem do proprio app. Excecao registrada por (arquivo, trecho) no script; qualquer outro uso reprova.
+  Recomendacao ao frontend: trocar por interpolacao na proxima passada e remover a excecao.
+- `check:prod-config`: **reprova hoje** o `turnstileSiteKey` vazio de `src/environments/environment.ts` (teste afirma isso). Fora do CI: entra quando a chave real do
+  Turnstile existir (conta Cloudflare).
+- `check:audit`: 0 vulnerabilidades de producao (secao acima). Passo bloqueante no CI.
+- CI, job `app`: `build:stats`, `check:ui`, `check:bundle`, `check:headers`, `check:secrets` (varre tambem `dist/`), `check:templates`, `test:scripts`, `check:audit`.
+  `.github/dependabot.yml` (`npm` e `github-actions`, semanal).
+
+## Job `e2e` (backend real) — infraestrutura
+
+- Terceiro job `e2e` em `.github/workflows/ci.yml`: sobe o Supabase local, roda `scripts/ci/e2e-prepare.sh` (le as chaves de `supabase status`, gera
+  `src/environments/environment.e2e.ts` **so no runner** e o `supabase/.env.local` com `FARO_ENV=test`, `SMS_DRIVER=stub`, `SMS_STUB_CODE=424242`, sobe o
+  `functions serve` e aquece o modelo de e-mail), instala o Chromium e roda `playwright.e2e-real.config.ts`. Falhou: publica `playwright-report-real` e
+  mostra o log do `functions serve`. Action `upload-artifact` fixada por hash (v7.0.2, `cf430e0...`, conferido com `gh api`).
+- Versionado: configuracao `e2e` do Angular (`fileReplacements` para `environment.e2e.ts`), `environment.e2e.example.ts` sem valores, `.gitignore` do arquivo com valores.
+  Os ambientes `environment.ts` e `environment.development.ts` nao foram tocados.
+- O app e servido por `ng serve --configuration e2e` na porta 4200 (o `site_url` dos e-mails). O servidor construido nao serve aqui: a CSP `connect-src` so
+  libera `https://<host>` e o Supabase local e `http://127.0.0.1:54321`.
+- **Desvio de caminho**: os testes ficam em `e2e-real/` (nao em `e2e/...` como no `tasks.md`), porque `npm run e2e` (testDir `e2e/`) roda na maquina de
+  desenvolvimento, onde o ambiente aponta para o projeto hospedado. `e2e-real/global-setup.ts` ABORTA se `E2E_SUPABASE_URL` ou `environment.e2e.ts` nao forem locais.
+- `workers: 1`: os limites de taxa (IP, conta) sao compartilhados no runner; cada teste usa e-mail e celular unicos.

@@ -272,12 +272,15 @@ test.describe('Conta, sair, exportar e excluir (backend simulado)', () => {
     expect(state.blocked).toEqual([]);
   });
 
-  test('uma linha da Phase 8 ainda não pronta cai na tela "em construção", não em branco', async ({ page }) => {
+  test('a linha "Dados pessoais" abre a tela; um caminho que não existe cai na tela "em construção", não em branco', async ({ page }) => {
     await mockBackend(page, newState());
     await persistSession(page);
     await page.goto('/app/conta');
     await page.locator(tid('account-row-personal')).click();
     await expect(page).toHaveURL(/\/app\/conta\/dados$/);
+    await expect(page.locator(tid('account-personal'))).toBeVisible();
+
+    await page.goto('/app/conta/inexistente');
     await expect(page.locator(tid('shell-fallback'))).toContainText('Esta parte ainda está em construção.');
     await expect(page.locator(tid('shell-fallback-home'))).toHaveAttribute('href', '/app');
   });
@@ -406,6 +409,9 @@ test.describe('Conta, sair, exportar e excluir (backend simulado)', () => {
       await page.goto('/app/conta/privacidade');
       await page.locator(tid('account-privacy-delete')).click();
       await expect(page.locator(tid('account-delete-submit'))).toBeVisible();
+      await page.locator(tid('account-delete-confirm-text')).fill('EXCLUIR');
+      await page.locator(tid('account-delete-password')).fill('SenhaSegura1');
+      await expect(page.locator(tid('account-delete-submit'))).toBeEnabled();
       const dark = await page.evaluate(() => ({
         shell: document.querySelector('[data-testid="tutor-shell"]')?.classList.contains('dark') ?? false,
         overlay: document.querySelector('.cdk-overlay-container')?.classList.contains('dark') ?? false,

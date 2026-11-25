@@ -3,6 +3,9 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
 import { BehaviorSubject } from 'rxjs';
 
+import { TURNSTILE_SITE_KEY } from '@/shared/components/faro/turnstile/turnstile-script';
+import { FakeTurnstile, TEST_TURNSTILE_SITE_KEY } from '@/shared/components/faro/turnstile/turnstile-testing';
+
 import { PasswordService } from '../../../core/auth/password.service';
 import { ReturnUrlService } from '../../../core/auth/return-url';
 import { ForgotPassword, RECOVERY_RESEND_SECONDS } from './forgot-password';
@@ -22,7 +25,7 @@ describe('ForgotPassword', () => {
   }
 
   async function create(query: Record<string, string> = {}) {
-    requestRecovery = vi.fn().mockResolvedValue(undefined);
+    requestRecovery = vi.fn().mockResolvedValue({ ok: true });
     capture = vi.fn();
     const params = new BehaviorSubject(convertToParamMap(query));
     TestBed.configureTestingModule({
@@ -50,6 +53,46 @@ describe('ForgotPassword', () => {
 
   afterEach(() => {
     vi.useRealTimers();
+  });
+
+  describe('desafio anti-robô', () => {
+    let fake: FakeTurnstile;
+    beforeEach(() => {
+      fake = new FakeTurnstile().install();
+      TestBed.overrideProvider(TURNSTILE_SITE_KEY, { useValue: TEST_TURNSTILE_SITE_KEY });
+    });
+    afterEach(() => fake.uninstall());
+
+    it('espera o token, envia captcha_token e renova o desafio depois do envio', async () => {
+      await create();
+      await vi.waitFor(() => expect(fake.renders).toHaveLength(1));
+      await settle();
+      expect((byId('forgot-password-submit') as HTMLButtonElement).disabled).toBe(true);
+
+      fake.solve('tok-1');
+      await settle();
+      expect((byId('forgot-password-submit') as HTMLButtonElement).disabled).toBe(false);
+      await submit('ana@email.com');
+
+      expect(requestRecovery).toHaveBeenCalledWith('ana@email.com', 'tok-1');
+      expect(fake.resets).toBe(1);
+      expect(byId('forgot-password-sent')).not.toBeNull();
+    });
+
+    it('captcha_failed mostra o texto do contrato e não vai para "confira seu e-mail"', async () => {
+      await create();
+      await vi.waitFor(() => expect(fake.renders).toHaveLength(1));
+      fake.solve('tok-1');
+      await settle();
+      requestRecovery.mockResolvedValueOnce({ ok: false, reason: 'captcha_failed' });
+      await submit('ana@email.com');
+
+      expect(byId('forgot-password-captcha-error')?.textContent).toContain(
+        'Não foi possível confirmar que você não é um robô. Tente de novo.',
+      );
+      expect(byId('forgot-password-sent')).toBeNull();
+      expect(fake.resets).toBe(1);
+    });
   });
 
   it('mostra o campo de e-mail e o botão, com os data-testid do contrato', async () => {
@@ -97,7 +140,7 @@ describe('ForgotPassword', () => {
     it('envia o e-mail e mostra a confirmação com o texto do contrato', async () => {
       await create();
       await submit('  ana@email.com ');
-      expect(requestRecovery).toHaveBeenCalledWith('ana@email.com');
+      expect(requestRecovery).toHaveBeenCalledWith('ana@email.com', undefined);
       const sent = byId('forgot-password-sent');
       expect(sent).not.toBeNull();
       expect(sent?.textContent).toContain(
@@ -113,7 +156,7 @@ describe('ForgotPassword', () => {
       TestBed.resetTestingModule();
 
       await create();
-      requestRecovery.mockResolvedValue(undefined); // falha de rede: o serviço também resolve sem erro
+      requestRecovery.mockResolvedValue({ ok: true }); // falha de rede: o serviço também resolve sem erro
       await submit('ninguem@email.com');
       expect(byId('forgot-password-sent')?.textContent?.trim()).toBe(withAccount);
     });
@@ -166,7 +209,7 @@ describe('ForgotPassword', () => {
       byId('forgot-password-again')!.click();
       await settle();
       expect(requestRecovery).toHaveBeenCalledTimes(2);
-      expect(requestRecovery).toHaveBeenLastCalledWith('ana@email.com');
+      expect(requestRecovery).toHaveBeenLastCalledWith('ana@email.com', undefined);
       expect(byId('forgot-password-countdown')?.textContent).toContain('1:00');
     });
 

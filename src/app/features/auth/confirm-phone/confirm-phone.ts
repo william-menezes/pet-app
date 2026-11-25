@@ -16,6 +16,7 @@ import { NgIcon } from '@ng-icons/core';
 import { ZardAlertComponent } from '@/shared/components/alert';
 import { ZardButtonComponent } from '@/shared/components/button';
 import { Note } from '@/shared/components/faro/note/note';
+import { CAPTCHA_FAILED_MESSAGE } from '@/shared/components/faro/turnstile/captcha-messages';
 import { ZardInputOtpComponent } from '@/shared/components/input-otp';
 import { FlowShell } from '@/shared/shells/flow-shell/flow-shell';
 
@@ -138,6 +139,8 @@ export class ConfirmPhone implements OnInit {
         return $localize`Este já é o seu celular confirmado.`;
       case 'cooldown':
         return null;
+      case 'captcha_failed':
+        return CAPTCHA_FAILED_MESSAGE;
       case 'terms_required':
       case 'invalid_phone':
       case 'reauth_required':

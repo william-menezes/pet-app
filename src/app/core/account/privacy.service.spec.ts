@@ -142,6 +142,17 @@ describe('PrivacyService', () => {
   });
 
   describe('deleteAccount', () => {
+    it('captchaToken vai no corpo como captcha_token, só quando existe', async () => {
+      await service.deleteAccount({ password: 'SenhaSegura1', captchaToken: 'tok' });
+      expect(invoke).toHaveBeenLastCalledWith('account-delete', {
+        body: { confirm: 'EXCLUIR', password: 'SenhaSegura1', captcha_token: 'tok' },
+      });
+      await service.deleteAccount({ password: 'SenhaSegura1' });
+      expect(invoke).toHaveBeenLastCalledWith('account-delete', {
+        body: { confirm: 'EXCLUIR', password: 'SenhaSegura1' },
+      });
+    });
+
     it('envia { confirm: "EXCLUIR", password } para account-delete', async () => {
       await service.deleteAccount({ password: 'SenhaSegura1' });
       expect(invoke).toHaveBeenCalledWith('account-delete', {
@@ -186,6 +197,7 @@ describe('PrivacyService', () => {
       'invalid_password',
       'deletion_unavailable',
       'deletion_incomplete',
+      'captcha_failed',
     ] as const) {
       it(`${error} é repassado e não limpa nada`, async () => {
         invoke.mockResolvedValue({ data: { ok: false, error }, error: null });

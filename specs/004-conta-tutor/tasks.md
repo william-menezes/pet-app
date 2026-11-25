@@ -699,16 +699,16 @@ senha e escolher a aparência.
 **Independent Test**: cada ajuste funciona sozinho; durante a troca de celular,
 `phone_is_confirmed` continua verdadeiro e `perfis.celular` é o número antigo.
 
-- [ ] T083 [P] [US6] [FE] Criar `src/app/features/account/personal-data/` (3 arquivos) e registrar
+- [x] T083 [P] [US6] [FE] Criar `src/app/features/account/personal-data/` (3 arquivos) e registrar
   `/app/conta/dados`: campo Nome (2–80), e-mail somente leitura com a ajuda do contrato, "Salvar
   alterações" desabilitado sem mudança, aviso "Dados salvos." pelo `sonner`. **Feito quando**: o
   teste cobre os limites 1, 2, 80, 81, o botão desabilitado e o sucesso.
-- [ ] T084 [P] [US6] [FE] Criar `src/app/features/account/phone/` (3 arquivos) e registrar
+- [x] T084 [P] [US6] [FE] Criar `src/app/features/account/phone/` (3 arquivos) e registrar
   `/app/conta/celular` com os três estados de §4 do contrato ("Celular"): confirmado, não
   confirmado, troca pendente. **Feito quando**: o teste cobre os três estados e os destinos dos
   botões (`/auth/celular?returnUrl=/app/conta/celular` e
   `/auth/confirmar-celular?returnUrl=/app/conta/celular`).
-- [ ] T085 [US6] [FE] Em `src/app/features/auth/phone-entry/`, implementar o **modo troca**
+- [x] T085 [US6] [FE] Em `src/app/features/auth/phone-entry/`, implementar o **modo troca**
   (`AccountStore.phoneConfirmed()` verdadeiro): título "Novo celular", linha com o celular atual,
   "Cancelar" no lugar de "Agora não", tratamento de `reauth_required` (`method = 'password'`:
   mostrar `phone-password` e reenviar; `method = 'google'`: botão `phone-google-reauth`),
@@ -717,16 +717,16 @@ senha e escolher a aparência.
   a troca (senha atual) ⇒ a tela de código aparece e `my_account()` ainda mostra o número antigo
   em `celular` e o novo em `celular_pendente`; digitar `424242` ⇒ `celular` passa a ser o novo e
   `/app/conta/celular` mostra "Confirmado". **Feito quando**: o teste passa.
-- [ ] T087 [P] [US6] [FE] Implementar `changePassword(current, next)` em
+- [x] T087 [P] [US6] [FE] Implementar `changePassword(current, next)` em
   `src/app/core/auth/password.service.ts` (5 passos de `contracts/password-recovery.edge.md`) e
   os testes em `password.service.spec.ts`. **Feito quando**: o teste cobre `no_password`,
   `invalid_current`, `rate_limited`, `weak_password` e o sucesso com
   `signOut({ scope: 'others' })`.
-- [ ] T088 [US6] [FE] Criar `src/app/features/account/password/` (3 arquivos) e registrar
+- [x] T088 [US6] [FE] Criar `src/app/features/account/password/` (3 arquivos) e registrar
   `/app/conta/senha`: formulário para `hasPassword()`, só a nota `account-password-google-note`
   para `isGoogleOnly()`. **Feito quando**: o teste cobre os dois modos, a validação da nova senha
   e cada mensagem.
-- [ ] T089 [P] [US6] [FE] Criar `src/app/features/account/appearance/` (3 arquivos) e registrar
+- [x] T089 [P] [US6] [FE] Criar `src/app/features/account/appearance/` (3 arquivos) e registrar
   `/app/conta/aparencia`: `z-toggle-group` de seleção única com "Clara", "Escura", "Igual ao
   sistema", refletindo `ThemeService.preference()` e chamando `setPreference`. **Não** tocar no
   DOM nem em `localStorage` aqui. **Feito quando**: o teste cobre a opção marcada para cada
@@ -747,7 +747,7 @@ senha e escolher a aparência.
   `/auth/confirmar-email`, `/auth/celular`, `/auth/confirmar-celular`, `/auth/termos`,
   `/auth/recuperar-senha`, `/auth/nova-senha`, `/app/conta` e suas cinco telas (estas nos temas
   claro e escuro), `/legal/termos`, `/legal/privacidade`. **Feito quando**: o teste passa.
-- [ ] T092 [P] [FE] Conferir que todo texto visível e todo `aria-label` das telas desta spec está
+- [x] T092 [P] [FE] Conferir que todo texto visível e todo `aria-label` das telas desta spec está
   marcado com `i18n`/`$localize`, e que os textos batem com os contratos. **Feito quando**:
   `npx ng extract-i18n --output-path /tmp/faro-i18n` conclui sem erro e uma busca por texto em
   português solto nos `.html` de `features/auth`, `features/account` e `features/legal`
@@ -805,18 +805,18 @@ fase dependem só da Phase 2; as de tela dependem das telas das histórias 1, 4,
   `_shared/reauth.ts`; corpo `captcha_token` em `phone-verify-start` (troca) e `account-delete`;
   código de erro `captcha_failed`. **Feito quando**: `deno test` prova que o token chega ao Auth
   e que `captcha_failed` não conta como falha de senha.
-- [ ] T103 [FE] Componente `app-turnstile` (`src/app/shared/components/faro/turnstile/`) e a
+- [x] T103 [FE] Componente `app-turnstile` (`src/app/shared/components/faro/turnstile/`) e a
   chave `turnstileSiteKey` nos ambientes, conforme o contrato §1. **Feito quando**: teste
   unitário prova que sem chave nenhum script é carregado e que `reset()` zera o token;
   `npm run check:bundle` mostra que o pacote inicial não contém `challenges.cloudflare.com`.
-- [ ] T104 [FE] Usar o desafio em "Entrar", "Criar conta", "Confirme seu e-mail" (reenvio),
+- [x] T104 [FE] Usar o desafio em "Entrar", "Criar conta", "Confirme seu e-mail" (reenvio),
   "Esqueci a senha", "Trocar celular", "Senha" e no diálogo de exclusão; `reset()` depois de cada
   envio; texto de `captcha_failed`. **Por último**, e só depois de todas as telas enviarem o token:
   ligar `[auth.captcha] enabled = true` no `config.toml` e ajustar os apoios de E2E que entram
   pela tela. **Feito quando**: teste de componente de cada tela cobre o envio com token e o erro
   `captcha_failed`; com o desafio ligado, `signUp` sem token é recusado e toda a suíte de E2E
   existente continua verde.
-- [ ] T105 [FE] Cabeçalhos (contrato §3): `src/security-headers.ts`, uso no `src/server.ts` com
+- [x] T105 [FE] Cabeçalhos (contrato §3): `src/security-headers.ts`, uso no `src/server.ts` com
   o middleware **antes** dos arquivos estáticos, `vercel.json` com as duas políticas e
   `scripts/security/check-headers.mjs` (`npm run check:headers`). **Feito quando**:
   `check:headers` passa e falha se alguém editar só um dos dois lugares.

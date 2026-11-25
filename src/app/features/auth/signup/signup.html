@@ -134,6 +134,8 @@
     </div>
   </form>
 
+  <app-turnstile />
+
   <button
     footer
     type="submit"
@@ -142,7 +144,7 @@
     zSize="lg"
     class="w-full text-lg"
     [zLoading]="isLoading()"
-    [zDisabled]="isLoading() || googleLoading()"
+    [zDisabled]="submitDisabled()"
     data-testid="signup-submit"
     i18n>
     Criar conta

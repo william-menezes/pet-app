@@ -25,7 +25,7 @@ describe('RegistrationService', () => {
     vi.useFakeTimers();
     signUp = vi.fn().mockResolvedValue({ data: {}, error: null });
     verifyOtp = vi.fn().mockResolvedValue({ data: {}, error: null });
-    resendConfirmation = vi.fn().mockResolvedValue(undefined);
+    resendConfirmation = vi.fn().mockResolvedValue({ ok: true });
     peek = vi.fn().mockReturnValue(null);
 
     TestBed.configureTestingModule({
@@ -88,6 +88,12 @@ describe('RegistrationService', () => {
     const data = signUp.mock.calls[0][0].options.data;
     expect(data.return_to).toBe('/ativar/7K3M-Q9XA-C');
     expect(new Date(data.return_to_at).toISOString()).toBe(data.return_to_at);
+  });
+
+  it('captcha_failed do Auth devolve captcha_failed (e não o sucesso uniforme)', async () => {
+    signUp.mockResolvedValue({ data: {}, error: { status: 400, code: 'captcha_failed' } });
+    const result = await run({ ...VALID, captchaToken: 'tok' });
+    expect(result).toEqual({ ok: false, reason: 'captcha_failed' });
   });
 
   it('repassa o captchaToken só quando existe', async () => {
@@ -197,6 +203,6 @@ describe('RegistrationService', () => {
 
   it('resendConfirmation delega no AuthService', async () => {
     await service.resendConfirmation('ana@email.com');
-    expect(resendConfirmation).toHaveBeenCalledWith('ana@email.com');
+    expect(resendConfirmation).toHaveBeenCalledWith('ana@email.com', undefined);
   });
 });

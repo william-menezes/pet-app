@@ -103,9 +103,20 @@ describe('PhoneVerificationService', () => {
       'invalid_password',
       'sms_unavailable',
       'sms_send_failed',
+      'captcha_failed',
     ])('mapeia %s', async (error) => {
       invoke.mockResolvedValue({ data: { ok: false, error }, error: null });
       expect(await service.start()).toEqual({ ok: false, error });
+    });
+
+    it('captchaToken vai no corpo como captcha_token, só quando existe', async () => {
+      invoke.mockResolvedValue({ data: OK, error: null });
+      await service.start({ phone: '(11) 98765-4421', password: 'x', captchaToken: 'tok' });
+      expect(invoke).toHaveBeenLastCalledWith('phone-verify-start', {
+        body: { phone: '(11) 98765-4421', password: 'x', captcha_token: 'tok' },
+      });
+      await service.start({ phone: '(11) 98765-4421' });
+      expect(invoke).toHaveBeenLastCalledWith('phone-verify-start', { body: { phone: '(11) 98765-4421' } });
     });
 
     it('reauth_required traz o método', async () => {

@@ -34,6 +34,7 @@ export type StartError =
   | 'rate_limited'
   | 'sms_unavailable'
   | 'sms_send_failed'
+  | 'captcha_failed'
   | 'network';
 
 export type StartResult =
@@ -63,6 +64,7 @@ const START_ERRORS: readonly StartError[] = [
   'rate_limited',
   'sms_unavailable',
   'sms_send_failed',
+  'captcha_failed',
 ];
 
 const CONFIRM_ERRORS: readonly ConfirmError[] = [
@@ -123,10 +125,11 @@ export class PhoneVerificationService {
   }
 
   /** `functions.invoke('phone-verify-start')`. O corpo só leva o que a tela informou. */
-  async start(input: { phone?: string; password?: string } = {}): Promise<StartResult> {
+  async start(input: { phone?: string; password?: string; captchaToken?: string } = {}): Promise<StartResult> {
     const body: Record<string, string> = {};
     if (input.phone !== undefined) body['phone'] = input.phone;
     if (input.password !== undefined) body['password'] = input.password;
+    if (input.captchaToken) body['captcha_token'] = input.captchaToken;
 
     const data = await this.invoke('phone-verify-start', body);
     if (data === null) return { ok: false, error: 'network' };

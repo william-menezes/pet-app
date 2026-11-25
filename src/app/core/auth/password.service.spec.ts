@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { AccountStore } from '../account/account.store';
 import { SupabaseService } from '../supabase/supabase.service';
+import { AuthService } from './auth.service';
 import { AuthStore } from './auth.store';
 import { PasswordService } from './password.service';
 
@@ -13,6 +14,8 @@ describe('PasswordService', () => {
   let service: PasswordService;
   let authStoreReset: ReturnType<typeof vi.fn>;
   let accountStoreReset: ReturnType<typeof vi.fn>;
+  let signInPassword: ReturnType<typeof vi.fn>;
+  let hasPassword: boolean;
 
   beforeEach(() => {
     calls = [];
@@ -31,6 +34,11 @@ describe('PasswordService', () => {
     });
     authStoreReset = vi.fn();
     accountStoreReset = vi.fn();
+    hasPassword = true;
+    signInPassword = vi.fn().mockImplementation(async () => {
+      calls.push('signInPassword');
+      return { ok: true };
+    });
 
     TestBed.configureTestingModule({
       providers: [
@@ -41,7 +49,15 @@ describe('PasswordService', () => {
           },
         },
         { provide: AuthStore, useValue: { reset: authStoreReset } },
-        { provide: AccountStore, useValue: { reset: accountStoreReset } },
+        {
+          provide: AccountStore,
+          useValue: {
+            reset: accountStoreReset,
+            hasPassword: () => hasPassword,
+            account: () => ({ email: 'ana@email.com' }),
+          },
+        },
+        { provide: AuthService, useValue: { signInPassword } },
       ],
     });
     service = TestBed.inject(PasswordService);
@@ -49,7 +65,7 @@ describe('PasswordService', () => {
 
   describe('requestRecovery', () => {
     it('chama a função password-recovery só com o e-mail', async () => {
-      await expect(service.requestRecovery('ana@email.com')).resolves.toBeUndefined();
+      await expect(service.requestRecovery('ana@email.com')).resolves.toEqual({ ok: true });
       expect(invoke).toHaveBeenCalledWith('password-recovery', { body: { email: 'ana@email.com' } });
     });
 
@@ -59,9 +75,19 @@ describe('PasswordService', () => {
       invoke.mockRejectedValueOnce(new Error('Failed to fetch'));
       const comRede = await service.requestRecovery('ana@email.com');
       const sucesso = await service.requestRecovery('ana@email.com');
-      expect(comErro).toBeUndefined();
-      expect(comRede).toBeUndefined();
-      expect(sucesso).toBeUndefined();
+      expect(comErro).toEqual({ ok: true });
+      expect(comRede).toEqual({ ok: true });
+      expect(sucesso).toEqual({ ok: true });
+    });
+
+    it('captcha_failed da função vira { ok: false } e só ele', async () => {
+      invoke.mockResolvedValueOnce({ data: { ok: false, error: 'captcha_failed' }, error: null });
+      expect(await service.requestRecovery('ana@email.com', 'token-x')).toEqual({
+        ok: false,
+        reason: 'captcha_failed',
+      });
+      invoke.mockResolvedValueOnce({ data: { ok: false, error: 'outro' }, error: null });
+      expect(await service.requestRecovery('ana@email.com')).toEqual({ ok: true });
     });
 
     it('repassa o desafio anti-robô quando existir', async () => {
@@ -159,7 +185,67 @@ describe('PasswordService', () => {
     });
   });
 
-  it('changePassword ainda não está implementado (T087)', async () => {
-    await expect(service.changePassword('a', 'b')).rejects.toThrow(/T087/);
+  describe('changePassword', () => {
+    it('conta sem senha: no_password, sem tocar no servidor', async () => {
+      hasPassword = false;
+      expect(await service.changePassword('atual', 'NovaSenha123')).toEqual({ ok: false, reason: 'no_password' });
+      expect(signInPassword).not.toHaveBeenCalled();
+      expect(updateUser).not.toHaveBeenCalled();
+    });
+
+    it('repassa o desafio ao signInPassword e devolve captcha_failed sem contar como senha errada', async () => {
+      signInPassword.mockResolvedValueOnce({ ok: false, reason: 'captcha_failed' });
+      expect(await service.changePassword('atual', 'NovaSenha123', 'token-x')).toEqual({
+        ok: false,
+        reason: 'captcha_failed',
+      });
+      expect(signInPassword).toHaveBeenCalledWith('ana@email.com', 'atual', 'token-x');
+    });
+
+    it('senha atual errada: invalid_current e a senha nova nunca é enviada', async () => {
+      signInPassword.mockResolvedValueOnce({ ok: false, reason: 'invalid' });
+      expect(await service.changePassword('errada', 'NovaSenha123')).toEqual({ ok: false, reason: 'invalid_current' });
+      expect(signInPassword).toHaveBeenCalledWith('ana@email.com', 'errada', undefined);
+      expect(updateUser).not.toHaveBeenCalled();
+      expect(signOut).not.toHaveBeenCalled();
+    });
+
+    it('bloqueio do login-guard: rate_limited', async () => {
+      signInPassword.mockResolvedValueOnce({ ok: false, reason: 'rate_limited' });
+      expect(await service.changePassword('atual', 'NovaSenha123')).toEqual({ ok: false, reason: 'rate_limited' });
+      expect(updateUser).not.toHaveBeenCalled();
+    });
+
+    it('falha de conexão ao conferir a senha atual vira network, não invalid_current', async () => {
+      signInPassword.mockResolvedValueOnce({ ok: false, reason: 'network' });
+      expect(await service.changePassword('atual', 'NovaSenha123')).toEqual({ ok: false, reason: 'network' });
+    });
+
+    it('senha nova fraca: weak_password e as outras sessões continuam', async () => {
+      updateUser.mockResolvedValueOnce({ data: {}, error: { status: 422, code: 'weak_password' } });
+      expect(await service.changePassword('atual', '1234567')).toEqual({ ok: false, reason: 'weak_password' });
+      expect(signOut).not.toHaveBeenCalled();
+    });
+
+    it('erro ou queda de rede no updateUser: network', async () => {
+      updateUser.mockRejectedValueOnce(new Error('Failed to fetch'));
+      expect(await service.changePassword('atual', 'NovaSenha123')).toEqual({ ok: false, reason: 'network' });
+      updateUser.mockResolvedValueOnce({ data: {}, error: { status: 500 } });
+      expect(await service.changePassword('atual', 'NovaSenha123')).toEqual({ ok: false, reason: 'network' });
+    });
+
+    it('sucesso: confere, troca e encerra só as outras sessões, nessa ordem', async () => {
+      expect(await service.changePassword('atual', 'NovaSenha123')).toEqual({ ok: true });
+      expect(updateUser).toHaveBeenCalledWith({ password: 'NovaSenha123' });
+      expect(signOut).toHaveBeenCalledWith({ scope: 'others' });
+      expect(calls).toEqual(['signInPassword', 'updateUser', 'signOut']);
+      expect(authStoreReset).not.toHaveBeenCalled();
+      expect(accountStoreReset).not.toHaveBeenCalled();
+    });
+
+    it('erro no signOut das outras sessões não desfaz a troca', async () => {
+      signOut.mockRejectedValueOnce(new Error('boom'));
+      expect(await service.changePassword('atual', 'NovaSenha123')).toEqual({ ok: true });
+    });
   });
 });

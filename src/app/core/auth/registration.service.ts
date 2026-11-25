@@ -14,7 +14,8 @@ import { Injectable, inject } from '@angular/core';
 import { normalizeBrPhone } from '../account/phone';
 import { TERMS_VERSION } from '../account/terms';
 import { SupabaseService } from '../supabase/supabase.service';
-import { AuthService } from './auth.service';
+import { AuthService, isCaptchaFailure } from './auth.service';
+import type { ResendResult } from './auth.service';
 import { AuthStore } from './auth.store';
 import { ReturnUrlService } from './return-url';
 
@@ -24,13 +25,13 @@ export interface SignUpInput {
   celular: string;
   senha: string;
   aceite: boolean;
-  /** Desafio anti-robô (Phase 10, `TODO(CAPTCHA)`): opcional, ainda sem uso. */
+  /** Token do desafio anti-robô (Turnstile). Ausente quando o desafio está desligado. */
   captchaToken?: string;
 }
 
 export type SignUpResult =
   | { ok: true }
-  | { ok: false; reason: 'invalid' | 'weak_password' | 'rate_limited' | 'network' };
+  | { ok: false; reason: 'invalid' | 'weak_password' | 'rate_limited' | 'network' | 'captcha_failed' };
 
 export type ConfirmEmailResult = { ok: true } | { ok: false; reason: 'invalid_link' | 'network' };
 
@@ -47,6 +48,7 @@ interface AuthErrorLike {
   status?: number;
   code?: string;
   name?: string;
+  message?: string;
 }
 
 function isNetworkError(error: AuthErrorLike): boolean {
@@ -112,8 +114,8 @@ export class RegistrationService {
   }
 
   /** Reenvio com resposta uniforme: nunca revela se o e-mail tem cadastro pendente. */
-  async resendConfirmation(email: string): Promise<void> {
-    await this.authService.resendConfirmation(email);
+  async resendConfirmation(email: string, captchaToken?: string): Promise<ResendResult> {
+    return this.authService.resendConfirmation(email, captchaToken);
   }
 
   /** Troca o `token_hash` do link por sessão (e a entrega ao `AuthStore`). Vencido, usado ou adulterado: a mesma resposta. */
@@ -138,6 +140,7 @@ export class RegistrationService {
 
   private classify(error: AuthErrorLike): SignUpResult {
     if (isNetworkError(error)) return { ok: false, reason: 'network' };
+    if (isCaptchaFailure(error)) return { ok: false, reason: 'captcha_failed' };
     if (error.code === 'weak_password') return { ok: false, reason: 'weak_password' };
     // 422 `user_already_exists` (confirmado) e o 429 de reenvio (ainda não confirmado) são o mesmo
     // sucesso de um e-mail novo. Outro 429 é limite de pedidos de verdade.

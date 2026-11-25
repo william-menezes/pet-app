@@ -69,3 +69,8 @@ tools/tag-generator/*.ttf
 # Artefatos locais do Playwright
 test-results/
 playwright-report/
+
+# E2E com backend real (CI): o arquivo com valores e gerado so dentro do runner. Versionado: so o .example.
+src/environments/environment.e2e.ts
+playwright-report-real/
+test-results-real/

@@ -84,7 +84,7 @@ export class OAuthCallback implements OnInit, AfterViewInit {
       if (!this.hasError()) {
         this.hasError.set(true);
         this.errorMessage.set(
-          'A verificação está demorando mais do que o esperado. Tente novamente.',
+          $localize`A verificação está demorando mais do que o esperado. Tente novamente.`,
         );
       }
     }, 8000);
@@ -128,7 +128,7 @@ export class OAuthCallback implements OnInit, AfterViewInit {
         this.fallbackTimer = null;
       }
       this.hasError.set(true);
-      this.errorMessage.set('Não conseguimos conectar. Verifique sua conexão e tente de novo.');
+      this.errorMessage.set($localize`Não conseguimos conectar. Verifique sua conexão e tente de novo.`);
     }
   }
 }

@@ -2,6 +2,9 @@ import { provideZonelessChangeDetection } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 
+import { TURNSTILE_SITE_KEY } from '@/shared/components/faro/turnstile/turnstile-script';
+import { FakeTurnstile, TEST_TURNSTILE_SITE_KEY } from '@/shared/components/faro/turnstile/turnstile-testing';
+
 import { AuthService } from '../../../core/auth/auth.service';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { RegistrationService } from '../../../core/auth/registration.service';
@@ -248,5 +251,84 @@ describe('Signup', () => {
       expect(byId('signup-error')?.textContent).toContain('Não conseguimos abrir o Google agora.');
       expect((byId('signup-google') as HTMLButtonElement).disabled).toBe(false);
     });
+  });
+});
+
+describe('Signup — desafio anti-robô', () => {
+  let fake: FakeTurnstile;
+  let signUp: ReturnType<typeof vi.fn>;
+  let fixture: ComponentFixture<Signup>;
+  let el: HTMLElement;
+
+  const byId = (id: string) => el.querySelector<HTMLElement>(`[data-testid="${id}"]`);
+
+  async function type(id: string, value: string) {
+    const input = byId(id) as HTMLInputElement;
+    input.value = value;
+    input.dispatchEvent(new Event('input'));
+    input.dispatchEvent(new Event('blur'));
+    await fixture.whenStable();
+  }
+
+  async function fillAndSubmit() {
+    await type('signup-name', 'Ana Souza');
+    await type('signup-email', 'ana@email.com');
+    await type('signup-phone', '11987654421');
+    await type('signup-password', 'SenhaSegura1');
+    el.querySelector<HTMLInputElement>('[data-testid="signup-terms"] input')!.click();
+    await fixture.whenStable();
+    el.querySelector('form')!.dispatchEvent(new Event('submit'));
+    await fixture.whenStable();
+    fixture.detectChanges();
+  }
+
+  beforeEach(async () => {
+    fake = new FakeTurnstile().install();
+    signUp = vi.fn().mockResolvedValue({ ok: true });
+    TestBed.overrideProvider(TURNSTILE_SITE_KEY, { useValue: TEST_TURNSTILE_SITE_KEY });
+    TestBed.configureTestingModule({
+      providers: [
+        provideZonelessChangeDetection(),
+        provideRouter([]),
+        { provide: RegistrationService, useValue: { signUp } },
+        { provide: ReturnUrlService, useValue: { capture: vi.fn() } },
+        { provide: AuthService, useValue: { signInWithGoogle: vi.fn() } },
+      ],
+    });
+    vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+    fixture = TestBed.createComponent(Signup);
+    el = fixture.nativeElement;
+    fixture.detectChanges();
+    await vi.waitFor(() => expect(fake.renders).toHaveLength(1));
+  });
+
+  afterEach(() => fake.uninstall());
+
+  it('Criar conta espera o token; o envio leva o captchaToken e o desafio é renovado', async () => {
+    fixture.detectChanges();
+    expect((byId('signup-submit') as HTMLButtonElement).disabled).toBe(true);
+    fake.solve('tok-1');
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect((byId('signup-submit') as HTMLButtonElement).disabled).toBe(false);
+
+    await fillAndSubmit();
+
+    expect(signUp).toHaveBeenCalledWith(expect.objectContaining({ captchaToken: 'tok-1' }));
+    expect(fake.resets).toBe(1);
+  });
+
+  it('captcha_failed mostra o texto do contrato e fica na tela', async () => {
+    fake.solve('tok-1');
+    signUp.mockResolvedValue({ ok: false, reason: 'captcha_failed' });
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    await fillAndSubmit();
+
+    expect(byId('signup-error')?.textContent).toContain(
+      'Não foi possível confirmar que você não é um robô. Tente de novo.',
+    );
+    expect(fake.resets).toBe(1);
   });
 });
