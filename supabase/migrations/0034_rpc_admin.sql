@@ -42,19 +42,25 @@ BEGIN
   END IF;
   RETURN jsonb_build_object('ok', true, 'batches', coalesce((
     SELECT jsonb_agg(jsonb_build_object(
-             'id', b.id,
-             'quantity', b.quantity,
-             'created_at', b.created_at,
-             'notes', b.notes,
-             'package_downloaded_at', b.package_downloaded_at,
+             'id', x.id,
+             'quantity', x.quantity,
+             'created_at', x.created_at,
+             'notes', x.notes,
+             'package_downloaded_at', x.package_downloaded_at,
              'counts', jsonb_build_object(
-               'available', count(t.code) FILTER (WHERE t.status = 'available'),
-               'assigned',  count(t.code) FILTER (WHERE t.status = 'assigned'),
-               'blocked',   count(t.code) FILTER (WHERE t.status = 'blocked'),
-               'void',      count(t.code) FILTER (WHERE t.status = 'void'))) ORDER BY b.id DESC)
-      FROM public.tag_batches b
-      LEFT JOIN public.tag_codes t ON t.batch_id = b.id
-     GROUP BY b.id), '[]'::jsonb));
+               'available', x.n_available,
+               'assigned',  x.n_assigned,
+               'blocked',   x.n_blocked,
+               'void',      x.n_void)) ORDER BY x.id DESC)
+      FROM (
+        SELECT b.id, b.quantity, b.created_at, b.notes, b.package_downloaded_at,
+               count(t.code) FILTER (WHERE t.status = 'available') AS n_available,
+               count(t.code) FILTER (WHERE t.status = 'assigned')  AS n_assigned,
+               count(t.code) FILTER (WHERE t.status = 'blocked')   AS n_blocked,
+               count(t.code) FILTER (WHERE t.status = 'void')      AS n_void
+          FROM public.tag_batches b
+          LEFT JOIN public.tag_codes t ON t.batch_id = b.id
+         GROUP BY b.id) x), '[]'::jsonb));
 END;
 $$;
 
