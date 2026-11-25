@@ -47,6 +47,18 @@ export interface ActivationResult {
   whatsappEnabled: boolean;
 }
 
+export interface LostModeInput {
+  petId: string;
+  on: boolean;
+  /** Recado para quem achar (até 280). Ignorado ao desligar. */
+  message?: string | null;
+  showSince: boolean;
+  showReward: boolean;
+}
+
+/** Limite do recado (CHECK da tabela). */
+export const LOST_MESSAGE_MAX = 280;
+
 const PIN_PATTERN = /^[0-9A-HJKMNP-TV-Z]{6}$/;
 
 /** PIN no formato que a RPC espera: 6 caracteres Crockford, com a mesma normalização do código. */
@@ -117,7 +129,7 @@ export class TagService {
     }
   }
 
-  /** `check_tag_for_link`: "Código válido · tag disponível". */
+  /** `check_tag_for_link`: 'Código válido · tag disponível'. */
   async checkForLink(code: string): Promise<TagResult<{ code: string }>> {
     const normalized = normalize(code);
     if (!isValid(normalized)) return failure('invalid_code');
@@ -167,6 +179,23 @@ export class TagService {
 
   async clearPendingActivation(): Promise<TagResult<object>> {
     const res = await this.call('clear_pending_activation');
+    return res.ok ? { ok: true } : res;
+  }
+
+  /**
+   * `set_lost_mode`: liga (com recado e as duas opções) ou desliga o modo perdido do pet. Ligar sem tag ativa devolve
+   * `no_active_tag`. Desligar mantém o recado como rascunho (o servidor decide); o recado branco vira `null`.
+   */
+  async setLostMode(input: LostModeInput): Promise<TagResult<object>> {
+    const message = (input.message ?? '').trim();
+    if (message.length > LOST_MESSAGE_MAX) return failure('network');
+    const res = await this.call('set_lost_mode', {
+      p_pet_id: input.petId,
+      p_on: input.on,
+      p_message: input.on && message !== '' ? message : null,
+      p_show_since: input.showSince,
+      p_show_reward: input.showReward,
+    });
     return res.ok ? { ok: true } : res;
   }
 

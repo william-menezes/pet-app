@@ -177,6 +177,48 @@ describe('TagService', () => {
     });
   });
 
+  describe('setLostMode (T060)', () => {
+    it('liga com o recado aparado e as duas opções, e manda os cinco parâmetros', async () => {
+      rpc.mockResolvedValue({ data: { ok: true }, error: null });
+      const res = await service.setLostMode({ petId: PET, on: true, message: '  Fale baixo.  ', showSince: true, showReward: false });
+      expect(res).toEqual({ ok: true });
+      expect(rpc).toHaveBeenCalledWith('set_lost_mode', {
+        p_pet_id: PET,
+        p_on: true,
+        p_message: 'Fale baixo.',
+        p_show_since: true,
+        p_show_reward: false,
+      });
+    });
+
+    it('recado em branco vira null; desligar nunca manda recado', async () => {
+      rpc.mockResolvedValue({ data: { ok: true }, error: null });
+      await service.setLostMode({ petId: PET, on: true, message: '   ', showSince: true, showReward: true });
+      expect(rpc.mock.calls[0][1]).toMatchObject({ p_message: null });
+      await service.setLostMode({ petId: PET, on: false, message: 'ficou', showSince: true, showReward: true });
+      expect(rpc.mock.calls[1][1]).toMatchObject({ p_on: false, p_message: null });
+    });
+
+    it('recado acima de 280 não sai do aparelho', async () => {
+      const res = await service.setLostMode({ petId: PET, on: true, message: 'a'.repeat(281), showSince: true, showReward: false });
+      expect(res.ok).toBe(false);
+      expect(rpc).not.toHaveBeenCalled();
+    });
+
+    it('no_active_tag e pet_not_found chegam como erro de negócio', async () => {
+      rpc.mockResolvedValue({ data: { ok: false, error: 'no_active_tag' }, error: null });
+      expect(await service.setLostMode({ petId: PET, on: true, showSince: true, showReward: false })).toEqual({
+        ok: false,
+        error: 'no_active_tag',
+      });
+      rpc.mockResolvedValue({ data: { ok: false, error: 'pet_not_found' }, error: null });
+      expect(await service.setLostMode({ petId: PET, on: false, showSince: true, showReward: false })).toEqual({
+        ok: false,
+        error: 'pet_not_found',
+      });
+    });
+  });
+
   describe('PIN', () => {
     it('normaliza como o código', () => {
       expect(normalizePin(' k47q-9m ')).toBe('K47Q9M');

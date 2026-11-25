@@ -80,7 +80,7 @@ export const routes: Routes = [
       },
       {
         path: 'pets/:petId/modo-perdido',
-        loadComponent: shellFallback,
+        loadComponent: () => import('./features/pets/lost-mode/lost-mode').then((m) => m.LostMode),
         data: { home: '/app/pets' },
         title: $localize`Modo perdido — Faro`,
       },

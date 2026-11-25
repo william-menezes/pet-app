@@ -138,6 +138,25 @@ describe('RescueView (T031, T061)', () => {
       expect(byId('public-rescue-reward')).not.toBeNull();
     });
 
+    // As oito combinações de tempo, recompensa e recado (T061): cada item só aparece se veio na projeção.
+    const combos: [boolean, boolean, boolean][] = [];
+    for (const since of [false, true]) for (const reward of [false, true]) for (const message of [false, true]) combos.push([since, reward, message]);
+    it.each(combos)('tempo=%s recompensa=%s recado=%s: só o que veio aparece, nunca vazio', (since, reward, message) => {
+      const info = {
+        ...(since ? { since: lost.since } : {}),
+        ...(reward ? { reward: true as const } : {}),
+        ...(message ? { message: lost.message } : {}),
+      };
+      const { byId, el } = render({ ...full, lost: info }, { elapsed: { unit: 'hours', amount: 5 } });
+      expect(byId('public-rescue-lost')).not.toBeNull();
+      expect(byId('public-rescue-title')?.textContent).toContain('Me perdi de casa.');
+      expect(byId('public-rescue-elapsed') !== null).toBe(since);
+      expect(byId('public-rescue-reward') !== null).toBe(reward);
+      expect(byId('public-rescue-message') !== null).toBe(message);
+      // Sem tempo e sem recompensa não sobra uma fileira vazia de chips.
+      expect(el.querySelectorAll('[data-testid="public-rescue-lost"] .flex-wrap').length).toBe(since || reward ? 1 : 0);
+    });
+
     it('o botão do WhatsApp continua sendo um link', () => {
       const { byId } = render({ ...full, lost });
       expect((byId('public-rescue-whatsapp') as HTMLAnchorElement).getAttribute('href')).toBe(full.whatsapp_url);

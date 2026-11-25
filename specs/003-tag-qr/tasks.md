@@ -352,10 +352,10 @@ Igual à `004`: a máquina não tem Docker nem a CLI do Supabase. Todo "Feito qu
 
 - [x] T059 [US4] [BE] `set_lost_mode` em `0031_rpc_tutor.sql`. **Feito quando**: pgTAP cobre ligar,
   desligar, sem tag ativa e a preservação de `lost_since` ao religar.
-- [ ] T060 [US4] [FE] Tela "Ativar modo perdido" conforme `V2-modo-perdido*.dc.html` (claro e
+- [x] T060 [US4] [FE] Tela "Ativar modo perdido" conforme `V2-modo-perdido*.dc.html` (claro e
   escuro): recado com contador de 280, dois interruptores, prévia do alerta em tablet e desktop,
   "Ativar modo perdido" e "Agora não". **Feito quando**: teste de componente.
-- [ ] T061 [US4] [FE] Página de resgate em modo perdido conforme `V2-resgate-perdido*.dc.html`:
+- [x] T061 [US4] [FE] Página de resgate em modo perdido conforme `V2-resgate-perdido*.dc.html`:
   bloco âmbar, "Perdido há N" calculado no servidor, selo de recompensa, recado rotulado; cada item
   só aparece se veio na projeção. **Feito quando**: teste de componente cobre as combinações.
 - [ ] T062 [US4] [FE] Desativar ("Pet encontrado") a partir da página do pet, com confirmação

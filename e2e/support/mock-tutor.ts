@@ -39,7 +39,30 @@ export interface MockPet {
   species: 'dog' | 'cat';
   hasTag?: boolean;
   tagCode?: string | null;
+  lostMode?: boolean;
+  lostSince?: string | null;
+  scansMonth?: number;
+  lastScan?: { occurred_at: string; geo_method: string } | null;
+  visibleShown?: number;
 }
+
+/** Perfil de resgate simulado (colunas de `rescue_profiles`). */
+export type MockProfile = Record<string, unknown>;
+
+export const defaultProfile = (petId: string): MockProfile => ({
+  pet_id: petId,
+  show_temperament: true,
+  show_care: true,
+  show_tutor_first_name: false,
+  show_whatsapp: false,
+  show_phone: false,
+  lost_mode: false,
+  lost_since: null,
+  lost_message: null,
+  lost_show_since: true,
+  lost_show_reward: false,
+  lost_show_message: true,
+});
 
 export interface TutorState {
   phoneConfirmed: boolean;
@@ -57,6 +80,23 @@ export interface TutorState {
   /** Consultas recebidas em `my_scans` (a parte depois do `?`). */
   scanQueries: string[];
   blocked: string[];
+  /** Perfis de resgate por pet (leitura e gravação direta). */
+  profiles: Record<string, MockProfile>;
+  /** Corpos das chamadas a `set_lost_mode`, e as respostas simuladas (a última se repete). */
+  lostBodies: unknown[];
+  lostReplies: unknown[];
+  /** Corpos dos PATCH em `rescue_profiles`; e erro simulado (mensagem do Postgres) para o próximo PATCH. */
+  profilePatches: unknown[];
+  profilePatchError: string | null;
+  /** Linhas de `pets` devolvidas pelo SELECT (página do pet e edição). */
+  petRows: Record<string, unknown>[];
+  /** Respostas de `check_tag_for_link` e de `release_tag` (a última se repete) e os corpos recebidos. */
+  checkReplies: unknown[];
+  checkBodies: unknown[];
+  releaseReplies: unknown[];
+  releaseBodies: unknown[];
+  petDeletes: string[];
+  petUpdates: unknown[];
 }
 
 export function newTutorState(over: Partial<TutorState> = {}): TutorState {
@@ -74,6 +114,18 @@ export function newTutorState(over: Partial<TutorState> = {}): TutorState {
     scansRows: [],
     scanQueries: [],
     blocked: [],
+    profiles: {},
+    lostBodies: [],
+    lostReplies: [{ ok: true }],
+    profilePatches: [],
+    profilePatchError: null,
+    petRows: [],
+    checkReplies: [{ ok: true, code: '7K3M-Q9XA-C' }],
+    checkBodies: [],
+    releaseReplies: [{ ok: true, code: '7K3M-Q9XA-C', new_pin: 'K47Q9M' }],
+    releaseBodies: [],
+    petDeletes: [],
+    petUpdates: [],
     ...over,
   };
 }
@@ -115,14 +167,14 @@ export async function mockTutorBackend(page: Page, state: TutorState): Promise<T
           name: p.name,
           species: p.species,
           photo_path: null,
-          lost_mode: false,
-          lost_since: null,
+          lost_mode: p.lostMode === true,
+          lost_since: p.lostSince ?? null,
           has_tag: p.hasTag === true,
           tag_code: p.tagCode ?? null,
           tag_status: p.hasTag ? 'assigned' : null,
-          scans_month: 0,
-          last_scan: null,
-          visible_shown: 3,
+          scans_month: p.scansMonth ?? 0,
+          last_scan: p.lastScan ?? null,
+          visible_shown: p.visibleShown ?? 3,
           visible_total: 5,
         })),
       }),
@@ -156,8 +208,57 @@ export async function mockTutorBackend(page: Page, state: TutorState): Promise<T
       state.petInserts.push(req.postDataJSON());
       return route.fulfill(json({ id: 'p-novo' }, 201));
     }
-    if (req.method() === 'PATCH') return route.fulfill(json([{ id: 'p-novo' }]));
-    return route.fulfill(json([]));
+    if (req.method() === 'PATCH') {
+      state.petUpdates.push(req.postDataJSON());
+      return route.fulfill(json([{ id: 'p-novo' }]));
+    }
+    if (req.method() === 'DELETE') {
+      state.petDeletes.push(new URL(req.url()).search);
+      return route.fulfill({ status: 204 });
+    }
+    return route.fulfill(json(state.petRows));
+  });
+  await page.route('**/rest/v1/rpc/set_lost_mode', (route) => {
+    const body = route.request().postDataJSON() as { p_pet_id: string; p_on: boolean };
+    const reply = state.lostReplies[Math.min(state.lostBodies.length, state.lostReplies.length - 1)];
+    state.lostBodies.push(body);
+    const profile = state.profiles[body.p_pet_id];
+    const pet = state.pets.find((p) => p.id === body.p_pet_id);
+    if ((reply as { ok?: boolean }).ok === true) {
+      if (pet) {
+        pet.lostMode = body.p_on;
+        pet.lostSince = body.p_on ? (pet.lostSince ?? new Date().toISOString()) : null;
+      }
+      if (profile && body.p_on) profile['lost_message'] = (body as Record<string, unknown>)['p_message'];
+    }
+    return route.fulfill(json(reply));
+  });
+  await page.route('**/rest/v1/rpc/check_tag_for_link', (route) => {
+    const reply = state.checkReplies[Math.min(state.checkBodies.length, state.checkReplies.length - 1)];
+    state.checkBodies.push(route.request().postDataJSON());
+    return route.fulfill(json(reply));
+  });
+  await page.route('**/rest/v1/rpc/release_tag', (route) => {
+    const reply = state.releaseReplies[Math.min(state.releaseBodies.length, state.releaseReplies.length - 1)];
+    state.releaseBodies.push(route.request().postDataJSON());
+    return route.fulfill(json(reply));
+  });
+  await page.route('**/rest/v1/rescue_profiles**', (route) => {
+    const req = route.request();
+    const petId = new URL(req.url()).searchParams.get('pet_id')?.replace('eq.', '') ?? '';
+    const profile = (state.profiles[petId] ??= defaultProfile(petId));
+    if (req.method() === 'PATCH') {
+      state.profilePatches.push(req.postDataJSON());
+      if (state.profilePatchError !== null) {
+        const message = state.profilePatchError;
+        state.profilePatchError = null;
+        return route.fulfill(json({ code: 'P0001', message }, 400));
+      }
+      Object.assign(profile, req.postDataJSON());
+      return route.fulfill(json([profile]));
+    }
+    const single = (req.headers()['accept'] ?? '').includes('pgrst.object');
+    return route.fulfill(json(single ? profile : [profile]));
   });
   return state;
 }
