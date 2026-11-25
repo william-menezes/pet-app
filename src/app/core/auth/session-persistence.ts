@@ -41,3 +41,27 @@ export class SupabaseStorageAdapter {
     this.storage.removeItem(key);
   }
 }
+
+const SESSION_KEY = /^sb-.+-auth-token$/;
+
+function hasSessionKey(storage: Storage): boolean {
+  for (let i = 0; i < storage.length; i++) {
+    const key = storage.key(i);
+    if (key !== null && SESSION_KEY.test(key)) return true;
+  }
+  return false;
+}
+
+/**
+ * Storage onde há uma sessão do Supabase gravada (`sb-…-auth-token`), ou null.
+ * Só no navegador. Se houver nos dois, vale o localStorage.
+ */
+export function findPersistedStorage(): Storage | null {
+  try {
+    if (hasSessionKey(localStorage)) return localStorage;
+    if (hasSessionKey(sessionStorage)) return sessionStorage;
+  } catch {
+    // acesso ao storage bloqueado
+  }
+  return null;
+}
