@@ -389,6 +389,29 @@ for f in phone-verify-start phone-verify-confirm; do
     bash -c 'printf "%s" "$1" | grep -qi "^access-control-allow-methods: POST, OPTIONS$"' _ "$H"
 done
 
+# CORS da admin-create-batch (spec 003: a tela do admin a chama direto do navegador). O Kong local responde o preflight e poe
+# 'Allow-Origin: *' em tudo; so a funcao poe 'Access-Control-Expose-Headers' (e so para origem da lista). Por isso a prova
+# do CORS da funcao e o Expose na resposta de POST: o tutor B nao e admin (403), entao vale tambem para resposta de erro.
+# (O valor exato do Allow-Origin e a regra da lista tem teste em handler.test.ts e http.test.ts; aqui o Kong o sobrepoe.)
+OC="$(curl -s -o /dev/null -w '%{http_code}' -X OPTIONS "$API_URL/functions/v1/admin-create-batch" -H "Origin: http://localhost:4200" \
+  -H "Access-Control-Request-Method: POST" -H "Access-Control-Request-Headers: authorization,content-type,apikey")"
+check "OPTIONS em admin-create-batch com origem permitida devolve 2xx ($OC)" bash -c 'printf "%s" "$1" | grep -qE "^2"' _ "$OC"
+acb_post() { # acb_post <origem>   (tutor comum: 403)
+  curl -s -i -X POST "$API_URL/functions/v1/admin-create-batch" -H "Origin: $1" -H "apikey: $ANON_KEY" \
+    -H "Authorization: Bearer $TOKEN_B" -H "Content-Type: application/json" -d '{"quantity":1}' | tr -d '\r'
+}
+H_OK="$(acb_post http://localhost:4200)"
+H_BAD="$(acb_post https://evil.example)"
+echo "POST em admin-create-batch, origem permitida:"; printf '%s\n' "$H_OK" | grep -iE '^(HTTP/|access-control-|vary:)' || true
+echo "POST em admin-create-batch, origem fora da lista:"; printf '%s\n' "$H_BAD" | grep -iE '^(HTTP/|access-control-|vary:)' || true
+check "tutor comum em admin-create-batch: 403 (CORS nao autoriza)" bash -c 'printf "%s" "$1" | head -1 | grep -q " 403"' _ "$H_OK"
+check "origem permitida: a funcao expoe X-Batch-Id e Content-Disposition" \
+  bash -c 'printf "%s" "$1" | grep -qi "^access-control-expose-headers: X-Batch-Id, Content-Disposition$"' _ "$H_OK"
+check "origem fora da lista: a funcao nao expoe nada (sem Expose)" \
+  bash -c '! printf "%s" "$1" | grep -qi "^access-control-expose-headers:"' _ "$H_BAD"
+check "origem fora da lista: Allow-Origin nunca e a origem recusada" \
+  bash -c '! printf "%s" "$1" | grep -qi "^access-control-allow-origin: https://evil.example"' _ "$H_BAD"
+
 # Tabela "Falha fechada" de quickstart.md §6. Cada linha reinicia o functions serve com o ambiente alterado.
 if restart_serve - test log; then
   R="$(fn phone-verify-start '{"phone":"(31) 97777-6666"}')"; C="$(fn_code phone-verify-start '{"phone":"(31) 97777-6666"}')"

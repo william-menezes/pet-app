@@ -15,6 +15,7 @@
  * vai para auditoria, tabela ou mensagem de erro.
  */
 import { type AdminDeps, requireAdmin } from "../_shared/auth.ts";
+import { allowedOriginsFromEnv, corsHeadersFor, withCors } from "../_shared/http.ts";
 import { chooseMask } from "../_shared/qr.ts";
 import { emptyResponse, internalError, jsonResponse, methodNotAllowed } from "../_shared/responses.ts";
 import { format, newCode, TAG_ALPHABET, tagUrl } from "../_shared/tag-code.ts";
@@ -33,7 +34,12 @@ export interface BatchDeps {
   /** Fonte criptografica (`crypto.getRandomValues`). */
   random(n: number): Uint8Array;
   now(): Date;
+  /** Origens do navegador aceitas (CORS). Padrao: `ALLOWED_ORIGINS`. Lista vazia: nenhuma origem recebe o cabecalho. */
+  allowedOrigins?(): string[];
 }
+
+/** Cabecalhos de resposta que a tela do admin le (nome do arquivo e id do lote). */
+export const BATCH_EXPOSED_HEADERS = ["X-Batch-Id", "Content-Disposition"] as const;
 
 type Rec = Record<string, unknown>;
 interface Item {
@@ -64,7 +70,22 @@ function fail(status: number, error: string): Response {
   return jsonResponse({ ok: false, error }, status);
 }
 
+/**
+ * Unica funcao da 003 chamada direto pelo navegador (a tela do admin): responde o preflight e poe CORS em TODA resposta,
+ * erro incluso. CORS nao autoriza nada: o JWT e `is_admin()` continuam exigidos no POST.
+ */
 export function createBatchHandler(deps: BatchDeps): (req: Request) => Promise<Response> {
+  const inner = batchCore(deps);
+  return async (req) => {
+    const allowed = deps.allowedOrigins ? deps.allowedOrigins() : allowedOriginsFromEnv();
+    if (req.method === "OPTIONS") {
+      return new Response(null, { status: 204, headers: corsHeadersFor(req, allowed, BATCH_EXPOSED_HEADERS) });
+    }
+    return withCors(req, await inner(req), allowed, BATCH_EXPOSED_HEADERS);
+  };
+}
+
+function batchCore(deps: BatchDeps): (req: Request) => Promise<Response> {
   return async (req) => {
     if (req.method !== "POST") return methodNotAllowed();
 

@@ -21,7 +21,7 @@ interface Item {
 /** Fonte aleatoria de teste: criptografica de verdade (o contrato exige `crypto.getRandomValues` em producao). */
 const random = (n: number) => crypto.getRandomValues(new Uint8Array(n));
 
-function setup(opts: { isAdmin?: boolean; replies?: Record<string, Reply>; insert?: (items: Item[], call: number) => Reply } = {}) {
+function setup(opts: { origins?: string[]; isAdmin?: boolean; replies?: Record<string, Reply>; insert?: (items: Item[], call: number) => Reply } = {}) {
   const calls: Array<{ fn: string; args: Record<string, unknown> }> = [];
   let insertCalls = 0;
   const admin: AdminDeps = {
@@ -32,6 +32,7 @@ function setup(opts: { isAdmin?: boolean; replies?: Record<string, Reply>; inser
     admin,
     random,
     now: () => new Date(Date.UTC(2026, 10, 24, 12, 0, 0)),
+    allowedOrigins: () => opts.origins ?? [],
     rpc: (fn, args) => {
       calls.push({ fn, args });
       let r: Reply | undefined = opts.replies?.[fn];
@@ -203,4 +204,92 @@ Deno.test("newPin: 6 caracteres do alfabeto, uniforme em 5000 amostras (sem cara
     for (const c of p) seen.add(c);
   }
   assertEquals(seen.size, 32);
+});
+
+// --- CORS (a tela do admin chama esta funcao direto do navegador) ---
+const APP = "https://app.faro.test";
+const cors = { origins: [APP] };
+const withOrigin = (origin: string, extra: Record<string, string> = {}) => ({ origin, ...extra });
+
+Deno.test("CORS: preflight com origem permitida => 204 sem corpo, com Allow-Origin, Methods, Headers, Expose e Vary", async () => {
+  const t = setup(cors);
+  const res = await t.handler(
+    new Request("http://x/fn", {
+      method: "OPTIONS",
+      headers: { origin: APP, "access-control-request-method": "POST", "access-control-request-headers": "authorization,apikey,content-type" },
+    }),
+  );
+  assertEquals(res.status, 204);
+  assertEquals(await res.text(), "");
+  assertEquals(res.headers.get("access-control-allow-origin"), APP);
+  assertEquals(res.headers.get("access-control-allow-methods"), "POST, OPTIONS");
+  assertEquals(res.headers.get("access-control-allow-headers"), "authorization, x-client-info, apikey, content-type");
+  assertEquals(res.headers.get("access-control-expose-headers"), "X-Batch-Id, Content-Disposition");
+  assertEquals(res.headers.get("vary"), "Origin");
+  assertEquals(t.calls.length, 0);
+});
+
+Deno.test("CORS: preflight de origem fora da lista (ou sem origem) nao recebe Allow-Origin nem Expose; nunca '*'", async () => {
+  const t = setup(cors);
+  for (const headers of [withOrigin("https://evil.test"), withOrigin("null"), {}]) {
+    const res = await t.handler(new Request("http://x/fn", { method: "OPTIONS", headers }));
+    assertEquals(res.status, 204);
+    assertEquals(res.headers.get("access-control-allow-origin"), null);
+    assertEquals(res.headers.get("access-control-expose-headers"), null);
+    assertEquals(res.headers.get("vary"), "Origin");
+  }
+  const semLista = setup();
+  const res = await semLista.handler(new Request("http://x/fn", { method: "OPTIONS", headers: withOrigin(APP) }));
+  assertEquals(res.headers.get("access-control-allow-origin"), null);
+});
+
+Deno.test("CORS: POST de sucesso com origem permitida expoe X-Batch-Id e Content-Disposition e mantem o zip", async () => {
+  const t = setup(cors);
+  const res = await t.handler(postJson({ quantity: 3 }, { ...H, ...withOrigin(APP) }));
+  assertEquals(res.status, 200);
+  assertEquals(res.headers.get("access-control-allow-origin"), APP);
+  assertEquals(res.headers.get("access-control-expose-headers"), "X-Batch-Id, Content-Disposition");
+  assertEquals(res.headers.get("vary"), "Origin");
+  assertEquals(res.headers.get("x-batch-id"), "lote-002");
+  assertEquals(res.headers.get("content-disposition"), 'attachment; filename="lote-002.zip"');
+  assertEquals(res.headers.get("content-type"), "application/zip");
+  assertEquals(res.headers.get("cache-control"), "no-store");
+  assertEquals(readCsv(new Uint8Array(await res.arrayBuffer())).crcOk, true);
+});
+
+Deno.test("CORS: POST sem origem e POST de origem nao permitida: sem Allow-Origin (a resposta nao muda de resto)", async () => {
+  const t = setup(cors);
+  for (const extra of [{}, withOrigin("https://evil.test")]) {
+    const res = await t.handler(postJson({ quantity: 3 }, { ...H, ...extra }));
+    assertEquals(res.status, 200);
+    assertEquals(res.headers.get("access-control-allow-origin"), null);
+    assertEquals(res.headers.get("access-control-expose-headers"), null);
+    assertEquals(res.headers.get("vary"), "Origin");
+    assertEquals(res.headers.get("x-batch-id"), "lote-002");
+  }
+});
+
+Deno.test("CORS: respostas de erro (401, 403, 400, 405, 429, 500) tambem levam os cabecalhos de CORS", async () => {
+  const o = withOrigin(APP);
+  const casos: Array<[number, Response]> = [
+    [401, await setup(cors).handler(postJson({ quantity: 5 }, o))],
+    [403, await setup({ ...cors, isAdmin: false }).handler(postJson({ quantity: 5 }, { ...H, ...o }))],
+    [400, await setup(cors).handler(postJson({ quantity: 0 }, { ...H, ...o }))],
+    [405, await setup(cors).handler(new Request("http://x/fn", { method: "GET", headers: o }))],
+    [429, await setup({ ...cors, replies: { admin_rate_hit: ok(true) } }).handler(postJson({ quantity: 3 }, { ...H, ...o }))],
+    [500, await setup({ ...cors, replies: { admin_rate_hit: "throw" } }).handler(postJson({ quantity: 3 }, { ...H, ...o }))],
+  ];
+  for (const [status, res] of casos) {
+    assertEquals(res.status, status);
+    assertEquals(res.headers.get("access-control-allow-origin"), APP, `status ${status}`);
+    assertEquals(res.headers.get("vary"), "Origin", `status ${status}`);
+  }
+});
+
+Deno.test("CORS nao e autorizacao: origem permitida sem JWT continua 401 e nenhuma chamada ao banco", async () => {
+  const t = setup(cors);
+  const res = await t.handler(postJson({ quantity: 5 }, withOrigin(APP)));
+  assertEquals(res.status, 401);
+  assertEquals(await res.text(), "");
+  assertEquals(t.calls.length, 0);
 });

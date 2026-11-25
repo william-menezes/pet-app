@@ -1,6 +1,7 @@
 /**
  * Respostas das Edge Functions de tag (spec 003). Estas funcoes sao chamadas de servidor para servidor (o servidor
- * SSR do app) ou por um admin autenticado, nunca direto pelo navegador da pagina publica: por isso aqui nao ha CORS.
+ * SSR do app: resolve-tag e register-scan, sem CORS) ou por um admin autenticado no navegador (admin-create-batch: o CORS
+ * entra no handler dela, com `withCors` de `_shared/http.ts`). Estes helpers nunca poem CORS.
  *
  * Regras (contracts/public-page.contract.md e security-hardening.contract.md):
  *  - sem a chave: 401 com corpo VAZIO (nada que ajude quem testa chaves);

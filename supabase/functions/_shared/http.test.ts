@@ -1,5 +1,5 @@
 import { assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
-import { bodyErrorResponse, corsHeadersFor, guardMethod, handleOptions, readJsonObject } from "./http.ts";
+import { bodyErrorResponse, corsHeadersFor, guardMethod, handleOptions, readJsonObject, withCors } from "./http.ts";
 
 const ORIGIN = "http://localhost:4200";
 
@@ -130,4 +130,27 @@ Deno.test("guardMethod: o formato do 405 pode ser o da 001 ({ error })", async (
   const res = guardMethod(new Request("http://x/fn", { method: "GET" }), { error: "method_not_allowed" });
   assertEquals(res?.status, 405);
   assertEquals(await res?.json(), { error: "method_not_allowed" });
+});
+
+Deno.test("corsHeadersFor: Expose so vai com origem permitida; sem o parametro nao existe", () => {
+  const ok = new Request("http://x/fn", { headers: { origin: "https://app.test" } });
+  const bad = new Request("http://x/fn", { headers: { origin: "https://evil.test" } });
+  assertEquals(corsHeadersFor(ok, ["https://app.test"], ["X-A", "X-B"])["Access-Control-Expose-Headers"], "X-A, X-B");
+  assertEquals(corsHeadersFor(ok, ["https://app.test"])["Access-Control-Expose-Headers"], undefined);
+  assertEquals(corsHeadersFor(bad, ["https://app.test"], ["X-A"])["Access-Control-Expose-Headers"], undefined);
+});
+
+Deno.test("withCors: acrescenta CORS sem mexer em status, corpo nem nos cabecalhos da resposta; origem fora da lista nao recebe Allow-Origin", async () => {
+  const res = new Response("zip", { status: 200, headers: { "X-Batch-Id": "lote-9", "Cache-Control": "no-store" } });
+  const ok = withCors(new Request("http://x/fn", { headers: { origin: "https://app.test" } }), res, ["https://app.test"], ["X-Batch-Id"]);
+  assertEquals(ok.status, 200);
+  assertEquals(await ok.text(), "zip");
+  assertEquals(ok.headers.get("x-batch-id"), "lote-9");
+  assertEquals(ok.headers.get("cache-control"), "no-store");
+  assertEquals(ok.headers.get("access-control-allow-origin"), "https://app.test");
+  assertEquals(ok.headers.get("access-control-expose-headers"), "X-Batch-Id");
+  const bad = withCors(new Request("http://x/fn", { headers: { origin: "https://evil.test" } }), new Response(null, { status: 401 }), ["https://app.test"]);
+  assertEquals(bad.status, 401);
+  assertEquals(bad.headers.get("access-control-allow-origin"), null);
+  assertEquals(bad.headers.get("vary"), "Origin");
 });

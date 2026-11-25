@@ -21,6 +21,7 @@ export function allowedOriginsFromEnv(): string[] {
 export function corsHeadersFor(
   req: Request,
   allowed: string[],
+  expose: readonly string[] = [],
 ): Record<string, string> {
   const headers: Record<string, string> = {
     "Access-Control-Allow-Headers": ALLOWED_HEADERS,
@@ -30,8 +31,25 @@ export function corsHeadersFor(
   const origin = req.headers.get("origin");
   if (origin && allowed.includes(origin)) {
     headers["Access-Control-Allow-Origin"] = origin;
+    // Cabecalhos de resposta que o navegador pode ler (ex.: X-Batch-Id e Content-Disposition do zip do admin).
+    if (expose.length > 0) headers["Access-Control-Expose-Headers"] = expose.join(", ");
   }
   return headers;
+}
+
+/**
+ * Copia de `res` com os cabecalhos de CORS (erro e sucesso saem iguais). So origem da lista recebe
+ * `Access-Control-Allow-Origin` (nunca `*`); `Vary: Origin` vai sempre. Nao muda status nem corpo, que segue como fluxo.
+ */
+export function withCors(
+  req: Request,
+  res: Response,
+  allowed: string[],
+  expose: readonly string[] = [],
+): Response {
+  const headers = new Headers(res.headers);
+  for (const [k, v] of Object.entries(corsHeadersFor(req, allowed, expose))) headers.set(k, v);
+  return new Response(res.body, { status: res.status, statusText: res.statusText, headers });
 }
 
 export function corsHeaders(req: Request): Record<string, string> {

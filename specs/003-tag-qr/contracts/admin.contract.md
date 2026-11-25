@@ -7,6 +7,13 @@ conveniência. Telas de referência: `design/telas-v2/V2-admin-lotes*.dc.html`,
 ## Edge Function `admin-create-batch`
 
 - **Autorização**: JWT de um admin (a função valida o token e chama `is_admin()` com ele).
+- **CORS** (é a única função da 003 chamada direto pelo navegador; `resolve-tag` e `register-scan`
+  são só do servidor SSR e não têm CORS): `OPTIONS` responde 204 sem exigir JWT. Só origem listada em
+  `ALLOWED_ORIGINS` recebe `Access-Control-Allow-Origin` (a própria origem, nunca `*`; origem fora da lista
+  não recebe o cabeçalho). Sempre: `Vary: Origin`, `Allow-Methods: POST, OPTIONS`,
+  `Allow-Headers: authorization, x-client-info, apikey, content-type`. Com origem listada, também
+  `Expose-Headers: X-Batch-Id, Content-Disposition` (a tela lê os dois do zip). Os cabeçalhos saem em toda
+  resposta, de erro inclusive. CORS não autoriza nada: o POST continua exigindo JWT e `is_admin()`.
 - **Entrada**: `{ "quantity": number (1..500), "notes"?: string }`.
 - **Passos**:
   1. Calcula o próximo id (`lote-NNN`, sequencial; o id do lote não é segredo).
