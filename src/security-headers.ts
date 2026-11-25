@@ -8,17 +8,19 @@
  *   sintaxe TypeScript apagável e nenhum import: o script o carrega direto pelo Node.
  *
  * Duas políticas, por tipo de documento:
- * - `tag`: a página de resgate (`/<código>` e `/<código>/perdido`). Nenhum host de terceiro e nenhum
+ * - `tag`: a página da tag (`/<código>`). Nenhum host de terceiro e nenhum
  *   `frame-src`: o resgate nunca depende de um serviço externo (Princípio I).
  * - `app`: todo o resto (landing, `/auth`, `/app`, `/admin`, `/legal`). Libera o desafio anti-robô
  *   (Turnstile) em `script-src` e `frame-src`.
  *
- * ATENÇÃO (spec 003): a rota real da tag ainda não existe. Enquanto isso, `tag` vale para o PADRÃO de
- * caminho de um segmento de 9 a 11 caracteres do alfabeto do código (com ou sem hífens, que é o
- * `XXXX-XXXX-X` exibido), mais `/<segmento>/perdido`. A landing (`/`) e `/legal/*` ficam em `app`
- * de propósito: seus links para `/auth/login` são `routerLink` (navegação dentro do Angular, que não
- * troca a política). Quando a 003 criar a rota real, ela ajusta `TAG_SEGMENT` e `TAG_SOURCES` aqui e o
- * `vercel.json` é conferido por `check:headers`.
+ * Rota real da tag (spec 003, T024): `/<código>`, um segmento só. `tag` vale para o PADRÃO de um segmento
+ * de 9 a 11 caracteres do alfabeto do código (com ou sem hífens, que é o `XXXX-XXXX-X` exibido) e para um
+ * segmento com espaço codificado (`%20`, como em `/7k3m%20q9xa%20c`, que a página normaliza). A rota
+ * antiga `/<código>/perdido` não existe mais: modo perdido é estado, não endereço. A landing (`/`) e
+ * `/legal/*` ficam em `app` de propósito: seus links para `/auth/login` são `routerLink` (navegação
+ * dentro do Angular, que não troca a política).
+ *
+ * A política `tag` também manda `Cache-Control: no-store` e `X-Robots-Tag: noindex` (contrato da 003, §1).
  */
 
 export type HeaderKind = 'tag' | 'app';
@@ -42,18 +44,21 @@ export const DEFAULT_SUPABASE_HOST = '*.supabase.co';
  */
 export const TAG_SEGMENT = '[0-9A-Za-z-]{9,11}';
 
+/** Um segmento com espaço codificado. Nenhuma rota do app tem `%20`, então não colide com as fixas. */
+export const TAG_ENCODED_SEGMENT = '[^/]*%20[^/]*';
+
 /** Caminhos (em sintaxe de `source` da Vercel) que recebem a política `tag`. Com e sem barra final. */
 export const TAG_SOURCES: readonly string[] = [
   `/:code(${TAG_SEGMENT})`,
   `/:code(${TAG_SEGMENT})/`,
-  `/:code(${TAG_SEGMENT})/perdido`,
-  `/:code(${TAG_SEGMENT})/perdido/`,
+  `/:code(${TAG_ENCODED_SEGMENT})`,
+  `/:code(${TAG_ENCODED_SEGMENT})/`,
 ];
 
 /** `source` da política `app`: tudo o que NÃO é caminho da tag. Mutuamente exclusivo com `TAG_SOURCES`. */
-export const APP_SOURCE = `/((?!${TAG_SEGMENT}/?$|${TAG_SEGMENT}/perdido/?$).*)`;
+export const APP_SOURCE = `/((?!${TAG_SEGMENT}/?$|${TAG_ENCODED_SEGMENT}/?$).*)`;
 
-const TAG_PATH = new RegExp(`^/${TAG_SEGMENT}(/perdido)?/?$`);
+const TAG_PATH = new RegExp(`^/(?:${TAG_SEGMENT}|${TAG_ENCODED_SEGMENT})/?$`);
 
 /** Política de um caminho (sem querystring). */
 export function headerKindForPath(pathname: string): HeaderKind {
@@ -107,5 +112,6 @@ export function securityHeaders(
     'Cross-Origin-Resource-Policy': 'same-origin',
     'X-Content-Type-Options': 'nosniff',
     'X-Frame-Options': 'DENY',
+    ...(app ? {} : { 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex' }),
   };
 }

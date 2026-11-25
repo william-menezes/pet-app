@@ -42,7 +42,7 @@ export function hasPersistedSession(): boolean {
 
 /** Chamar em contexto de injeção (inicializador do app). O `load` existe para os testes. */
 export function bootstrapSession(
-  load: RestorerLoader = () => import('./auth.service'),
+  load: RestorerLoader = () => import('../auth/auth.service'),
 ): Promise<void> {
   const platformId = inject(PLATFORM_ID);
   const injector = inject(Injector);

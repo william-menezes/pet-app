@@ -4,7 +4,8 @@
 //  2. nenhuma saída tem fonte da galeria de desenvolvimento;
 //  3. nenhum .html de dist/faro/browser tem `onload=`;
 //  4. nenhum .css de dist/faro/browser tem a cor-canário `0FA12E`.
-// `core/auth` e `core/supabase` no fecho são só AVISO (exceção conhecida, vira tarefa da spec 003).
+// 3. `core/auth`, `core/account`, `core/supabase` e `@supabase/supabase-js` no fecho ESTÁTICO do pacote público
+//    REPROVAM (spec 003, T034B): os guards entram por `lazyCanMatch` e a sessão por `import()` dinâmico.
 // `--self-test`: roda a mesma lógica sobre um mapa de exemplo com uma violação e exige que ela
 // seja detectada. Sem dependências.
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
@@ -23,8 +24,9 @@ const FORBIDDEN_IN_PUBLIC = [
   /src\/app\/shared\/components\/(alert-dialog|sonner)\//,
   /node_modules\/ngx-sonner\//,
   /src\/app\/shared\/components\/faro\/turnstile\//,
+  /src\/app\/core\/(auth|account|supabase)\//,
+  /node_modules\/@supabase\//,
 ];
-const KNOWN_EXCEPTION = [/src\/app\/core\/auth\//, /src\/app\/core\/supabase\//];
 const GALLERY = /src\/app\/features\/dev-gallery\//;
 
 const norm = (p) => p.replace(/\\/g, '/');
@@ -53,10 +55,9 @@ function sourcesOf(outputs, names) {
   return sources;
 }
 
-/** Parte pura: devolve `{ violations, warnings, publicSet }` para um `stats.json` já lido. */
+/** Parte pura: devolve `{ violations, publicSet, outputs }` para um `stats.json` já lido. */
 export function analyze(stats) {
   const violations = [];
-  const warnings = [];
   const outputs = Object.fromEntries(Object.entries(stats.outputs ?? {}).filter(([name]) => isJs(name)));
 
   const seeds = Object.entries(outputs)
@@ -74,8 +75,6 @@ export function analyze(stats) {
   for (const [source, output] of sources) {
     if (FORBIDDEN_IN_PUBLIC.some((re) => re.test(source))) {
       violations.push(`fecho da página pública alcança ${source} (saída ${output})`);
-    } else if (KNOWN_EXCEPTION.some((re) => re.test(source))) {
-      warnings.push(`${source} (saída ${output})`);
     }
   }
 
@@ -86,8 +85,11 @@ export function analyze(stats) {
     }
   }
 
-  return { violations, warnings, publicSet, outputs };
+  return { violations, publicSet, outputs };
 }
+
+/** Meta de JavaScript baixado pela rota da tag (gzip), em kB (contrato `rls-expectations`: JS <= 100 KB). */
+const TAG_ROUTE_BUDGET_KB = 100;
 
 function selfTest() {
   const sample = {
@@ -108,15 +110,25 @@ function selfTest() {
       'chunk-LAZY.js': { imports: [], inputs: { 'src/app/features/admin/admin/admin.ts': {} } },
     },
   };
-  const { violations, warnings } = analyze(sample);
-  const caught = violations.length === 1 && violations[0].includes('features/pets/');
+  const { violations } = analyze(sample);
+  const caughtPets = violations.some((v) => v.includes('features/pets/'));
+  const caughtAuth = violations.some((v) => v.includes('core/auth/'));
   const lazyIgnored = !violations.some((v) => v.includes('features/admin/'));
-  const warned = warnings.some((w) => w.includes('core/auth/'));
-  if (caught && lazyIgnored && warned) {
-    console.log('check:bundle --self-test: ok (violação detectada, import dinâmico ignorado, exceção só avisada)');
+  const supabase = analyze({
+    outputs: {
+      'main-AAA.js': {
+        entryPoint: 'src/main.ts',
+        imports: [{ path: 'chunk-S.js', kind: 'import-statement' }],
+        inputs: { 'src/main.ts': {} },
+      },
+      'chunk-S.js': { imports: [], inputs: { 'node_modules/@supabase/supabase-js/dist/index.mjs': {} } },
+    },
+  }).violations.some((v) => v.includes('@supabase/'));
+  if (caughtPets && caughtAuth && lazyIgnored && supabase) {
+    console.log('check:bundle --self-test: ok (app autenticado, core/auth e supabase-js reprovam; import dinâmico ignorado)');
     process.exit(0);
   }
-  console.error('check:bundle --self-test: FALHOU', { violations, warnings });
+  console.error('check:bundle --self-test: FALHOU', { violations });
   process.exit(1);
 }
 
@@ -155,7 +167,7 @@ function main() {
     process.exit(1);
   }
 
-  const { violations, warnings, publicSet, outputs } = analyze(stats);
+  const { violations, publicSet, outputs } = analyze(stats);
 
   // 5A. Nenhum host do desafio anti-robô (Turnstile) no pacote inicial nem no fecho da página pública:
   // o script só pode ser pedido, em tempo de execução, pelas telas de /auth e /app/conta.
@@ -197,10 +209,11 @@ function main() {
   console.log(line('pacote inicial (main + polyfills)', initial));
   for (const [entry, set] of routeSets) console.log(line(`rota ${entry.replace('src/app/features/public/', '')}`, set));
   console.log(`  fecho público total (inicial + rotas públicas): ${publicSet.size} arquivos`);
-
-  if (warnings.length > 0) {
-    console.warn('check:bundle: AVISO (exceção conhecida, vira tarefa da spec 003): core/auth e core/supabase no pacote público:');
-    for (const w of [...new Set(warnings)]) console.warn(`  - ${w}`);
+  const tagRoute = routeSets.find(([entry]) => entry.endsWith('/tag-page/tag-page.ts'));
+  if (tagRoute) {
+    const { gz } = sizes(tagRoute[1]);
+    const verdict = gz / 1024 <= TAG_ROUTE_BUDGET_KB ? 'dentro da meta' : 'ACIMA da meta';
+    console.log(`  rota da tag: ${kb(gz)} em gzip, meta de ${TAG_ROUTE_BUDGET_KB} kB: ${verdict}`);
   }
 
   if (violations.length > 0) {

@@ -37,6 +37,14 @@
         {
           "key": "X-Frame-Options",
           "value": "DENY"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "no-store"
+        },
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex"
         }
       ]
     },
@@ -74,11 +82,19 @@
         {
           "key": "X-Frame-Options",
           "value": "DENY"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "no-store"
+        },
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex"
         }
       ]
     },
     {
-      "source": "/:code([0-9A-Za-z-]{9,11})/perdido",
+      "source": "/:code([^/]*%20[^/]*)",
       "headers": [
         {
           "key": "Content-Security-Policy",
@@ -111,11 +127,19 @@
         {
           "key": "X-Frame-Options",
           "value": "DENY"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "no-store"
+        },
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex"
         }
       ]
     },
     {
-      "source": "/:code([0-9A-Za-z-]{9,11})/perdido/",
+      "source": "/:code([^/]*%20[^/]*)/",
       "headers": [
         {
           "key": "Content-Security-Policy",
@@ -148,11 +172,19 @@
         {
           "key": "X-Frame-Options",
           "value": "DENY"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "no-store"
+        },
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex"
         }
       ]
     },
     {
-      "source": "/((?![0-9A-Za-z-]{9,11}/?$|[0-9A-Za-z-]{9,11}/perdido/?$).*)",
+      "source": "/((?![0-9A-Za-z-]{9,11}/?$|[^/]*%20[^/]*/?$).*)",
       "headers": [
         {
           "key": "Content-Security-Policy",
