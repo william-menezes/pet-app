@@ -4,3 +4,4 @@ export type * from './tag';
 export type * from './rescue-profile';
 export type * from './scan';
 export type * from './tag-resolution';
+export type * from './dashboard';

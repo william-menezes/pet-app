@@ -271,9 +271,9 @@ Igual à `004`: a máquina não tem Docker nem a CLI do Supabase. Todo "Feito qu
 - [x] T039 [US2] [QA] `supabase/tests/rpc_activate_tag.test.sql`: todos os itens de "Testes
   obrigatórios" do contrato ligados a ativação (PIN, bloqueios, concorrência, mensagem única).
   **Feito quando**: passa. Medir e anotar no PR o tempo de uma verificação de PIN.
-- [ ] T040 [US2] [FE] `core/tags/tag.service.ts`: métodos para as RPCs de ativação, com tradução
+- [x] T040 [US2] [FE] `core/tags/tag.service.ts`: métodos para as RPCs de ativação, com tradução
   dos códigos de erro para as mensagens do contrato. **Feito quando**: teste unitário cobre cada erro.
-- [ ] T041 [P] [US2] [FE] `core/pets/pet.service.ts`: criar, editar, remover e listar pets; upload
+- [x] T041 [P] [US2] [FE] `core/pets/pet.service.ts`: criar, editar, remover e listar pets; upload
   de foto (redimensiona para 1600 px, converte para WebP, grava em `pet-photos/<uid>/<pet>/…`).
   **Feito quando**: teste unitário com o cliente Supabase simulado.
 - [ ] T042 [US2] [FE] Guard e rota `/ativar/:code`: sem sessão, redireciona para
