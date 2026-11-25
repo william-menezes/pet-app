@@ -377,16 +377,16 @@ verificar sessão de tutor com aceite registrado; antes de confirmar, o login é
   (`design/telas-v2/V2-entrar.dc.html`). Os `data-testid` existentes não mudam. **Feito quando**:
   `login.spec.ts` continua verde, com um teste novo no fim conferindo o destino do link
   `login-signup-link`.
-- [ ] T038 [P] [US1] [QA] Criar `e2e/support/mailbox.ts` com `waitForLink(email, contains)`
+- [x] T038 [P] [US1] [QA] Criar `e2e/support/mailbox.ts` com `waitForLink(email, contains)`
   conforme `quickstart.md` §7 (Mailpit e, se não houver, Inbucket; espera de até 15 s).
   **Feito quando**: um teste de fumaça em `e2e/support/mailbox.spec.ts` cria um usuário por
   `POST /auth/v1/signup` e obtém um link contendo `token_hash=`.
-- [ ] T039 [US1] [QA] Criar `e2e/signup-confirm-phone.spec.ts` com o primeiro teste: boas-vindas →
+- [x] T039 [US1] [QA] Criar `e2e/signup-confirm-phone.spec.ts` com o primeiro teste: boas-vindas →
   criar conta → tela de espera → link do coletor → "Confirmar meu e-mail" → sessão ativa (a URL
   final é `/auth/celular` ou `/auth/confirmar-celular`); e um segundo teste: antes de confirmar,
   entrar com as credenciais mostra `login-unconfirmed-notice`. **Feito quando**: os dois passam
   em Chromium com `supabase start` e `supabase functions serve` rodando.
-- [ ] T040 [US1] [QA] Criar `e2e/security/account-enumeration.spec.ts` (parte de cadastro):
+- [x] T040 [US1] [QA] Criar `e2e/security/account-enumeration.spec.ts` (parte de cadastro):
   chamando `POST /auth/v1/signup` com um e-mail novo e com `tutor.a@faro.test`, as duas respostas
   têm o mesmo status HTTP e nenhuma tem erro ou sessão; pela tela, os dois casos terminam na mesma
   tela de espera com o mesmo texto; o nome do perfil de `tutor.a` não muda. **Feito quando**: o
@@ -512,7 +512,7 @@ e ver `phone_is_confirmed` verdadeiro; repetir com código errado, vencido, reen
   `PhoneVerificationService.start()`; `ok` ⇒ `/auth/confirmar-celular`; qualquer falha ⇒
   `/auth/celular`; sem pendente ⇒ `PostAuthNavigator.go()`. Sempre preservando `returnUrl`.
   **Feito quando**: `confirm-email.spec.ts` cobre os três ramos.
-- [ ] T060 [US2] [QA] Em `e2e/signup-confirm-phone.spec.ts`, acrescentar: (a) caminho completo com
+- [x] T060 [US2] [QA] Em `e2e/signup-confirm-phone.spec.ts`, acrescentar: (a) caminho completo com
   `SMS_DRIVER=stub`, `FARO_ENV=test`, `SMS_STUB_CODE=424242`: cadastro → link → confirmar e-mail →
   digitar `424242` → `/app`, e em seguida a RPC `phone_is_confirmed` devolve `true`; (b) código
   errado mostra "restam 4"; (c) cadastro iniciado em `/auth/criar-conta?returnUrl=/app/conta`
@@ -548,7 +548,7 @@ depois de aceitar, e é convidada a confirmar o celular, podendo adiar.
   já existente, sem criar sessão. Acrescentar a `oauth-callback` um teste
   (`oauth-callback.spec.ts`) para os dois casos se ainda não existir. **Feito quando**: o teste
   passa.
-- [ ] T064 [US3] [QA] Criar `e2e/account-onboarding.spec.ts`: criar pela API de admin um usuário
+- [x] T064 [US3] [QA] Criar `e2e/account-onboarding.spec.ts`: criar pela API de admin um usuário
   confirmado **sem** metadados de aceite (equivale a uma conta vinda do Google; a chave
   `SUPABASE_SERVICE_ROLE_KEY` vem do ambiente do teste, nunca do repositório); entrar com ele ⇒
   `/auth/termos`; tentar abrir `/app` direto ⇒ volta para `/auth/termos`; aceitar ⇒
@@ -604,7 +604,7 @@ senha pelo link; a antiga deixa de valer.
   `z-alert` de sucesso "Senha alterada. Entre com a nova senha." com
   `data-testid="login-password-changed"`. **Feito quando**: `login.spec.ts` continua verde, com
   dois testes novos no fim.
-- [ ] T072 [US4] [QA] Criar `e2e/password-recovery.spec.ts`: criar um usuário confirmado pela API
+- [x] T072 [US4] [QA] Criar `e2e/password-recovery.spec.ts`: criar um usuário confirmado pela API
   de admin (com `user_metadata: { terms_version: '2026-11' }`); pedir a recuperação pela tela;
   obter o link com `mailbox.ts`; definir a senha nova; entrar com a nova (a URL deixa
   `/auth/login`) e com a antiga (mensagem genérica); abrir o mesmo link de novo ⇒
@@ -681,7 +681,7 @@ os dados pessoais sumiram e que a trilha de auditoria ficou sem identificação.
   cobre o botão desabilitado, `invalid_password`, `reauth_required` nos dois métodos,
   `deletion_unavailable`, `deletion_incomplete` e o sucesso; o diálogo sai escuro quando o app
   está no tema escuro.
-- [ ] T082 [US5] [QA] Criar `e2e/account.spec.ts`: (a) Conta → Sair ⇒ tela de entrada e um evento
+- [x] T082 [US5] [QA] Criar `e2e/account.spec.ts`: (a) Conta → Sair ⇒ tela de entrada e um evento
   `logout` novo; (b) exportar ⇒ o arquivo baixado é JSON com `conta.email` do usuário e sem
   nenhuma chave contendo `hash`; (c) excluir com senha errada ⇒ erro e a conta continua; (d)
   excluir com a senha certa ⇒ `/auth?conta=excluida`, o login falha com a mensagem genérica e o
@@ -713,7 +713,7 @@ senha e escolher a aparência.
   "Cancelar" no lugar de "Agora não", tratamento de `reauth_required` (`method = 'password'`:
   mostrar `phone-password` e reenviar; `method = 'google'`: botão `phone-google-reauth`),
   `invalid_password` e `same_number`. **Feito quando**: `phone-entry.spec.ts` cobre os cinco casos.
-- [ ] T086 [US6] [QA] Acrescentar a `e2e/account.spec.ts`: com conta de celular confirmado, iniciar
+- [x] T086 [US6] [QA] Acrescentar a `e2e/account.spec.ts`: com conta de celular confirmado, iniciar
   a troca (senha atual) ⇒ a tela de código aparece e `my_account()` ainda mostra o número antigo
   em `celular` e o novo em `celular_pendente`; digitar `424242` ⇒ `celular` passa a ser o novo e
   `/app/conta/celular` mostra "Confirmado". **Feito quando**: o teste passa.
@@ -731,7 +731,7 @@ senha e escolher a aparência.
   sistema", refletindo `ThemeService.preference()` e chamando `setPreference`. **Não** tocar no
   DOM nem em `localStorage` aqui. **Feito quando**: o teste cobre a opção marcada para cada
   preferência e a chamada a `setPreference` com `'light'`, `'dark'` e `'system'`.
-- [ ] T090 [US6] [QA] Acrescentar a `e2e/account.spec.ts`: alterar o nome e ver o novo nome em
+- [x] T090 [US6] [QA] Acrescentar a `e2e/account.spec.ts`: alterar o nome e ver o novo nome em
   `/app/conta`; trocar a senha e entrar com a nova; escolher "Escura" e conferir que o contêiner
   da casca do tutor tem a classe `dark` e que, abrindo `/auth/login` depois de sair, **nenhum**
   elemento tem a classe `dark`. **Feito quando**: os três passam.
@@ -742,7 +742,7 @@ senha e escolher a aparência.
 
 ## Phase 9: Polish & Cross-Cutting Concerns
 
-- [ ] T091 [P] [QA] Criar `e2e/account-a11y.spec.ts`: axe (sem violações `serious` ou `critical`)
+- [x] T091 [P] [QA] Criar `e2e/account-a11y.spec.ts`: axe (sem violações `serious` ou `critical`)
   e "sem rolagem horizontal" em 320, 390, 768 e 1440 px para `/auth`, `/auth/criar-conta`,
   `/auth/confirmar-email`, `/auth/celular`, `/auth/confirmar-celular`, `/auth/termos`,
   `/auth/recuperar-senha`, `/auth/nova-senha`, `/app/conta` e suas cinco telas (estas nos temas
@@ -820,11 +820,11 @@ fase dependem só da Phase 2; as de tela dependem das telas das histórias 1, 4,
   o middleware **antes** dos arquivos estáticos, `vercel.json` com as duas políticas e
   `scripts/security/check-headers.mjs` (`npm run check:headers`). **Feito quando**:
   `check:headers` passa e falha se alguém editar só um dos dois lugares.
-- [ ] T106 [P] [QA] Checagens do repositório (contrato §7): `check:secrets` com o gancho de
+- [x] T106 [P] [QA] Checagens do repositório (contrato §7): `check:secrets` com o gancho de
   pre-commit, `check:audit` com a triagem registrada em `specs/004-conta-tutor/execution-log.md`,
   `check:templates` e `check:prod-config`. **Feito quando**: cada script passa no estado atual e
   reprova o exemplo ruim que o próprio teste cria e apaga.
-- [ ] T107 [QA] CI: acrescentar ao `.github/workflows/ci.yml` (que já existe, com o job do app e o
+- [x] T107 [QA] CI: acrescentar ao `.github/workflows/ci.yml` (que já existe, com o job do app e o
   job do Supabase local) os `check:*` desta fase, e criar `.github/dependabot.yml`, conforme o
   contrato §7. **Feito quando**: depois do push da branch, os dois jobs ficam verdes.
 - [ ] T108 [QA] `e2e/security/headers.spec.ts` e `e2e/security/captcha.spec.ts` (contrato §9).

@@ -746,3 +746,19 @@ Progresso registrado a cada passo (a sessão caiu mais de uma vez). Nenhum teste
   3. **Teste**: T060b esperava "restam 4"; o texto real (e o do contrato) e "Voce tem mais 4 tentativas". T086 usava `account-phone-badge`; o
      `data-testid` real e `account-phone-status`.
 - Run 45525027303: job `e2e` com 27 passando e T086 (corrigido no commit seguinte); `supabase` e `app` verdes.
+
+### Estado dos testes reais e tarefas `[QA]` (2026-11-25)
+
+- Run verde de referencia: 45527719725 (`app` 701 unitarios, `supabase` pgTAP `Result: PASS` e `deno test` 211, `e2e` 112 passando, 1 falha esperada
+  `DEF-001`, 1 flaky `seed: admin` cuja causa provavel e preencher o login antes do app iniciar; o login agora espera `networkidle`).
+- Marcadas `[x]`: T038, T039, T040, T060, T064, T072, T082, T086, T090, T091, T106, T107. Desvio de caminho: os e2e reais ficam em `e2e-real/`
+  (nao `e2e/`), pelo motivo ja registrado.
+- **T091**: axe (WCAG 2.0/2.1 A e AA, `serious`/`critical`) e "sem rolagem horizontal" em 320, 390, 768 e 1440 px passaram em `/auth`, `/auth/criar-conta`,
+  `/auth/login`, `/auth/recuperar-senha`, `/auth/nova-senha` (estado "link invalido"), `/legal/termos`, `/legal/privacidade`, `/auth/termos`, `/auth/celular`,
+  `/auth/confirmar-celular` e nas seis telas de `/app/conta` (claro e escuro). `/auth/confirmar-email` so e coberta pelo e2e simulado (`e2e/`, 166 passam).
+- **Gate de log**: passo `Segredos no log das Edge Functions` (workflow) reprova se `424242` ou uma senha de teste aparecer no log do `functions serve`.
+- **T108**: `e2e-real/headers.spec.ts` cobre `/`, `/auth/login` e a politica `tag` em `ng serve`; o arquivo estatico e coberto por um passo do job `app`
+  contra o servidor construido (o dev server nao envia cabecalhos em estatico). **`captcha.spec.ts` NAO feito**: o desafio esta desligado no Auth
+  (T104, ultimo passo, depende da chave Cloudflare). Pendencia.
+- **Pendentes**: T065 (Google real), T093 (`git diff develop...HEAD -- src/app/features/public` mostra a landing, mudanca prevista da 004; a rota de
+  tag nao existe nesta branch, entao "abre sem sessao" nao e verificavel), T094, T095, T096, T108 (captcha).
