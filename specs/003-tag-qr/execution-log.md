@@ -664,3 +664,24 @@ Veredito de segurança: nenhuma expectativa falhou. Veredito geral: AMARELO (DEF
 - **Tempos medidos** (stack local, Windows, Docker Desktop, 1 execucao cada): 54 codigos em ~8,2 s; 500 codigos em ~49 s pela Edge Function.
 - **OBS-2**: `my_scans` ganhou gatilhos INSTEAD OF que negam escrita (42501) e perdeu os privilegios de escrita de `service_role`; `POST /rest/v1/my_scans` como `anon` agora responde 401 `42501` (antes 500). Era a ordem do Postgres (o rewrite recusa a escrita em visao com join antes de checar privilegio). `my_scans` e a unica visao do schema `public`.
 - **Testes**: pgTAP `rpc_admin` (privilegios, validacao e limite de `admin_hash_pins`; hash malformado, custo 10, `pin` em claro e formato antigo recusados) e `rls_scans`; `deno test` do handler (fatias, 3 em voo, colisao com reaproveitamento de hash, falha de fatia, falha do insert, limite de taxa tocado uma vez); `admin.spec.ts` (54 e 500 reais, sem `test.fail`) e `gate-security.spec.ts` (`admin_hash_pins` nas listas de funcoes so de servidor).
+
+## Correcoes de frontend apontadas pelo QA (DEF-003-03, WhatsApp ao vincular, DEF-003-02)
+
+- **DEF-003-03 (aviso/toast)**: o `ngx-sonner` rende `<ol><ngx-sonner-toast><li role="status" aria-live>`. O `role="status"` tira o `<li>` do papel de item e o axe reprova a `<ol>` (`list`, grave). Correcao no `ZardSonnerComponent` (componente copiado): um `MutationObserver` (so no navegador) poe `role="presentation"` na `<ol data-sonner-toaster>`, que e so contêiner de posicao; cada aviso segue como regiao viva (`aria-live="polite"`). Regra do axe mantida. Prova: e2e simulado novo em `e2e/dev-gallery.spec.ts` (axe COM o aviso visivel, antes da correcao reprovava `list`) e teste unitario do componente; `test.fail` removido de `e2e-real/a11y-screens.spec.ts`.
+- **WhatsApp ao vincular pelo app**: o passo do PIN (`PinStep`) passa a iniciar o WhatsApp **desmarcado** quando `variant = 'link'`, com o apoio "Se voce marcar, seu WhatsApp vai aparecer ... Voce pode mudar depois em O que estranhos veem". A ativacao pela tag (`activate`) continua marcada e com o aviso. Commit isolado, facil de reverter. Testes unitarios, e2e simulado e `owner.spec.ts` (T074) ajustados.
+- **DEF-003-02 (JS da rota publica, 134 kB gzip contra meta de 100 kB)**: medido, sem corte seguro que chegue a meta; `test.fail` mantido. Tabela por pedaco abaixo (gzip nivel 6 do fecho da rota `/:code`, 30 arquivos, 134,8 kB; `check:bundle` aponta 133,5 kB).
+
+| Pedaco | gzip kB |
+| --- | --- |
+| `@angular/core` | 53,7 |
+| `@angular/router` | 20,9 |
+| `features/public` (pagina, resgate, contingencia) | 10,1 |
+| `tailwind-merge` (usado por button, icon-tile, pet-avatar) | 8,7 |
+| `@angular/common` (inclui http da hidratacao) | 7,6 |
+| `rxjs` | 6,3 |
+| `@angular/platform-browser` | 5,2 |
+| Boxicons (30 icones registrados na raiz) | 5,2 |
+| shells, logo, brand-panel, button, info-card etc. (codigo do Faro) | ~12 |
+| `@ng-icons/core`, `tslib`, `cva`, `clsx`, `localize` | ~3,5 |
+
+  Piso: Angular (core + router + common + platform-browser + rxjs + tslib + localize) ≈ 94,8 kB. Cortes avaliados e nao feitos: (a) registrar so os icones da pagina publica na raiz e o resto nas rotas autenticadas, ~3 kB, exige reorganizar `app.routes.ts` e arrisca icone ausente em overlays; (b) trocar `tailwind-merge` por `clsx` nos 3 componentes alcancados, ~8,7 kB, muda a resolucao de classes em sobrescritas (`w-full text-lg` sobre o tamanho do botao). Com os dois, ~122 kB; 100 kB nao e alcancavel sem tirar o roteador.
