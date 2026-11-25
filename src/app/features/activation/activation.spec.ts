@@ -252,6 +252,33 @@ describe('Activation', () => {
       expect(calls).not.toContain('K47Q9M');
     });
 
+    it('PIN com caractere fora do alfabeto não fica sem resposta: a tentativa segue e o erro aparece', async () => {
+      activate.mockImplementation(async (input: { pin: string }) =>
+        /[ILOU]/i.test(input.pin) && input.pin.includes('U') ? { ok: false, error: 'wrong_pin' } : OK,
+      );
+      await typePin('K47Q9U');
+      await submitPin();
+      expect(activate).toHaveBeenCalledTimes(1);
+      expect(byId('activation-pin-error')?.textContent).toContain('PIN incorreto. Confira o cartão.');
+    });
+
+    it('depois de um PIN errado o foco volta para a primeira célula', async () => {
+      activate.mockResolvedValue({ ok: false, error: 'wrong_pin' });
+      await typePin('K47Q9M');
+      await submitPin();
+      await settle();
+      expect(document.activeElement).toBe(byId('activation-pin-cell-1'));
+    });
+
+    it('ao trocar de passo o foco vai para o título do passo novo', async () => {
+      expect(document.activeElement?.tagName).toBe('H1');
+      click('activation-change-pet');
+      await settle();
+      await settle();
+      expect(document.activeElement?.tagName).toBe('H1');
+      expect(document.activeElement?.textContent).toContain('Para qual pet é esta tag?');
+    });
+
     it('tag_unavailable e rede também terminam numa mensagem, sem sair do passo', async () => {
       activate.mockResolvedValue({ ok: false, error: 'tag_unavailable' });
       await typePin('K47Q9M');

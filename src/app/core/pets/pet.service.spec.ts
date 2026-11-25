@@ -150,6 +150,15 @@ describe('PetService', () => {
       expect(t.remove).toHaveBeenCalledWith([`${UID}/${PET}/velha.webp`]);
     });
 
+    it('navegador sem WebP: sobe JPEG, com extensão e contentType de acordo', async () => {
+      const t = setup({ processor: async () => new Blob(['j'], { type: 'image/jpeg' }) });
+      t.setResult({ data: [{ id: PET }], error: null });
+      const res = await t.service.uploadPhoto(PET, new Blob(['img']));
+      expect(res.ok).toBe(true);
+      expect(t.upload.mock.calls[0][0]).toMatch(new RegExp(`^${UID}/${PET}/[0-9a-f-]{36}[.]jpg$`));
+      expect(t.upload.mock.calls[0][2]).toMatchObject({ contentType: 'image/jpeg' });
+    });
+
     it('arquivo que não vira imagem => unsupported, sem subir nada', async () => {
       const t = setup({ processor: () => Promise.reject(new Error('x')) });
       expect(await t.service.uploadPhoto(PET, new Blob(['pdf']))).toEqual({ ok: false, error: 'unsupported' });

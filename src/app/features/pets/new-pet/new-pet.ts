@@ -2,6 +2,10 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
+  ElementRef,
+  Injector,
+  afterNextRender,
+  effect,
   PLATFORM_ID,
   computed,
   inject,
@@ -69,6 +73,8 @@ export class NewPet {
   private readonly router = inject(Router);
   private readonly petService = inject(PetService);
   private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly injector = inject(Injector);
 
   /** `?returnUrl=` (ligado por `withComponentInputBinding`). */
   readonly returnUrl = input<string | undefined>(undefined);
@@ -172,6 +178,16 @@ export class NewPet {
 
   constructor() {
     inject(DestroyRef).onDestroy(() => this.revokePreview());
+    // Trocar de passo recria a casca e o foco cairia no body: leva o foco ao título do passo novo.
+    let first = true;
+    effect(() => {
+      this.step();
+      if (first) {
+        first = false;
+        return;
+      }
+      afterNextRender(() => this.host.nativeElement.querySelector<HTMLElement>('h1')?.focus(), { injector: this.injector });
+    });
   }
 
   // ── Passo 1 ──────────────────────────────────────────────────────────────

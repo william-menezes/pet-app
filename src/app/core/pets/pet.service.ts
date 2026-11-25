@@ -199,10 +199,11 @@ export class PetService {
     }
     if (blob.size > PHOTO_MAX_BYTES) return { ok: false, error: 'too_large' };
 
-    const path = `${tutorId}/${petId}/${crypto.randomUUID()}.webp`;
+    const isJpeg = blob.type === 'image/jpeg';
+    const path = `${tutorId}/${petId}/${crypto.randomUUID()}.${isJpeg ? 'jpg' : 'webp'}`;
     try {
       const storage = this.supabase.client.storage.from('pet-photos');
-      const up = await storage.upload(path, blob, { contentType: 'image/webp', upsert: false });
+      const up = await storage.upload(path, blob, { contentType: isJpeg ? 'image/jpeg' : 'image/webp', upsert: false });
       if (up.error) return { ok: false, error: 'network' };
       const saved = await this.savePhotoPath(petId, path);
       if (!saved) {

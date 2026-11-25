@@ -6,7 +6,7 @@
   @case ('invalid') {
     <app-flow-shell barTitle="Ativar tag" i18n-barTitle [back]="'close'" [backLink]="'/app'">
       <div data-testid="activation-invalid">
-        <h1 class="font-display text-[32px] leading-[1.04] font-bold tracking-[-0.03em] text-foreground md:text-[42px]" i18n>
+        <h1 tabindex="-1" class="font-display text-[32px] leading-[1.04] font-bold tracking-[-0.03em] text-foreground md:text-[42px]" i18n>
           Confira o código
         </h1>
         <p class="mt-2.5 text-base leading-[1.45] text-text" data-testid="activation-invalid-text">{{ invalidMessage }}</p>

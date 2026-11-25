@@ -106,6 +106,7 @@ Out of the box ZardUI is a dense desktop kit. Four of its defaults break Faro ru
 - **Focus.** ZardUI draws a 3px ring at 50% opacity (`focus-visible:ring-3 focus-visible:ring-ring/50`), about 1.9:1 on white. Replace it in every `*.variants.ts` with Faro's solid ring: `focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background`. Same for `aria-invalid:ring-destructive/20` → `aria-invalid:ring-2 aria-invalid:ring-destructive`.
 - **Touch targets.** Buttons are 28–36px and inputs 32px; Faro needs 44px (`--tap`). Inputs: `h-8` → `h-11`, `border` → `border-[1.5px]`, `px-2.5` → `px-3.5`, and keep `text-base` (16px, which also stops iOS zooming into the field).
 - **Destructive.** ZardUI's destructive button is a pale red tint; Faro's is solid red with white text.
+- **Selected chip on hover (2026-11-25).** `toggle.variants.ts`: `hover:bg-background` beat `data-[state=on]:bg-foreground`, so a selected chip turned pale grey under the mouse. Both chip types now use `hover:not-data-[state=on]:bg-background`.
 - **Missing variants.** Faro needs `accent` (lime) and `whatsapp`, and a 60px `rescue` size for the rescue page.
 
 `button.variants.ts`, the parts that change:

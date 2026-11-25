@@ -381,3 +381,13 @@ sem commit (DEF-001).
 
 `npm run lint` limpo; `npm test -- --watch=false` 104 arquivos, 1006 testes (1 pulado); `npm run build`; `check:ui`, `check:bundle` (+ `--self-test`), `check:headers`; `npm run e2e` 192 passaram
 (eram 166 + 5; acrescentei `activation-ui` 8, `new-pet-ui` 4, `scans-ui` 9, todos com axe e sem rolagem horizontal). Rota da tag segue em 132,4 kB gzip (meta de 100 kB não atingida, ver Phase 3).
+
+### Ajustes depois da revisão (mesma rodada)
+
+- PIN com caractere fora do alfabeto (por exemplo, "U") agora segue para o `TagService`, que devolve `wrong_pin` sem chamar a RPC, e a mensagem aparece (antes o botão não fazia nada).
+- Foto: WebP, com JPEG de reserva quando o navegador não codifica WebP pelo canvas (caminho `.jpg`, `contentType: image/jpeg`; o bucket aceita os dois). **Não verificado no Safari do iOS**; o e2e roda só no Chromium.
+- Foco: trocar de passo (ativação e novo pet) leva o foco ao título do passo novo (`h1` com `tabindex="-1"`); depois de `wrong_pin` o foco vai à primeira célula. Com teste de componente.
+- `docs/zardui-faro.md` registra a edição de `toggle.variants.ts`.
+- Colar um PIN com hífen ou espaço perde um caractere: o `handlePaste` do `z-input-otp` corta em seis antes de filtrar. Não corrigido (componente copiado do ZardUI; o cartão traz o PIN sem separador).
+- O PR nº 5 está `CONFLICTING` com `develop`, e por isso o GitHub não dispara a CI de `pull_request` nos pushes novos; o CI foi disparado à mão (`workflow_dispatch`) na branch.
+- Os tiles do OpenStreetMap expõem a um terceiro a área do scan e o IP do tutor; a CSP (`img-src https:`) é mais larga do que o "só nessa rota" da pesquisa. Decisão do William.

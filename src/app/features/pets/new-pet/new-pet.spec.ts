@@ -110,6 +110,15 @@ describe('NewPet', () => {
       expect(create).not.toHaveBeenCalled();
     });
 
+    it('ao trocar de passo o foco vai para o título do passo novo', async () => {
+      await create$();
+      await fillStep1();
+      await click(byId('new-pet-continue'));
+      await settle();
+      expect(document.activeElement?.tagName).toBe('H1');
+      expect(document.activeElement?.textContent).toContain('O que ajuda num resgate');
+    });
+
     it('voltar do passo 2 mantém o que foi digitado', async () => {
       await create$();
       await fillStep1('Mel');

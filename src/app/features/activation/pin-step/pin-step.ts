@@ -1,4 +1,16 @@
-import { ChangeDetectionStrategy, Component, computed, effect, input, output, signal, viewChild } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  Injector,
+  afterNextRender,
+  computed,
+  effect,
+  inject,
+  input,
+  output,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 
 import { ZardAlertComponent } from '@/shared/components/alert';
@@ -10,7 +22,6 @@ import { ZardInputOtpComponent } from '@/shared/components/input-otp';
 import { FlowShell } from '@/shared/shells/flow-shell/flow-shell';
 
 import { tagErrorMessage, type TagError } from '../../../core/tags/tag-errors';
-import { isPinShape } from '../../../core/tags/tag.service';
 import type { PetOption } from '../pet-option';
 
 export interface PinProblem {
@@ -62,9 +73,16 @@ export class PinStep {
   protected readonly sub = $localize`Ele vem no cartão dentro da embalagem e nunca na etiqueta.`;
   private readonly pinLength = signal(0);
   private readonly otp = viewChild(ZardInputOtpComponent);
+  private readonly injector = inject(Injector);
 
   constructor() {
     this.pin.valueChanges.subscribe((value) => this.pinLength.set(value.length));
+
+    // Depois de um PIN errado o foco volta para a primeira célula (as células foram apagadas).
+    effect(() => {
+      if (this.problem()?.error !== 'wrong_pin') return;
+      afterNextRender(() => this.otp()?.inputs()[0]?.nativeElement.focus(), { injector: this.injector });
+    });
 
     // Dá a cada célula um data-testid (activation-pin-cell-1 a -6) para os testes.
     effect(() => {
@@ -84,7 +102,7 @@ export class PinStep {
 
   protected onSubmit(): void {
     const raw = this.pin.value;
-    if (!this.canSubmit() || !isPinShape(raw)) return;
+    if (!this.canSubmit()) return; // PIN fora do alfabeto: o TagService devolve wrong_pin sem chamar a RPC
     const enableWhatsapp = this.whatsapp.value;
     this.clearPin();
     this.submitted.emit({ pin: raw, enableWhatsapp });

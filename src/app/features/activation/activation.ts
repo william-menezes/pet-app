@@ -1,4 +1,16 @@
-import { ChangeDetectionStrategy, Component, OnInit, computed, inject, input, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  Injector,
+  OnInit,
+  afterNextRender,
+  computed,
+  effect,
+  inject,
+  input,
+  signal,
+} from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 
 import { ZardButtonComponent } from '@/shared/components/button';
@@ -33,6 +45,8 @@ export class Activation implements OnInit {
   private readonly router = inject(Router);
   private readonly tags = inject(TagService);
   private readonly petService = inject(PetService);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly injector = inject(Injector);
 
   /** Parâmetro de rota `:code` (ligado por `withComponentInputBinding`). */
   readonly code = input('');
@@ -55,6 +69,19 @@ export class Activation implements OnInit {
   protected readonly result = signal<ActivationResult | null>(null);
 
   protected readonly chosen = computed(() => this.pets().find((p) => p.id === this.selectedId()) ?? null);
+
+  constructor() {
+    // Trocar de passo recria a casca inteira e o foco cairia no body: leva o foco ao título do passo novo.
+    let first = true;
+    effect(() => {
+      this.view();
+      if (first) {
+        first = false;
+        return;
+      }
+      afterNextRender(() => this.host.nativeElement.querySelector<HTMLElement>('h1')?.focus(), { injector: this.injector });
+    });
+  }
 
   ngOnInit(): void {
     if (!isValid(this.normalized())) {
