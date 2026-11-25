@@ -26,6 +26,8 @@ export class PetStep {
   readonly code = input.required<string>();
   readonly pets = input.required<PetOption[]>();
   readonly state = input<PetStepState>('ready');
+  /** Texto do erro de carga; sem ele, o genérico de conexão. */
+  readonly errorText = input<string | null>(null);
   /** Aviso no topo da lista (por exemplo, o pet não foi encontrado). */
   readonly notice = input<string | null>(null);
   readonly selectedId = model<string | null>(null);
@@ -39,6 +41,7 @@ export class PetStep {
   protected readonly selected = computed(() => this.pets().find((p) => p.id === this.selectedId()) ?? null);
   protected readonly label = speciesLabel;
   protected readonly headline = [$localize`Uma tag,`, $localize`um pet.`];
+  protected readonly loadFailed = $localize`Não conseguimos carregar seus pets. Verifique sua conexão e tente de novo.`;
   protected readonly sub = $localize`Você escolhe para quem é a tag e confirma com o PIN do cartão.`;
 
   protected select(id: string): void {

@@ -154,6 +154,17 @@ describe('Activation', () => {
       expect(navigate).toHaveBeenCalledWith(['/novo-pet'], { queryParams: { returnUrl: `/ativar/${NORMALIZED}` } });
     });
 
+    it('limite de chamadas ao carregar os pets (T106): texto do contrato, não o de conexão, e "Tentar de novo"', async () => {
+      await create({ pets: 'error' });
+      myDashboard.mockResolvedValue({ ok: false, error: 'too_many_requests' });
+      click('activation-retry');
+      await settle();
+      await settle();
+      expect(byId('activation-pets-error')?.textContent).toContain('Muitas ações em pouco tempo. Aguarde um minuto.');
+      expect(byId('activation-pets-error')?.textContent).not.toContain('Verifique sua conexão');
+      expect(byId('activation-retry')).not.toBeNull();
+    });
+
     it('sem pets: mensagem e o caminho para cadastrar; erro de carga: tentar de novo', async () => {
       await create({ pets: [] });
       expect(byId('activation-no-pets')).not.toBeNull();

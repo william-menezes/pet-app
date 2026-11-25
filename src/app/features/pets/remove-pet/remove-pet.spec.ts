@@ -10,10 +10,10 @@ const PET_ID = '11111111-1111-4111-8111-111111111111';
 
 @Component({
   imports: [RemovePet],
-  template: `<app-remove-pet [petId]="petId" petName="Paçoca" [tagCode]="tagCode()" (removed)="removedCount.update((n) => n + 1)" />`,
+  template: `<app-remove-pet [petId]="petId()" petName="Paçoca" [tagCode]="tagCode()" (removed)="removedCount.update((n) => n + 1)" />`,
 })
 class Host {
-  readonly petId = PET_ID;
+  readonly petId = signal(PET_ID);
   readonly tagCode = signal<string | null>(null);
   readonly removedCount = signal(0);
 }
@@ -88,8 +88,40 @@ describe('RemovePet (T071)', () => {
     expect(inDialog('remove-pet-pin')?.textContent?.trim()).toBe('K47Q9M');
     expect(document.body.textContent).toContain('Anote agora. Ele não aparece de novo.');
     expect(fixture.componentInstance.removedCount()).toBe(0);
+    expect(inDialog('remove-pet-pin-warning')?.textContent).toContain('Anote agora. Ele não aparece de novo.');
+    // O PIN está numa seção da página, não no overlay do diálogo.
+    expect(document.querySelector('.cdk-overlay-container [data-testid="remove-pet-pin"]')).toBeNull();
+    expect((fixture.nativeElement as HTMLElement).querySelector('[data-testid="remove-pet-pin-panel"] [data-testid="remove-pet-pin"]')).not.toBeNull();
+    // A tela do PIN só some pelo botão: o botão de abrir sai (não há como "remover de novo").
+    expect(inDialog('remove-pet-open')).toBeNull();
     await click('remove-pet-done');
     expect(fixture.componentInstance.removedCount()).toBe(1);
+    expect(inDialog('remove-pet-pin')).toBeNull();
+  });
+
+  it('Esc não esconde o PIN, e o foco vai para o título da seção', async () => {
+    await create({ tagCode: '7K3M-Q9XA-C' });
+    await click('remove-pet-confirm');
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    await settle();
+    expect(inDialog('remove-pet-pin')?.textContent?.trim()).toBe('K47Q9M');
+    expect(document.activeElement?.getAttribute('data-testid')).toBe('remove-pet-pin-title');
+    expect(fixture.componentInstance.removedCount()).toBe(0);
+  });
+
+  it('"Copiar PIN" copia e avisa; trocar de pet apaga o PIN', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+    await create({ tagCode: '7K3M-Q9XA-C' });
+    await click('remove-pet-confirm');
+    await click('remove-pet-copy');
+    expect(writeText).toHaveBeenCalledWith('K47Q9M');
+    expect(inDialog('remove-pet-copied')).not.toBeNull();
+    fixture.componentInstance.petId.set('22222222-2222-4222-8222-222222222222');
+    await settle();
+    expect(inDialog('remove-pet-pin')).toBeNull();
+    expect(inDialog('remove-pet-open')).not.toBeNull();
   });
 
   it('o PIN não vai para storage, URL nem console', async () => {
@@ -116,7 +148,7 @@ describe('RemovePet (T071)', () => {
     await create({ tagCode: '7K3M-Q9XA-C', removeResults: [{ ok: false, error: 'network' }, { ok: true }] });
     await click('remove-pet-confirm');
     expect(inDialog('remove-pet-pin')?.textContent?.trim()).toBe('K47Q9M');
-    expect(inDialog('remove-pet-problem')?.textContent).toContain('A tag foi liberada, mas não conseguimos remover Paçoca');
+    expect(inDialog('remove-pet-pin-problem')?.textContent).toContain('A tag foi liberada, mas não conseguimos remover Paçoca');
     expect(inDialog('remove-pet-done')).toBeNull();
     await click('remove-pet-retry');
     expect(releaseTag).toHaveBeenCalledTimes(1);

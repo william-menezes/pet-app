@@ -292,7 +292,7 @@ describe('NewPet: editar (T071)', () => {
     await fixture.whenStable();
   };
 
-  async function create(opts: { get?: unknown; tagCode?: string | null } = {}) {
+  async function create(opts: { get?: unknown; tagCode?: string | null; dashboard?: unknown } = {}) {
     update = vi.fn().mockResolvedValue({ ok: true });
     uploadPhoto = vi.fn().mockResolvedValue({ ok: true, path: 'u1/p/b.webp' });
     TestBed.configureTestingModule({
@@ -312,7 +312,7 @@ describe('NewPet: editar (T071)', () => {
         {
           provide: TagService,
           useValue: {
-            myDashboard: vi.fn().mockResolvedValue({
+            myDashboard: vi.fn().mockResolvedValue(opts.dashboard ?? {
               ok: true,
               dashboard: {
                 pets: [{ id: PET_ID, tagCode: opts.tagCode === undefined ? '7K3M-Q9XA-C' : opts.tagCode }],
@@ -413,5 +413,21 @@ describe('NewPet: editar (T071)', () => {
     await create({ get: { ok: false, error: 'network' } });
     expect(byId('new-pet-load-error')).not.toBeNull();
     expect(byId('new-pet-retry-load')).not.toBeNull();
+    expect(byId('new-pet-load-error')?.textContent).toContain('Verifique sua conexão');
+  });
+
+  it('limite de chamadas na carga (T106): texto do contrato e "Tentar de novo"; sem a tag a tela não abre', async () => {
+    await create({ dashboard: { ok: false, error: 'too_many_requests' } });
+    const box = byId('new-pet-load-error');
+    expect(box?.textContent).toContain('Muitas ações em pouco tempo. Aguarde um minuto.');
+    expect(box?.textContent).not.toContain('Verifique sua conexão');
+    expect(byId('new-pet-retry-load')).not.toBeNull();
+    expect(byId('remove-pet-open')).toBeNull();
+  });
+
+  it('limite de chamadas com o tempo do servidor (T106)', async () => {
+    await create({ dashboard: { ok: false, error: 'too_many_requests', retryAfterSeconds: 30 } });
+    expect(byId('new-pet-load-error')?.textContent).toContain('Muitas ações em pouco tempo. Aguarde');
+    expect(byId('new-pet-load-error')?.textContent).not.toContain('um minuto');
   });
 });

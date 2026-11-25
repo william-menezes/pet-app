@@ -38,6 +38,7 @@ import {
   type PetError,
 } from '../../../core/pets/pet.service';
 import { withPetParam } from '../../../core/tags/activation-links';
+import { loadErrorText } from '../../../core/tags/tag-errors';
 import { TagService } from '../../../core/tags/tag.service';
 import type { Pet, PetSex, PetSize, PetSpecies } from '../../../models';
 import { RemovePet } from '../remove-pet/remove-pet';
@@ -47,6 +48,8 @@ type Problem = 'create_failed' | 'photo_failed' | PetError;
 type LoadState = 'idle' | 'loading' | 'ready' | 'missing' | 'error';
 
 /** Foto escolhida antes do redimensionamento: acima disto nem tentamos (o navegador travaria). */
+/** Texto do erro de carga da edição (o do limite de chamadas vem de `loadErrorText`). */
+const LOAD_FAILED = $localize`Não conseguimos carregar os dados do pet. Verifique sua conexão e tente de novo.`;
 const PHOTO_PICK_MAX_BYTES = 25 * 1024 * 1024;
 
 /**
@@ -105,6 +108,8 @@ export class NewPet {
   protected readonly step = signal<Step>(1);
   protected readonly editing = computed(() => this.petId() !== undefined);
   protected readonly loadState = signal<LoadState>('idle');
+  /** Texto do erro de carga da edição; o do limite de chamadas vem de `loadErrorText`. */
+  protected readonly loadError = signal(LOAD_FAILED);
   /** Foto que o pet já tem (URL assinada) e o caminho dela, para apagar a antiga ao trocar. */
   protected readonly existingPhotoUrl = signal<string | null>(null);
   private existingPhotoPath: string | null = null;
@@ -225,14 +230,22 @@ export class NewPet {
   /** Edição: lê o pet, a foto e a tag e preenche os campos. */
   protected async loadExisting(id: string): Promise<void> {
     this.loadState.set('loading');
+    this.loadError.set(LOAD_FAILED);
     const [pet, dashboard] = await Promise.all([this.petService.get(id), this.tags.myDashboard()]);
     if (!pet.ok) {
+      this.loadError.set(loadErrorText(dashboard, LOAD_FAILED));
       this.loadState.set(pet.error === 'not_found' ? 'missing' : 'error');
+      return;
+    }
+    if (!dashboard.ok) {
+      // Sem saber da tag, "Remover pet" apagaria o pet sem liberar a tag: a tela não abre pela metade.
+      this.loadError.set(loadErrorText(dashboard, LOAD_FAILED));
+      this.loadState.set('error');
       return;
     }
     this.fill(pet.pet);
     this.existingPhotoPath = pet.pet.photoPath;
-    if (dashboard.ok) this.activeTagCode.set(dashboard.dashboard.pets.find((p) => p.id === id)?.tagCode ?? null);
+    this.activeTagCode.set(dashboard.dashboard.pets.find((p) => p.id === id)?.tagCode ?? null);
     const urls = await this.petService.photoUrls([pet.pet.photoPath]);
     this.existingPhotoUrl.set(pet.pet.photoPath === null ? null : (urls[pet.pet.photoPath] ?? null));
     this.loadState.set('ready');

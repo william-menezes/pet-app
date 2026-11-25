@@ -20,8 +20,7 @@
               class="w-full"
               zType="danger"
               [zRole]="'status'"
-              zDescription="Não conseguimos carregar os dados do pet. Verifique sua conexão e tente de novo."
-              i18n-zDescription />
+              [zDescription]="loadError()" />
             <button type="button" z-button zType="outline" (click)="loadExisting(petId() ?? '')" data-testid="new-pet-retry-load" i18n>
               Tentar de novo
             </button>

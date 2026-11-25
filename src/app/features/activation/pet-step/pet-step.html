@@ -44,8 +44,7 @@
       <z-alert
         zType="danger"
         [zRole]="'status'"
-        zDescription="Não conseguimos carregar seus pets. Verifique sua conexão e tente de novo."
-        i18n-zDescription
+        [zDescription]="errorText() ?? loadFailed"
         data-testid="activation-pets-error" />
     }
     @default {

@@ -19,7 +19,7 @@ import { FlowShell } from '@/shared/shells/flow-shell/flow-shell';
 import { PetService } from '../../core/pets/pet.service';
 import { format, isValid, normalize } from '../../core/tag-code';
 import { activationPath, phoneConfirmationRoute } from '../../core/tags/activation-links';
-import { tagErrorMessage } from '../../core/tags/tag-errors';
+import { loadErrorText, tagErrorMessage } from '../../core/tags/tag-errors';
 import { TagService, type ActivationResult } from '../../core/tags/tag.service';
 import { DoneStep } from './done-step/done-step';
 import type { PetOption } from './pet-option';
@@ -60,6 +60,8 @@ export class Activation implements OnInit {
   protected readonly view = signal<View>('pet');
   protected readonly petState = signal<PetStepState>('loading');
   protected readonly pets = signal<PetOption[]>([]);
+  /** Texto do erro de carga dos pets (o do limite de chamadas é próprio); `null` usa o genérico do passo. */
+  protected readonly petsError = signal<string | null>(null);
   protected readonly selectedId = signal<string | null>(null);
   protected readonly confirmReplace = signal(false);
   protected readonly petNotice = signal<string | null>(null);
@@ -95,6 +97,7 @@ export class Activation implements OnInit {
     this.petState.set('loading');
     const res = await this.tags.myDashboard();
     if (!res.ok) {
+      this.petsError.set(res.error === 'too_many_requests' ? loadErrorText(res, '') : null);
       this.petState.set('error');
       return;
     }

@@ -178,6 +178,52 @@ test.describe('página do pet: fluxos', () => {
   });
 });
 
+// O PIN novo ao remover um pet com tag fica numa seção da PÁGINA (não num diálogo que fecha com Esc). A edição é um fluxo,
+// sempre claro: o tema escuro guardado não a atinge.
+for (const theme of [undefined, 'dark'] as const) {
+  for (const size of SIZES) {
+    test.describe(`remover pet com tag em ${size.width}px, preferência ${theme === 'dark' ? 'escura' : 'clara'}`, () => {
+      test.use({ viewport: { width: size.width, height: size.height } });
+
+      test('PIN novo à vista, com foco, e Esc não o esconde', async ({ page }) => {
+        const state = await setup(page, {}, theme);
+        await page.goto('/app/pets/p1/editar');
+        await expect(page.locator(tid('new-pet-name'))).toHaveValue('Paçoca', { timeout: 15_000 });
+        await expect(page.locator('.dark')).toHaveCount(0);
+        await page.locator(tid('remove-pet-open')).click();
+        await expect(page.locator(tid('remove-pet-text'))).toContainText('7K3M-Q9XA-C');
+        await page.locator(tid('remove-pet-confirm')).click();
+
+        const pin = page.locator(tid('remove-pet-pin'));
+        await expect(pin).toHaveText('K47Q9M');
+        await expect(pin).toBeInViewport();
+        await expect(page.locator('#remove-pet-pin-title')).toBeFocused();
+        await expect(page.locator(tid('remove-pet-pin-warning'))).toContainText('Anote agora. Ele não aparece de novo.');
+        await expect(page.locator('[role="alertdialog"]')).toHaveCount(0);
+
+        // Esc (com o foco no título e com o foco no corpo) não esconde o PIN.
+        await page.keyboard.press('Escape');
+        await page.locator('body').click({ position: { x: 1, y: 1 } });
+        await page.keyboard.press('Escape');
+        await expect(pin).toHaveText('K47Q9M');
+        await expect(pin).toBeInViewport();
+
+        await page.waitForTimeout(400);
+        await expectNoHorizontalScroll(page);
+        await expectNoSeriousA11y(page);
+        await shot(page, `remover-pet-pin-${theme === 'dark' ? 'pref-escura-' : ''}${size.name}`);
+        expect(state.petDeletes).toHaveLength(1);
+        const stored = await page.evaluate(() => JSON.stringify({ ...localStorage }) + JSON.stringify({ ...sessionStorage }) + location.href);
+        expect(stored).not.toContain('K47Q9M');
+
+        await page.locator(tid('remove-pet-done')).click();
+        await expect(page).toHaveURL(/\/app\/pets$/);
+        await expect(page.locator('body')).not.toContainText('K47Q9M');
+      });
+    });
+  }
+}
+
 test.describe('painel: estados', () => {
   test('sem pets: convite para cadastrar o primeiro', async ({ page }) => {
     await setup(page, { pets: [], petRows: [] });
