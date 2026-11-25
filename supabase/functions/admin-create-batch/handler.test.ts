@@ -1,0 +1,206 @@
+import { assert, assertEquals, assertFalse } from "https://deno.land/std@0.224.0/assert/mod.ts";
+import type { AdminDeps } from "../_shared/auth.ts";
+import { chooseMask } from "../_shared/qr.ts";
+import { postJson } from "../_shared/testing.ts";
+import { format, isValid, tagUrl } from "../_shared/tag-code.ts";
+import { crc32 } from "../_shared/zip.ts";
+import { BATCH_HOURLY_LIMIT, type BatchDeps, createBatchHandler, newPin } from "./handler.ts";
+
+const ADMIN_ID = "99999999-9999-9999-9999-999999999999";
+const H = { authorization: "Bearer jwt-do-admin" };
+
+type Reply = { data: unknown; error: unknown } | "throw";
+const ok = (data: unknown): Reply => ({ data, error: null });
+
+interface Item {
+  code: string;
+  pin: string;
+  qr_mask: number;
+}
+
+/** Fonte aleatoria de teste: criptografica de verdade (o contrato exige `crypto.getRandomValues` em producao). */
+const random = (n: number) => crypto.getRandomValues(new Uint8Array(n));
+
+function setup(opts: { isAdmin?: boolean; replies?: Record<string, Reply>; insert?: (items: Item[], call: number) => Reply } = {}) {
+  const calls: Array<{ fn: string; args: Record<string, unknown> }> = [];
+  let insertCalls = 0;
+  const admin: AdminDeps = {
+    getCaller: (req) => Promise.resolve(req.headers.get("authorization") ? { id: ADMIN_ID } : null),
+    isAdmin: () => Promise.resolve(opts.isAdmin ?? true),
+  };
+  const deps: BatchDeps = {
+    admin,
+    random,
+    now: () => new Date(Date.UTC(2026, 10, 24, 12, 0, 0)),
+    rpc: (fn, args) => {
+      calls.push({ fn, args });
+      let r: Reply | undefined = opts.replies?.[fn];
+      if (fn === "admin_insert_batch") {
+        insertCalls++;
+        r = r ?? (opts.insert ? opts.insert(args.p_items as Item[], insertCalls) : ok({ ok: true, batch_id: "lote-002" }));
+      }
+      if (fn === "admin_rate_hit") r = r ?? ok(false);
+      r = r ?? ok({ ok: true });
+      return r === "throw" ? Promise.reject(new Error("banco fora do ar")) : Promise.resolve(r);
+    },
+  };
+  return { handler: createBatchHandler(deps), calls };
+}
+
+/** Le o arquivo `pins.csv` de dentro do ZIP de um unico arquivo. */
+function readCsv(zip: Uint8Array): { text: string; crcOk: boolean } {
+  const v = new DataView(zip.buffer, zip.byteOffset, zip.byteLength);
+  assertEquals(v.getUint32(0, true), 0x04034b50);
+  const crc = v.getUint32(14, true);
+  const size = v.getUint32(22, true);
+  const nameLen = v.getUint16(26, true);
+  assertEquals(new TextDecoder().decode(zip.slice(30, 30 + nameLen)), "pins.csv");
+  const data = zip.slice(30 + nameLen, 30 + nameLen + size);
+  return { text: new TextDecoder().decode(data), crcOk: crc32(data) === crc };
+}
+
+Deno.test("sem JWT: 401 de corpo vazio, nenhuma chamada ao banco", async () => {
+  const t = setup();
+  const res = await t.handler(postJson({ quantity: 5 }));
+  assertEquals(res.status, 401);
+  assertEquals(await res.text(), "");
+  assertEquals(t.calls.length, 0);
+});
+
+Deno.test("tutor comum (JWT valido, nao admin): 403 e nenhuma linha criada", async () => {
+  const t = setup({ isAdmin: false });
+  const res = await t.handler(postJson({ quantity: 5 }, H));
+  assertEquals(res.status, 403);
+  assertEquals(t.calls.length, 0);
+});
+
+Deno.test("metodo diferente de POST: 405", async () => {
+  const t = setup();
+  const res = await t.handler(new Request("http://x/fn", { method: "GET", headers: H }));
+  assertEquals(res.status, 405);
+});
+
+Deno.test("entrada invalida: 400 e nada e criado (quantidade 0, 501, decimal, texto; notas longas; corpo invalido)", async () => {
+  const t = setup();
+  for (const body of [{ quantity: 0 }, { quantity: 501 }, { quantity: 2.5 }, { quantity: "5" }, {}, { quantity: 5, notes: "x".repeat(201) }, { quantity: 5, notes: 3 }, "nao e json", "[1]"]) {
+    const res = await t.handler(postJson(body, H));
+    assertEquals(res.status, 400);
+  }
+  assertEquals(t.calls.length, 0);
+});
+
+Deno.test("lote de 54: codigos distintos e validos, mascara de 0 a 7 calculada, PINs de 6 caracteres; o CSV traz os mesmos pares enviados ao banco", async () => {
+  const logs: string[] = [];
+  const orig = { log: console.log, error: console.error, warn: console.warn, info: console.info, debug: console.debug };
+  for (const k of Object.keys(orig) as Array<keyof typeof orig>) console[k] = (...a: unknown[]) => void logs.push(a.join(" "));
+  let res: Response;
+  const t = setup();
+  try {
+    res = await t.handler(postJson({ quantity: 54, notes: "teste" }, H));
+  } finally {
+    Object.assign(console, orig);
+  }
+  assertEquals(res.status, 200);
+  assertEquals(res.headers.get("content-type"), "application/zip");
+  assertEquals(res.headers.get("cache-control"), "no-store");
+  assertEquals(res.headers.get("content-disposition"), 'attachment; filename="lote-002.zip"');
+
+  const insert = t.calls.find((c) => c.fn === "admin_insert_batch");
+  assert(insert);
+  assertEquals(insert.args.p_admin, ADMIN_ID);
+  assertEquals(insert.args.p_quantity, 54);
+  const items = insert.args.p_items as Item[];
+  assertEquals(items.length, 54);
+  assertEquals(new Set(items.map((i) => i.code)).size, 54);
+  for (const it of items) {
+    assert(isValid(it.code), "codigo valido (digito Luhn mod 32)");
+    assertEquals(it.code.length, 9);
+    assert(/^[0-9A-HJKMNP-TV-Z]{6}$/.test(it.pin));
+    assert(Number.isInteger(it.qr_mask) && it.qr_mask >= 0 && it.qr_mask <= 7);
+    assertEquals(it.qr_mask, chooseMask(tagUrl(it.code)));
+  }
+
+  const { text, crcOk } = readCsv(new Uint8Array(await res.arrayBuffer()));
+  assert(crcOk);
+  const lines = text.trim().split("\n");
+  assertEquals(lines[0], "code,pin");
+  assertEquals(lines.length, 55);
+  assertEquals(lines.slice(1), items.map((i) => `${format(i.code)},${i.pin}`));
+
+  // Marcou o pacote como baixado, uma vez, e nenhum PIN apareceu em log nem em auditoria/RPC alem do envio ao banco.
+  assertEquals(t.calls.filter((c) => c.fn === "admin_mark_package_downloaded").length, 1);
+  assertEquals(logs.length, 0);
+  for (const it of items) assertFalse(logs.join("\n").includes(it.pin));
+  for (const c of t.calls.filter((c) => c.fn !== "admin_insert_batch")) {
+    for (const it of items) assertFalse(JSON.stringify(c.args).includes(it.pin));
+  }
+});
+
+Deno.test("limite de 10 lotes por hora por admin: o 11o devolve 429 sem gerar nada", async () => {
+  const t = setup({ replies: { admin_rate_hit: ok(true) } });
+  const res = await t.handler(postJson({ quantity: 5 }, H));
+  assertEquals(res.status, 429);
+  assertEquals(await res.json(), { ok: false, error: "too_many_requests" });
+  const hit = t.calls.find((c) => c.fn === "admin_rate_hit");
+  assertEquals(hit?.args, { p_admin: ADMIN_ID, p_scope: "admin_batch_hour", p_limit: BATCH_HOURLY_LIMIT, p_window_seconds: 3600 });
+  assertEquals(t.calls.filter((c) => c.fn === "admin_insert_batch").length, 0);
+});
+
+Deno.test("colisao de codigo: troca so os codigos que colidiram e repete", async () => {
+  let firstItems: Item[] = [];
+  const t = setup({
+    insert: (items, call) => {
+      if (call === 1) {
+        firstItems = items.map((i) => ({ ...i }));
+        return ok({ ok: false, error: "code_collision", codes: [items[0].code, items[3].code] });
+      }
+      return ok({ ok: true, batch_id: "lote-003" });
+    },
+  });
+  const res = await t.handler(postJson({ quantity: 6 }, H));
+  assertEquals(res.status, 200);
+  const calls = t.calls.filter((c) => c.fn === "admin_insert_batch");
+  assertEquals(calls.length, 2);
+  const second = calls[1].args.p_items as Item[];
+  assertEquals(second.length, 6);
+  assert(second[0].code !== firstItems[0].code && second[3].code !== firstItems[3].code);
+  assertEquals([second[1], second[2], second[4], second[5]], [firstItems[1], firstItems[2], firstItems[4], firstItems[5]]);
+  assertEquals(new Set(second.map((i) => i.code)).size, 6);
+});
+
+Deno.test("colisao sem fim: desiste depois das rodadas e devolve erro sem pacote", async () => {
+  const t = setup({ insert: (items) => ok({ ok: false, error: "code_collision", codes: [items[0].code] }) });
+  const res = await t.handler(postJson({ quantity: 2 }, H));
+  assertEquals(res.status, 500);
+  assertEquals(t.calls.filter((c) => c.fn === "admin_insert_batch").length, 6);
+  assertEquals(t.calls.filter((c) => c.fn === "admin_mark_package_downloaded").length, 0);
+});
+
+Deno.test("segundo pedido do pacote (banco recusa a marcacao): erro, nenhum corpo com PIN", async () => {
+  const t = setup({ replies: { admin_mark_package_downloaded: ok({ ok: false, error: "package_already_downloaded" }) } });
+  const res = await t.handler(postJson({ quantity: 3 }, H));
+  assertEquals(res.status, 500);
+  assert(!(res.headers.get("content-type") ?? "").includes("zip"));
+  assertFalse((await res.text()).includes("pin"));
+});
+
+Deno.test("falha do banco em qualquer passo: 500 sem detalhe", async () => {
+  for (const fn of ["admin_rate_hit", "admin_insert_batch"]) {
+    const t = setup({ replies: { [fn]: { data: null, error: { message: "segredo interno" } } } });
+    const res = await t.handler(postJson({ quantity: 3 }, H));
+    assertEquals(res.status, 500);
+    assertFalse((await res.text()).includes("segredo"));
+  }
+  const thrown = setup({ replies: { admin_rate_hit: "throw" } });
+  assertEquals((await thrown.handler(postJson({ quantity: 3 }, H))).status, 500);
+});
+
+Deno.test("newPin: 6 caracteres do alfabeto, uniforme em 5000 amostras (sem caractere ausente)", () => {
+  const seen = new Set<string>();
+  for (let i = 0; i < 5000; i++) {
+    const p = newPin(random);
+    assert(/^[0-9A-HJKMNP-TV-Z]{6}$/.test(p));
+    for (const c of p) seen.add(c);
+  }
+  assertEquals(seen.size, 32);
+});

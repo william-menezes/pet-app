@@ -126,3 +126,8 @@ verify_jwt = false
 
 [functions.register-scan]
 verify_jwt = false
+
+# Spec 003: criar lote e devolver o pacote (so admin). verify_jwt = true no gateway, e a funcao ainda confere o JWT e
+# is_admin() por conta propria (requireAdmin). So desenvolvimento ate a T011 e a T085 passarem.
+[functions.admin-create-batch]
+verify_jwt = true
