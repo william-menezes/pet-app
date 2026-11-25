@@ -1,16 +1,13 @@
 -- pgTAP: rls_scans.test.sql
 -- Spec 003-tag-qr, T058: "Testes de isolamento entre vinculos" de contracts/rls-expectations.md, com as RPCs REAIS de
--- scan (register_scan, set_scan_location) e de ativacao (activate_tag). UMA parte e simulada: `release_tag` (T087, fase
--- posterior) ainda nao existe; a liberacao da tag pela tutora A e feita por escrita direta como dono do banco, que e exatamente
--- o estado que `release_tag` deixa (vinculo encerrado `released`, tag `available`, PIN NOVO gravado so como hash).
--- Quando T087 chegar, trocar essa escrita direta pela chamada de release_tag.
+-- scan (register_scan, set_scan_location), de ativacao (activate_tag) e de liberacao (release_tag, T087). Nada e simulado.
 --
 -- Cenario (criado aqui, desfeito no ROLLBACK final; PINs gerados na transacao e guardados so em GUC):
 --   tutora A com Rex e a tag T1 (ABCDEFGHV); tutor B com Bidu (tag T2 = ZZZZZZZZ8) e Nina (sem tag); admin.
 
 BEGIN;
 
-SELECT plan(39);
+SELECT plan(41);
 
 CREATE SCHEMA IF NOT EXISTS tests;
 GRANT USAGE ON SCHEMA tests TO anon, authenticated, service_role;
@@ -92,13 +89,15 @@ SELECT is((SELECT count(*)::integer FROM public.my_scans), 1, 'B le so o scan da
 SELECT is((SELECT count(*)::integer FROM public.my_scans WHERE tag_code = 'ABCDEFGHV'), 0, 'B ainda nao le nada da tag T1 (ela e da A)');
 RESET ROLE;
 
--- ═══════════════ A libera a T1 e B a ativa com o PIN novo (liberacao SIMULADA, ver o cabecalho) ═══════════════
+-- ═══════════════ A libera a T1 (release_tag REAL) e B a ativa com o PIN novo ═══════════════
 
-UPDATE public.tag_assignments SET ended_at = now(), end_reason = 'released' WHERE id = 'a5a5a5a5-2222-0000-0000-00000000000a';
-UPDATE public.rescue_profiles SET lost_mode = false, lost_since = NULL WHERE pet_id = 'a5a5a5a5-1111-0000-0000-000000000001';
-UPDATE public.tag_codes
-   SET status = 'available', activation_pin_hash = extensions.crypt(tests.pin(), extensions.gen_salt('bf', 12))
- WHERE code = 'ABCDEFGHV';
+SELECT set_config('tests.old_pin', tests.pin(), true);
+SELECT tests.set_auth_uid('a5a5a5a5-0000-0000-0000-0000000000a1');
+SELECT set_config('tests.pin', public.release_tag('ABCDEFGHV', 'released') ->> 'new_pin', true);
+RESET ROLE;
+SELECT isnt(tests.pin(), current_setting('tests.old_pin'), 'release_tag devolveu um PIN novo (diferente do anterior)');
+SELECT is((SELECT status || ':' || (extensions.crypt(tests.pin(), activation_pin_hash) = activation_pin_hash)::text FROM public.tag_codes WHERE code = 'ABCDEFGHV'),
+          'available:true', 'release_tag: tag available e o hash gravado confere com o PIN novo');
 
 SELECT tests.set_auth_uid('a5a5a5a5-0000-0000-0000-0000000000b2');
 SELECT is(public.activate_tag('ABCDEFGHV', tests.pin(), 'a5a5a5a5-1111-0000-0000-000000000003') ->> 'ok', 'true', 'B ativa a T1 liberada com o PIN novo (activate_tag real)');

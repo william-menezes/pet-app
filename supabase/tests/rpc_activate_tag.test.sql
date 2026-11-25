@@ -20,8 +20,15 @@ CREATE SCHEMA IF NOT EXISTS tests;
 GRANT USAGE ON SCHEMA tests TO anon, authenticated, service_role;
 ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA tests GRANT EXECUTE ON FUNCTIONS TO PUBLIC;
 
+-- O limite de chamadas de activate_tag (30 em 15 min por conta, migration 0035) conta TODA chamada; este arquivo faz bem mais
+-- de 30 chamadas com a conta A na mesma transacao (o relogio do pgTAP e fixo). O limite em si e provado em
+-- endurecimento_tags.test.sql; aqui o contador e zerado a cada troca de identidade, so para os cenarios nao dependerem dele.
+CREATE OR REPLACE FUNCTION tests.reset_activate_calls() RETURNS void LANGUAGE sql SECURITY DEFINER SET search_path = public, pg_temp AS $$
+  DELETE FROM public.rate_limits WHERE scope = 'activate_calls';
+$$;
 CREATE OR REPLACE FUNCTION tests.set_auth_uid(p_uid text) RETURNS void LANGUAGE sql AS $$
-  SELECT set_config('request.jwt.claims', json_build_object('sub', p_uid, 'role', 'authenticated')::text, true),
+  SELECT tests.reset_activate_calls(),
+         set_config('request.jwt.claims', json_build_object('sub', p_uid, 'role', 'authenticated')::text, true),
          set_config('request.jwt.claim.sub', p_uid, true),
          set_config('role', 'authenticated', true);
 $$;
