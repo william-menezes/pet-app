@@ -38,7 +38,7 @@
     "@angular/ssr": "^21.2.30",
     "@boxicons/js": "^1.0.1",
     "@ng-icons/core": "^34.0.0",
-    "@supabase/supabase-js": "^2.108.1",
+    "@supabase/supabase-js": "^2.119.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "express": "^5.1.0",
