@@ -94,9 +94,9 @@ test('telas publicas e do admin: 3 larguras, sempre claras', async ({ page }) =>
   await check(page, '/admin/auditoria', tid('admin-audit-row'), light);
 });
 
-// DEF-003-03: o aviso (toast) do ngx-sonner e uma <ol> cujos filhos nao sao <li>: o axe reprova (`list`, grave) enquanto o
+// DEF-003-03 (corrigido): o aviso (toast) do ngx-sonner era uma <ol> cujos filhos nao sao <li>: o axe reprovava (`list`, grave) enquanto o
 // aviso esta na tela. Os e2e simulados esperam o aviso sair antes de rodar o axe; aqui ele e medido COM o aviso visivel.
-test.fail('DEF-003-03: axe sem violacao grave com um aviso (toast) na tela', async ({ page }) => {
+test('DEF-003-03: axe sem violacao grave com um aviso (toast) na tela', async ({ page }) => {
   const tag = takeTag();
   await loginViaUi(page, SEED.admin.email, SEED.password);
   await expect(page).toHaveURL(/\/(admin|app)/, { timeout: 30_000 });

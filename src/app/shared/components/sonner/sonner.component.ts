@@ -156,6 +156,18 @@ export class ZardSonnerComponent {
       }
     });
 
+    // DEF-003-03: o ngx-sonner põe cada aviso (<ngx-sonner-toast><li role="status" aria-live>) dentro de uma <ol>.
+    // Com o role="status" o <li> deixa de ser item de lista e o axe reprova a <ol> (`list`). A <ol> é só um
+    // contêiner de posição: sem papel de lista, cada aviso segue como região viva (`aria-live`) e é anunciado.
+    this.zone.runOutsideAngular(() => {
+      if (typeof MutationObserver === 'undefined') {
+        return; // servidor: não há DOM vivo, e o aviso só aparece no navegador
+      }
+      const observer = new MutationObserver(() => this.unlistToasts());
+      observer.observe(this.host, { childList: true, subtree: true });
+      inject(DestroyRef).onDestroy(() => observer.disconnect());
+    });
+
     if (this.supportsTopLayer) {
       this.zone.runOutsideAngular(() => {
         // Any other element entering the top layer (a dialog opened while a
@@ -195,6 +207,12 @@ export class ZardSonnerComponent {
       // keeps rendering in the normal flow instead of being hidden by the
       // closed-popover UA styles. The next toast promotes it again.
       this.host.removeAttribute('popover');
+    }
+  }
+
+  private unlistToasts(): void {
+    for (const list of Array.from(this.host.querySelectorAll('ol[data-sonner-toaster]:not([role])'))) {
+      list.setAttribute('role', 'presentation');
     }
   }
 

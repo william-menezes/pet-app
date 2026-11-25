@@ -37,6 +37,22 @@ describe('ZardSonnerComponent', () => {
     TestBed.inject(ZardSonnerService).dismiss(id);
   });
 
+  // DEF-003-03: a <ol> do ngx-sonner não pode ser lista (os avisos são regiões vivas), e o aviso continua anunciado.
+  it('a lista do aviso não tem papel de lista e cada aviso segue com aria-live', async () => {
+    TestBed.configureTestingModule({ providers: [provideIcons(faroIcons)] });
+    const fixture = TestBed.createComponent(ZardSonnerComponent);
+    fixture.detectChanges();
+    const id = TestBed.inject(ZardSonnerService).show('Dados atualizados.');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    await new Promise((resolve) => setTimeout(resolve));
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('ol[data-sonner-toaster]')?.getAttribute('role')).toBe('presentation');
+    expect(el.querySelector('li[role="status"]')?.getAttribute('aria-live')).toBe('polite');
+    TestBed.inject(ZardSonnerService).dismiss(id);
+  });
+
   it('fica no topo, ao centro, e o tema é claro', () => {
     TestBed.configureTestingModule({ providers: [provideIcons(faroIcons)] });
     const fixture = TestBed.createComponent(ZardSonnerComponent);
