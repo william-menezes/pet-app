@@ -389,7 +389,7 @@ for f in phone-verify-start phone-verify-confirm; do
     bash -c 'printf "%s" "$1" | grep -qi "^access-control-allow-methods: POST, OPTIONS$"' _ "$H"
 done
 
-# Tabela "Falha fechada" de quickstart.md Â§6. Cada linha reinicia o functions serve com o ambiente alterado.
+# Tabela "Falha fechada" de quickstart.md §6. Cada linha reinicia o functions serve com o ambiente alterado.
 if restart_serve - test log; then
   R="$(fn phone-verify-start '{"phone":"(31) 97777-6666"}')"; C="$(fn_code phone-verify-start '{"phone":"(31) 97777-6666"}')"
   check "sem PHONE_OTP_PEPPER: HTTP 500 misconfigured" bash -c '[ "$1" = "500" ] && printf "%s" "$2" | grep -q "\"error\":\"misconfigured\""' _ "$C" "$R"
@@ -756,7 +756,7 @@ C="$(curl -s -o /dev/null -w '%{http_code}' -X POST "$API_URL/functions/v1/resol
 echo "diagnostico: resolve-tag so com x-faro-ssr-key (sem apikey nem Authorization): HTTP $C"
 
 RA="$(ssr_call resolve-tag "{\"code\":\"$CODE_AS\",\"ip_hash\":\"ci-resolve-1\"}")"
-check "resolve-tag (tag vinculada do seed): state assigned com o nome do pet" bash -c 'printf "%s" "$1" | grep -q "\"state\":\"assigned\"" && printf "%s" "$1" | grep -qF "PaÃ§oca"' _ "$RA"
+check "resolve-tag (tag vinculada do seed): state assigned com o nome do pet" bash -c 'printf "%s" "$1" | grep -q "\"state\":\"assigned\"" && printf "%s" "$1" | grep -qF "Paçoca"' _ "$RA"
 check "resolve-tag: devolve o primeiro nome (\"Tutor\", de \"Tutor A Teste\") e o link do WhatsApp liberados pela tutora do seed" bash -c 'printf "%s" "$1" | grep -qF "\"tutor_first_name\":\"Tutor\"" && printf "%s" "$1" | grep -qF "\"whatsapp_url\":\"https://wa.me/5511900000001?text="' _ "$RA"
 check "resolve-tag: o codigo sai no formato XXXX-XXXX-X" has "$RA" "\"code\":\"$(seed_display assigned)\""
 check "resolve-tag: nenhum identificador interno, ip_hash, hash de PIN nem photo_path" \
@@ -805,7 +805,7 @@ for _ in $(seq 1 15); do
   sleep 1
 done
 check "register-scan: o aviso saiu fora do caminho da resposta (driver de teste) e notified_at foi gravado" test "$NOTIFIED" = "1"
-check "register-scan: o aviso saiu no driver log (so o assunto)" bash -c 'grep -qF "[email:log] assunto=A tag do PaÃ§oca foi escaneada" "$1"' _ "$LOG_FILE"
+check "register-scan: o aviso saiu no driver log (so o assunto)" bash -c 'grep -qF "[email:log] assunto=A tag do Paçoca foi escaneada" "$1"' _ "$LOG_FILE"
 RS2="$(ssr_call register-scan "{\"code\":\"$CODE_AS\",\"ip_hash\":\"ci-scan-1\"}")"
 check "register-scan: o mesmo codigo e origem em seguida e duplicado (devolve token novo)" has "$RS2" '"scan_token"'
 check "register-scan: duplicado nao cria outra linha" test "$(rest GET 'scan_events?ip_hash=eq.ci-scan-1&select=id' | grep -o '"id"' | wc -l)" = "1"
@@ -821,7 +821,7 @@ RS_21="$(ssr_call register-scan "{\"code\":\"$CODE_AS\",\"ip_hash\":\"ci-scan-fl
 check "scan_ip_min: a 21a chamada em um minuto devolve 200 sem efeito ({\"owner\":false}, sem scan_token)" test "$RS_21" = '{"owner":false}'
 check "scan_ip_min: o limite nao criou linha de scan a mais (1 scan para o ip_hash)" test "$(rest GET 'scan_events?ip_hash=eq.ci-scan-flood&select=id' | grep -o '"id"' | wc -l)" = "1"
 check "scan_ip_min: o contador do banco chegou a 21" has "$(rest GET 'rate_limits?scope=eq.scan_ip_min&key=eq.ci-scan-flood&select=count')" '"count":21'
-RS3="$(ssr_call register-scan "{\"code\":\"$CODE_AS\",\"ip_hash\":\"ci-scan-geo\",\"geo\":{\"lat\":-23.5505,\"lng\":-46.6333,\"city\":\"SÃ£o Paulo\",\"region\":\"SP\"}}")"
+RS3="$(ssr_call register-scan "{\"code\":\"$CODE_AS\",\"ip_hash\":\"ci-scan-geo\",\"geo\":{\"lat\":-23.5505,\"lng\":-46.6333,\"city\":\"São Paulo\",\"region\":\"SP\"}}")"
 check "register-scan: com coordenadas do cabecalho grava metodo ip com margem de 3000 m" \
   bash -c 'printf "%s" "$1" | grep -q "\"geo_method\":\"ip\"" && printf "%s" "$1" | grep -q "\"accuracy_m\":3000"' _ "$(rest GET 'scan_events?ip_hash=eq.ci-scan-geo&select=geo_method,accuracy_m,city')"
 RS4="$(ssr_call register-scan "{\"code\":\"$CODE_AV\",\"ip_hash\":\"ci-scan-av\"}")"
@@ -843,7 +843,7 @@ RL2="$(ssr_call register-scan "$LOC_BODY")"
 check "register-scan (location): o token e de uso unico (a segunda vez nao tem efeito)" test "$RL2" = '{"updated":false}'
 LOC_MAIL=0
 for _ in $(seq 1 15); do
-  if grep -qF "[email:log] assunto=Quem achou o PaÃ§oca enviou a localizaÃ§Ã£o" "$LOG_FILE"; then LOC_MAIL=1; break; fi
+  if grep -qF "[email:log] assunto=Quem achou o Paçoca enviou a localização" "$LOG_FILE"; then LOC_MAIL=1; break; fi
   sleep 1
 done
 check "register-scan (location): o aviso de localizacao saiu (driver log)" test "$LOC_MAIL" = "1"
@@ -853,7 +853,7 @@ check "register-scan (location): token inventado: 200 sem efeito" test "$RL3" = 
 OWNER_LOGIN="$(curl -s -X POST "$API_URL/auth/v1/token?grant_type=password" -H "apikey: $ANON_KEY" -H "Content-Type: application/json" \
   -d '{"email":"tutor.a@faro.test","password":"TesteSenha123!"}')"
 OWNER_TOKEN="$(printf '%s' "$OWNER_LOGIN" | grep -oE '"access_token":"[^"]+"' | head -1 | cut -d'"' -f4)"
-check "login da Ana (dona do PaÃ§oca no seed)" test -n "$OWNER_TOKEN"
+check "login da Ana (dona do Paçoca no seed)" test -n "$OWNER_TOKEN"
 RS8="$(ssr_call register-scan "{\"code\":\"$CODE_AS\",\"ip_hash\":\"ci-scan-owner\",\"user_jwt\":\"$OWNER_TOKEN\"}")"
 check "register-scan: o dono logado recebe owner true" test "$RS8" = '{"owner":true}'
 check "register-scan: o dono logado nao gera scan" test "$(rest GET 'scan_events?ip_hash=eq.ci-scan-owner&select=id')" = "[]"
@@ -863,7 +863,7 @@ RR="$(ssr_call register-scan '{"action":"resend"}')"
 check "register-scan (resend): responde {sent, failed} sem erro" bash -c 'printf "%s" "$1" | grep -qE "^\{\"sent\":[0-9]+,\"failed\":[0-9]+\}$"' _ "$RR"
 rest DELETE 'scan_events?ip_hash=like.ci-scan-*' > /dev/null
 rest DELETE 'scan_events?ip_hash=like.ci-resolve-*' > /dev/null
-check "limpeza: os scans de teste do CI foram removidos (o seed volta a ter so os 3 do PaÃ§oca)" \
+check "limpeza: os scans de teste do CI foram removidos (o seed volta a ter so os 3 do Paçoca)" \
   test "$(rest GET 'scan_events?select=id' | grep -o '"id"' | wc -l)" = "3"
 
 # --- activate_tag pela API: o PIN de desenvolvimento do seed, o contador que sobrevive ao erro e a corrida ---
