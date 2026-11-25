@@ -18,8 +18,8 @@
   por CVA) + **Tailwind CSS v4**. Ícones **Boxicons v3** via `@ng-icons/core` 34.x.
   **Exceção explícita ao padrão PrimeNG da casa**: neste projeto não se usa PrimeNG, PrimeIcons
   nem `@primeuix/themes`. Ignore a skill `angular-primeng-standard` aqui.
-- **Estado atual do código**: o bootstrap (`000`) e o login (`001`) foram feitos em PrimeNG.
-  A spec `002-ui-zardui` faz a migração; até ela ser executada o código ainda importa PrimeNG.
+- **Estado atual do código**: o código não importa mais PrimeNG; a migração `002-ui-zardui` foi feita
+  (bootstrap e login já estão em ZardUI + Tailwind v4).
 - **Renderização**: híbrida — **SSR** nas rotas públicas, **CSR** no app autenticado
   (`@angular/ssr`, render mode por rota).
 - **Responsivo, mobile first**: toda tela em três larguras — celular (base), tablet (`md`,
@@ -50,9 +50,12 @@ pet-app/
 ├── public/logos/             # wordmark e focinho em SVG
 ├── src/
 │   ├── app/
-│   │   ├── core/             # supabase client, auth, guards, tag-code (normalize/validar)
+│   │   ├── core/             # supabase client, auth, guards, theme, tag-code (normalize/validar)
 │   │   ├── shared/
-│   │   │   ├── components/   # componentes ZardUI copiados + componentes próprios do Faro
+│   │   │   ├── components/   # componentes ZardUI copiados + faro/ (componentes próprios)
+│   │   │   ├── core/         # base do ZardUI (copiada pelo zard-cli)
+│   │   │   ├── utils/        # utilitários do ZardUI (merge de classes)
+│   │   │   ├── shells/       # cascas: tutor, admin, fluxo, layout público
 │   │   │   └── icons/        # faro-icons.ts (Boxicons sob nomes do Faro)
 │   │   ├── features/
 │   │   │   ├── public/       # página da tag (SSR): resgate, não ativada, não encontrada
@@ -61,9 +64,11 @@ pet-app/
 │   │   │   ├── pets/         # painel, página do pet, novo pet, visibilidade, modo perdido
 │   │   │   ├── scans/        # histórico de scans
 │   │   │   ├── account/      # dados pessoais, telefone, privacidade
-│   │   │   └── admin/        # lotes, códigos, detalhe, fila de scans, auditoria
+│   │   │   ├── admin/        # lotes, códigos, detalhe, fila de scans, auditoria
+│   │   │   └── dev-gallery/  # galeria de componentes e cascas (/dev/ui; só em dev)
 │   │   └── models/           # tipos/DTOs do domínio
 │   └── styles.css            # ÚNICO arquivo de tema: Tailwind v4 + variáveis do Faro
+├── scripts/ui-checks/        # checagens de tokens, pilha, fronteira e pacote (check:ui)
 ├── supabase/
 │   ├── migrations/           # schema versionado (SQL) + políticas RLS
 │   ├── functions/            # Edge Functions (lotes, etiquetas, scan, e-mail, SMS)
@@ -83,6 +88,9 @@ npm run build                  # build de produção (com SSR)
 npm test                       # testes unitários (Vitest); use --watch=false em agente
 npm run lint
 npm run e2e                    # Playwright
+npm run check:ui               # tokens, pilha removida e fronteira da página pública
+npm run build:stats            # build de produção com dist/faro/stats.json
+npm run check:bundle           # a página pública não carrega o app autenticado
 
 # Supabase (CLI)
 supabase start                 # stack local
@@ -92,7 +100,7 @@ supabase test db               # pgTAP
 supabase functions serve       # rodar Edge Functions localmente
 
 # ZardUI
-npx zard-cli@latest add <componente>   # copia o componente para src/app/shared/components/
+npx zard-cli@1.12.0 add <componente> --yes   # copia o componente para src/app/shared/components/
 
 # Spec Kit
 /speckit.specify  /speckit.clarify  /speckit.plan  /speckit.tasks  /speckit.implement
@@ -255,6 +263,7 @@ Pipeline em [docs/dev-pipeline.md](docs/dev-pipeline.md). Specs, planos e tarefa
 - 2026-11-17: **Pivô do MVP para a tag com QR Code.** Constituição emendada para **v2.0.0** (Princípio VIII novo; Freemium suspenso; `TODO(BILLING_MODEL)`).
 - 2026-11-21: Decisões de marca e produto fechadas em entrevista ([docs/decisoes-pivo.md](docs/decisoes-pivo.md)): lima como cor de ação, navy `#25337A`, Outfit, responsivo em três larguras, tema escuro só no app do tutor, sem service worker, SMS para confirmar celular. Telas "MVP v2" (87) e design system revisados no Claude Design.
 - 2026-11-21 (retomada): William confirmou as decisões das specs, com duas mudanças (WhatsApp começa marcado na ativação, com aviso; excluir conta mantém o PIN). Constituição **v2.1.0**. Logo em Outfit, `tools/tag-generator/gerar_tags.py` e o lote-001 entregues. Implementação **liberada**, começando pela `002`.
+- 2026-11-21: **Spec `002-ui-zardui` executada**: PrimeNG, PrimeIcons e `@primeuix/themes` saíram; ZardUI + Tailwind v4 com tema único em `src/styles.css`, componentes próprios em `shared/components/faro/`, cascas em `shared/shells/`, tema escuro só na casca do tutor, login refeito, service worker removido (arquivo de desligamento em `public/`), ícones do app a partir do focinho. Detalhe em `specs/002-ui-zardui/execution-log.md`.
 - 2026-11-21: `CLAUDE.md` reescrito; `DESIGN.md` e `PRODUCT.md` criados; specs **`002-ui-zardui`**, **`003-tag-qr`** e **`004-conta-tutor`** criadas com plano e tarefas; subagentes reduzidos a três (backend, frontend, QA) e reescritos para o pivô. Implementação ainda **não iniciada**.
 
 <!-- MANUAL ADDITIONS START -->

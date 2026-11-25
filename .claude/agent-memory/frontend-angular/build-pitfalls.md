@@ -7,7 +7,7 @@ metadata:
 
 **@Component imports array must stay in sync with TS import statements.** Removing a TS import without removing it from `imports: []` causes NG1010 build error ("Value could not be determined statically"). The IDE shows this as a false positive before the build catches it — trust the build output, not the language service squiggles.
 
-**Why:** This happened during 001-login when PrimeNG modules were removed from TS imports but left in the @Component imports array.
+**Why:** This happened during 001-login when UI modules were removed from TS imports but left in the @Component imports array.
 
 **How to apply:** After removing any TS import, grep for its name in the same file's imports array and remove it too.
 
@@ -18,14 +18,6 @@ metadata:
 **Why:** login.spec.ts tests for emailFieldError and passwordFieldError failed because computed() was memoized and never invalidated by form control mutations.
 
 **How to apply:** For any derived state that reads from ReactiveForm controls (touched, valid, errors), always use a plain `get` getter, not `computed()`.
-
----
-
-**CSS budget `anyComponentStyle` default is 4kB warning / 8kB error.** Page-level components (e.g., login) with many states legitimately exceed 4kB. Raised to 8kB warning / 16kB error in angular.json.
-
-**Why:** login.css is ~7.35kB for a full authentication page with 6+ states — that is appropriate and should not warn.
-
-**How to apply:** Raise the threshold for large page-level components; keep the error threshold to catch accidental bloat.
 
 ---
 

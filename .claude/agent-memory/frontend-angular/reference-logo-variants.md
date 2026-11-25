@@ -1,18 +1,13 @@
 ---
 name: reference-logo-variants
-description: Mapa das variações de logo em public/logos/ e quando usar cada uma (por tema/fundo)
+description: Quais arquivos de logo existem em public/logos/ e como o app escolhe entre eles (por tone, não por tema)
 metadata:
   type: reference
 ---
 
-Logos da marca Faro ficam em `public/logos/` (servidas em `/logos/*.svg`). Escolha a variante pelo **fundo/tema** onde a logo aparece:
+Arquivos em `public/logos/` (servidos em `/logos/*.svg`): `logo-full-light.svg` (letras navy, para fundo claro), `logo-full-dark.svg` (letras brancas, para navy ou tema escuro), `logo-full-light2.svg` e `logo-compact2.svg` (para fundo lima; sem uso no código), `logo-compact.svg` (só o focinho).
 
-- `logo-full-light.svg` — wordmark escuro (#25337A) + pata verde → **tema light** (fundo claro)
-- `logo-full-light2.svg` — wordmark branco + pata escura (#25337A) → **fundo verde**
-- `logo-full-dark.svg` — wordmark branco + pata verde → **tema dark** (fundo escuro)
-- `logo-compact.svg` — só a pata verde → dark **ou** light
-- `logo-compact2.svg` — só a pata escura (#25337A) → **fundo verde**
+O código **não referencia `/logos/` fora de** `src/app/shared/components/faro/logo/brand-assets.ts`. A troca é pela propriedade `tone` do `<app-logo>` (`on-light` ou `on-dark`), não por `.faro-dark` nem por CSS. O `<app-focinho>` usa o path copiado de `logo-compact.svg`; os ícones do app saem de `node scripts/generate-icons.mjs`.
 
-Padrão de troca por tema (usado no login): dois `<img>` (light/dark) alternados por CSS com `:host-context(.faro-dark)`. O seletor de dark mode do app é a classe `.faro-dark` (ver `app.config.ts`).
-
-**How to apply:** Ao inserir a logo numa tela, cheque a cor do fundo daquela região. Fundo verde exige as variantes `2`. `.faro-dark` troca full-light↔full-dark.
+**Why:** a classe `.faro-dark` e o par de `<img>` alternado por CSS eram da identidade antiga (saíram na 002).
+**How to apply:** ao trocar os arquivos do logo, mantenha os `d` dos paths de `brand-assets.ts` idênticos aos SVG e rode `npm run check:ui`.

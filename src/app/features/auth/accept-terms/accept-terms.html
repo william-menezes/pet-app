@@ -1,0 +1,82 @@
+<!-- Aceitar termos. Referência: design/telas-v2/V2-aceite-termos*.dc.html; contrato §4. -->
+<app-flow-shell [headline]="headline" [sub]="sub">
+  <div [attr.aria-busy]="accepting()">
+    <h1 class="font-display text-[32px] leading-[1.04] font-bold tracking-[-0.03em] text-foreground md:text-[42px]" i18n>
+      Antes de continuar
+    </h1>
+    <p class="mt-2.5 text-base leading-[1.45] text-text" i18n>
+      Para usar o Faro, você precisa aceitar os Termos e a Política de privacidade.
+    </p>
+  </div>
+
+  @if (account(); as current) {
+    <div class="flex items-center gap-3 rounded-[20px] bg-card px-4 py-3.5" data-testid="terms-account">
+      @if (isGoogle()) {
+        <app-google-glyph />
+      }
+      <span class="flex min-w-0 flex-col gap-0.5">
+        @if (isGoogle()) {
+          <span class="text-[15px] font-semibold text-foreground" i18n>Você entrou com o Google</span>
+        } @else {
+          <span class="text-[15px] font-semibold text-foreground" i18n>Você entrou com seu e-mail</span>
+        }
+        <span class="truncate text-[13px] text-muted-foreground">{{ current.email }}</span>
+      </span>
+    </div>
+  }
+
+  <z-checkbox [formControl]="accepted" zId="terms-checkbox-input" data-testid="terms-checkbox">
+    <span i18n>Li e aceito os</span>&nbsp;<a
+      href="/legal/termos"
+      target="_blank"
+      rel="noopener"
+      class="font-semibold text-link underline underline-offset-[3px]"
+      i18n
+      >Termos</a
+    >&nbsp;<span i18n>e a</span>&nbsp;<a
+      href="/legal/privacidade"
+      target="_blank"
+      rel="noopener"
+      class="font-semibold text-link underline underline-offset-[3px]"
+      i18n
+      >Política de privacidade</a
+    >.
+  </z-checkbox>
+
+  <div aria-live="polite">
+    @if (failed()) {
+      <z-alert
+        zType="danger"
+        [zRole]="'status'"
+        zDescription="Não conseguimos conectar. Verifique sua conexão e tente de novo."
+        i18n-zDescription
+        data-testid="terms-error" />
+    }
+  </div>
+
+  <button
+    footer
+    type="button"
+    z-button
+    zSize="lg"
+    class="w-full text-lg"
+    [zLoading]="accepting()"
+    [zDisabled]="!canAccept()"
+    (click)="onAccept()"
+    data-testid="terms-accept"
+    i18n>
+    Aceitar e continuar
+  </button>
+  <button
+    footer
+    type="button"
+    z-button
+    zType="ghost"
+    class="w-full"
+    [zDisabled]="loggingOut()"
+    (click)="onLogout()"
+    data-testid="terms-logout"
+    i18n>
+    Sair
+  </button>
+</app-flow-shell>

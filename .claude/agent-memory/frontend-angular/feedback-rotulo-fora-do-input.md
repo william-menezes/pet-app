@@ -1,12 +1,12 @@
 ---
 name: feedback-rotulo-fora-do-input
-description: Rótulos de campo devem ficar acima/fora da caixa do input, não in-field (evitar IftaLabel/FloatLabel)
+description: Rótulo de campo fica acima e fora da caixa do input; nada de rótulo dentro ou flutuando
 metadata:
   type: feedback
 ---
 
-Todos os inputs devem ter o **rótulo (label) fora da caixa**, posicionado **acima** do campo — use um `<label class="login-label">` (ou `pLabel`) padrão acima do control. **Não** use `p-iftalabel` nem `p-floatlabel` (label dentro/flutuando na caixa).
+Todo input tem o **rótulo fora da caixa**, **acima** do campo. Hoje isso é o `z-field` com `z-field-label`, o controle embaixo e `z-field-error` abaixo dele. Nada de rótulo dentro da caixa nem flutuante.
 
-**Why:** Na 001-login (2026-07-01) a primeira versão usou `p-iftalabel` (label dentro da caixa) e o tutor reprovou: "Todos os inputs devem ter a label fora da caixa de input."
+**Why:** na 001-login (2026-07-01) a primeira versão pôs o rótulo dentro da caixa (componente do PrimeNG, que saiu na 002) e o William reprovou: "Todos os inputs devem ter a label fora da caixa de input."
 
-**How to apply:** Ao montar campos de formulário, `<label>` acima + control abaixo + `p-message` de erro embaixo. Vale para toda tela do painel. Ver [[feedback-prefer-native-primeng]].
+**How to apply:** ao montar formulário, rótulo acima, controle, erro abaixo. Vale para toda tela.

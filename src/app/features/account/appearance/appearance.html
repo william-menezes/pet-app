@@ -1,0 +1,20 @@
+<!-- Aparência. Referência: design/telas-v2/V2-conta-aparencia*.dc.html; contrato §4. -->
+<div class="flex w-full flex-col gap-3 md:max-w-[560px] md:gap-4" data-testid="account-appearance">
+  <app-screen-header title="Aparência" i18n-title [back]="'back'" [backLink]="'/app/conta'" />
+
+  <div class="flex flex-col gap-2">
+    <span id="account-appearance-label" class="px-1 text-[13px] font-semibold text-muted-foreground" i18n>Tema do app</span>
+    <z-toggle-group
+      zType="segmented"
+      [zMode]="'single'"
+      zAriaLabel="Tema do app"
+      i18n-zAriaLabel
+      [zItems]="items"
+      [zValue]="preference()"
+      (valueChange)="onChange($event)" />
+  </div>
+
+  <app-note icon="info" i18n>
+    O tema vale só dentro do app. A página que as pessoas veem ao escanear a tag é sempre clara.
+  </app-note>
+</div>

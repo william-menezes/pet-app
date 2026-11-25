@@ -5,7 +5,9 @@
 [api]
 enabled = true
 port = 54321
-schemas = ["public", "storage", "graphql_public"]
+# Spec 004 (0017): so `public`. Nada no Faro usa GraphQL (pg_graphql removida). max_rows continua em 1000: o limite vale
+# tambem para service_role e cortaria em silencio a geracao de etiquetas e a exportacao de um lote (ate 540 codigos).
+schemas = ["public"]
 extra_search_path = ["public", "extensions"]
 max_rows = 1000
 
@@ -18,7 +20,8 @@ major_version = 15
 enabled = true
 port = 54323
 
-[inbucket]
+# Coletor de e-mails local (CLI >= 3.x: `local_smtp`, antes `inbucket`).
+[local_smtp]
 enabled = true
 port = 54324
 
@@ -27,27 +30,60 @@ enabled = true
 
 [auth]
 enabled = true
-port = 54321
 site_url = "http://localhost:4200"
 additional_redirect_urls = ["http://localhost:4200/auth/callback"]
 jwt_expiry = 3600
-
-# E-mail + senha com confirmação obrigatória (FR-024).
-# em local dev, confirmação é auto-confirmada para facilitar testes; setar enable_confirmations=true em staging/prod.
-enable_confirmations = false    # dev: false | staging/prod: true
+enable_signup = true
+# Spec 004, security-hardening.contract.md secao 4: rotacao de refresh token, sem entrada anonima, sem vinculo manual.
+# Sem tempo maximo de sessao nem saida por inatividade (decisao do contrato: o tutor volta no dia em que o pet some).
+enable_refresh_token_rotation = true
+refresh_token_reuse_interval = 10
+enable_anonymous_sign_ins = false
+enable_manual_linking = false
+# FR-003, imposto no servidor (contracts/auth-config.contract.md). Sem regra de composicao.
+minimum_password_length = 8
+password_requirements = ""
 
 # Rate-limit nativo do GoTrue — camada ampla (FR-018, defesa em duas camadas).
 # A segunda camada é a tabela auth_login_attempts + Edge login-guard.
+# Nomes válidos na CLI 3.x: email_sent (e-mails por hora), token_refresh (por 5 min, por IP).
 [auth.rate_limit]
-# Ajuste conforme a política do GoTrue disponível na versão usada.
 # Os valores abaixo são defaults conservadores para dev/staging.
-email_sent_per_hour = 10
-token_refresh_per_hour = 30
+email_sent = 30           # e-mails por hora (global). Producao: ajustar ao plano do provedor SMTP
+sign_in_sign_ups = 30     # por 5 min, por IP
+token_verifications = 30  # por 5 min, por IP (confirmacao e recuperacao)
+token_refresh = 150       # por 5 min, por IP
 
 [auth.email]
 enable_signup = true
 double_confirm_changes = true
-enable_confirmations = true   # GoTrue: exige link de confirmação antes de liberar sessão
+enable_confirmations = true   # FR-024 da 001; tambem ativa a resposta ofuscada para e-mail ja cadastrado
+secure_password_change = true  # trava de servidor para troca de senha em sessao antiga
+max_frequency = "60s"          # intervalo minimo entre e-mails para o mesmo usuario (FR-011)
+otp_expiry = 3600              # validade dos links: 1 hora (FR-012, FR-035)
+
+[auth.email.template.confirmation]
+subject = "Confirme seu e-mail no Faro"
+content_path = "./supabase/templates/confirmation.html"
+
+[auth.email.template.recovery]
+subject = "Crie uma nova senha no Faro"
+content_path = "./supabase/templates/recovery.html"
+
+# O celular NAO e forma de entrar (FR-028) e o SMS desta spec nao passa pelo Auth.
+[auth.sms]
+enable_signup = false
+enable_confirmations = false
+
+# Spec 004, security-hardening.contract.md secao 1: desafio anti-robo (Cloudflare Turnstile).
+# `enabled = false` ate a T104: ligar antes quebraria todo login/cadastro, porque as telas ainda nao enviam o token.
+# O segredo vem do ambiente (SUPABASE_AUTH_CAPTCHA_SECRET), nunca do arquivo. Desenvolvimento e E2E usam as chaves de
+# TESTE da Cloudflare (publicas, documentacao "Testing"): segredo 1x0000000000000000000000000000000AA (sempre aprova),
+# 2x0000000000000000000000000000000AA (sempre reprova); site key 1x00000000000000000000AA (aprova) e 2x00000000000000000000AB (reprova).
+[auth.captcha]
+enabled = false
+provider = "turnstile"
+secret = "env(SUPABASE_AUTH_CAPTCHA_SECRET)"
 
 # Google OAuth (FR-016/Princípio III): client id/secret NUNCA commitados.
 # Configure via `supabase secrets set GOOGLE_OAUTH_CLIENT_ID=... GOOGLE_OAUTH_SECRET=...`
@@ -61,6 +97,25 @@ redirect_uri = "http://localhost:54321/auth/v1/callback"
 [analytics]
 enabled = false
 
-[functions]
-# Edge Functions servidas localmente em supabase functions serve
+# Edge Functions: verify_jwt é configurado por função (a chave global não existe mais).
+# Chave publica NOVA (sb_publishable_..., nao e JWT): login-guard e password-recovery rodam ANTES de existir sessao.
+# O portao da plataforma nao autentica quem manda so chave de API, e a aceitacao da chave publishable no
+# Authorization e documentada como "compatibilidade de migracao" (transitoria). Por isso, nestas DUAS, o portao fica
+# desligado e o codigo e a barreira (limite por IP e por conta, CORS, metodo, corpo, anti-enumeracao, piso de tempo).
+[functions.login-guard]
+verify_jwt = false
+
+# Spec 004: confirmacao de celular. Exigem usuario autenticado (a propria funcao valida o JWT com getUser).
+[functions.phone-verify-start]
+verify_jwt = true
+
+[functions.phone-verify-confirm]
+verify_jwt = true
+
+# Spec 004: recuperacao de senha. Pre-sessao (qualquer visitante); a funcao nao exige usuario. Ver a nota acima.
+[functions.password-recovery]
+verify_jwt = false
+
+# Spec 004: exclusao da propria conta. Exige usuario autenticado (a funcao valida o JWT com getUser).
+[functions.account-delete]
 verify_jwt = true

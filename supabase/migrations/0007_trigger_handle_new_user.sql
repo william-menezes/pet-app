@@ -50,6 +50,7 @@ CREATE TRIGGER on_auth_user_created
   FOR EACH ROW
   EXECUTE FUNCTION public.handle_new_user();
 
-COMMENT ON TRIGGER on_auth_user_created ON auth.users IS
-  'Cria a linha correspondente em public.perfis a cada novo usuário. '
-  'Gatilho de spec 001-login; não remover sem atualizar a spec de signup.';
+-- Trigger on_auth_user_created: cria a linha correspondente em public.perfis a cada novo usuário.
+-- Gatilho da spec 001-login; não remover sem atualizar a spec de signup.
+-- (Era um COMMENT ON TRIGGER, removido: o role das migrations não é dono de auth.users
+--  e o statement falhava com "must be owner of relation users".)

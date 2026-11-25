@@ -63,7 +63,8 @@ Regras:
 - **Não** habilitar nenhum provedor em `[auth.sms.*]` nem `[auth.hook.send_sms]`: o SMS desta spec
   não passa pelo Auth.
 - `[auth.external.google]` continua como na `001`.
-- `[functions]`: `verify_jwt = true` para as quatro funções novas (padrão atual do arquivo).
+- `[functions]`: `verify_jwt = true` em `phone-verify-start`, `phone-verify-confirm` e `account-delete` (exigem sessão);
+  `verify_jwt = false` em `login-guard` e `password-recovery` (pré-sessão; chave pública nova, ver `shared-edge.contract.md`).
 - No projeto hospedado, os mesmos valores e os dois modelos são aplicados pelo painel ou por
   `supabase config push`. Registrar a conferência no checklist de produção (`quickstart.md` §9).
 
@@ -119,6 +120,14 @@ o verificador ficaria no navegador de origem e quebraria a confirmação em outr
 | Limite de pedidos de recuperação (FR-037) | Edge `password-recovery` para o app; Auth como rede de fundo | chamada direta a `/recover` ignora o limite do app |
 | Trocar senha exige autenticação recente (FR-043) | `secure_password_change` (24 h) + senha atual pedida pela tela | a janela do servidor é de 24 h, não de minutos |
 | Celular não é login (FR-028) | `[auth.sms] enable_signup = false` e nenhum provedor de SMS no Auth | — |
+
+> **Correção medida em 2026-11-22 (CLI 3.2.0, GoTrue v2.198, CI da execução BE da Phase 2).** A primeira linha
+> da tabela acima **não vale** nessa versão: `POST /auth/v1/signup` com e-mail já confirmado responde
+> **HTTP 422 `user_already_exists`** (também para quem confirmou pelo link normal), e com e-mail ainda não
+> confirmado dentro de `max_frequency` responde **429**. Não há chave de configuração que mude isso. Quem chama
+> o Auth direto **consegue distinguir** e-mail já cadastrado. A tela continua igual nos dois casos: o
+> `RegistrationService` trata 422 `user_already_exists` e o 429 de reenvio como sucesso uniforme. A mitigação
+> contra enumeração em massa é o desafio anti-robô da Phase 10 (`TODO(CAPTCHA)`).
 
 ## Segredos
 

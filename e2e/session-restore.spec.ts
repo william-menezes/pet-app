@@ -84,13 +84,13 @@ for (const where of ['sessionStorage', 'localStorage'] as const) {
 test('sem sessão: /app vai para o login', async ({ page }) => {
   await mockSupabase(page, { refreshOk: true });
   await page.goto('/app');
-  await expect(page).toHaveURL(/\/auth\/login/);
+  await expect(page).toHaveURL(/\/auth(\?|$|\/)/);
 });
 
 test('sessão inválida gravada: vai para o login e a chave some do storage', async ({ page }) => {
   await mockSupabase(page, { refreshOk: false });
   await seed(page, 'sessionStorage', storedSession(NOW() - 3600));
   await page.goto('/app');
-  await expect(page).toHaveURL(/\/auth\/login/);
+  await expect(page).toHaveURL(/\/auth(\?|$|\/)/);
   await expect.poll(() => inStorage(page)).toEqual([null, null]);
 });
