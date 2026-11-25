@@ -528,7 +528,7 @@ Em todas, `forbidden` (conta sem acesso) mostra a mensagem sem "Tentar de novo" 
 - **PIN novo à vista.** A caixa do PIN do admin e o painel do PIN de "Gerenciar tag" levam a tela e o foco para o título quando aparecem (o botão que abriu o diálogo sai do DOM e o admin pode estar rolado até as ações). O e2e confere `toBeInViewport()` e o foco, nas três larguras.
 - **Ordem do detalhe do código.** No celular e no tablet "Ações" vem logo depois de "Vínculo atual", como em `V2-admin-codigo*.dc.html`; no desktop as ações ficam na coluna da direita.
 - **Códigos nos testes.** `T6EV-BXPY-W` e `TJ27-9DDB-B` (em `codes.spec.ts` e `queue.spec.ts`) são dos vetores SINTÉTICOS (`specs/003-tag-qr/contracts/tag-code.vectors.json`, que declara "nenhum destes é um código real"); o resto vem do seed (`e2e/fixtures/seed-codes.json`). Nenhum código nem PIN do lote-001 foi aberto.
-- **Banco local.** A pilha local foi parada e o volume `supabase_db_wt-003` apagado: os testes por script tinham mexido nele (PIN reemitido de `5P8NMRXYW`, pedidos de 2ª via, pets de teste). `supabase start` recria tudo do zero com o seed.
+- **Banco local.** A pilha local foi parada e o volume `supabase_db_wt-003` apagado: os testes por script tinham mexido nele (PIN reemitido de uma das tags disponíveis do seed, pedidos de 2ª via, pets de teste). `supabase start` recria tudo do zero com o seed.
 
 ### Tarefas [FE] ainda abertas na spec inteira
 
