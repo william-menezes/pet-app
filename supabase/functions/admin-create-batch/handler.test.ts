@@ -18,8 +18,12 @@ interface Item {
   qr_mask: number;
 }
 
-/** Hash falso com a forma do bcrypt custo 12 (o banco confere a forma); deterministico por PIN. */
-const fakeHash = (pin: string) => "$2a$12$" + pin.padEnd(53, "x");
+/**
+ * Hash falso com a forma do bcrypt custo 12 (o banco confere a forma), injetivo por PIN e SEM nunca conter o PIN: so letras
+ * minusculas, e o alfabeto do PIN e maiusculas e digitos (assim o teste de vazamento de PIN em argumentos nao da falso positivo).
+ */
+const fakeHash = (pin: string) =>
+  "$2a$12$" + Array.from(pin, (c) => String.fromCharCode(97 + (c.charCodeAt(0) % 26), 97 + Math.floor(c.charCodeAt(0) / 26))).join("").padEnd(53, "z");
 
 /** Fonte aleatoria de teste: criptografica de verdade (o contrato exige `crypto.getRandomValues` em producao). */
 const random = (n: number) => crypto.getRandomValues(new Uint8Array(n));
@@ -50,13 +54,13 @@ function setup(
     rpc: async (fn, args) => {
       calls.push({ fn, args });
       if (fn === "admin_hash_pins") {
-        hashCalls++;
+        const callNo = ++hashCalls; // numero fixado na chegada: chamadas concorrentes nao o embaralham
         inFlight++;
         stats.maxInFlight = Math.max(stats.maxInFlight, inFlight);
         await new Promise((r) => setTimeout(r, 1)); // deixa as fatias se sobreporem, como no banco
         inFlight--;
         const pins = args.p_pins as string[];
-        const h: Reply = opts.hash ? opts.hash(pins, hashCalls) : ok(pins.map(fakeHash));
+        const h: Reply = opts.hash ? opts.hash(pins, callNo) : ok(pins.map(fakeHash));
         if (h === "throw") throw new Error("banco fora do ar");
         return h;
       }
