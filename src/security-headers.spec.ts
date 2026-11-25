@@ -47,6 +47,13 @@ describe('security-headers', () => {
       expect(tag['Cross-Origin-Resource-Policy']).toBe('same-origin');
     });
 
+    it('tag: Cache-Control no-store e X-Robots-Tag noindex; o app não os manda', () => {
+      expect(tag['Cache-Control']).toBe('no-store');
+      expect(tag['X-Robots-Tag']).toBe('noindex');
+      expect(app['Cache-Control']).toBeUndefined();
+      expect(app['X-Robots-Tag']).toBeUndefined();
+    });
+
     it('app: desafio em script-src e frame-src, câmera própria, popups permitidos', () => {
       const csp = app['Content-Security-Policy'];
       expect(csp).toContain(`script-src 'self' ${TURNSTILE_ORIGIN}`);

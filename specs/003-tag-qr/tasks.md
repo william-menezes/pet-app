@@ -82,16 +82,16 @@ Igual à `004`: a máquina não tem Docker nem a CLI do Supabase. Todo "Feito qu
 - [x] T001 [BE] Criar a branch `003-tag-qr` a partir de `develop`. Adicionar ao `.gitignore`:
   `lote.csv`, `lote-*/`, `**/pins.csv`, `tools/tag-generator/lote-*/`.
   **Feito quando**: `git check-ignore lote.csv tools/tag-generator/lote-001/lote.csv` lista os dois.
-- [ ] T002 [P] [FE] Criar as pastas e arquivos `index.ts` vazios: `src/app/core/tag-code/`,
+- [x] T002 [P] [FE] Criar as pastas e arquivos `index.ts` vazios: `src/app/core/tag-code/`,
   `core/tags/`, `core/pets/`, `core/scans/`, `core/admin/`, `features/public/tag-page/`,
   `features/activation/`, `features/scans/`. **Feito quando**: `npm run build` passa.
-- [ ] T003 [P] [FE] Criar os tipos em `src/app/models/`: `pet.ts`, `tag.ts`, `rescue-profile.ts`,
+- [x] T003 [P] [FE] Criar os tipos em `src/app/models/`: `pet.ts`, `tag.ts`, `rescue-profile.ts`,
   `scan.ts`, espelhando `data-model.md` e as saídas dos contratos (ex.: `TagResolution` com os
   quatro estados de `public-page.contract.md`). **Feito quando**: `npm run lint` passa, sem `any`.
 - [x] T004 [P] [BE] Declarar em `supabase/.env.local.example` as variáveis `FARO_SSR_KEY`,
   `IP_HASH_SECRET`, `EMAIL_API_KEY`, `EMAIL_FROM`, com comentário de uma linha cada, sem valores.
   **Feito quando**: o arquivo lista as quatro e nenhum valor real aparece em `git diff`.
-- [ ] T005 [P] [FE] Documentar em `README.md` (seção "Variáveis do servidor SSR") `FARO_SSR_KEY`,
+- [x] T005 [P] [FE] Documentar em `README.md` (seção "Variáveis do servidor SSR") `FARO_SSR_KEY`,
   `IP_HASH_SECRET`, `SUPABASE_FUNCTIONS_URL`. **Feito quando**: a seção existe.
 - [x] T006 [BE] Criar `docs/importar-lote-001.md` com o procedimento de `research.md` §12, passo a
   passo, com os comandos SQL completos e a conferência final. **Feito quando**: o documento cobre
@@ -175,7 +175,7 @@ Igual à `004`: a máquina não tem Docker nem a CLI do Supabase. Todo "Feito qu
 - [x] T023 [BE] `supabase/functions/_shared/`: `auth.ts` (valida `x-faro-ssr-key`; valida JWT e
   papel de admin), `supabase.ts` (cliente com role de serviço), `responses.ts`. Testes em `deno test`.
   **Feito quando**: chamada sem chave devolve `401` no teste.
-- [ ] T024 [FE] `src/app/app.routes.ts` e `app.routes.server.ts`: todas as rotas da tabela de
+- [x] T024 [FE] `src/app/app.routes.ts` e `app.routes.server.ts`: todas as rotas da tabela de
   `contracts/integration-002-004.contract.md` §1, com o `UrlMatcher` do código (research §15);
   remover `:codigo/perdido`. As filhas de `app` e de `admin` entram **antes** do `**` que a `002`
   deixou. Em `app.routes.server.ts`, acrescentar `ativar/**`, `novo-pet` e `vincular/**` em
@@ -213,28 +213,28 @@ Igual à `004`: a máquina não tem Docker nem a CLI do Supabase. Todo "Feito qu
   **Feito quando**: `deno test` cobre os quatro estados e a recusa sem chave.
 - [x] T028 [P] [US1] [BE] `0032_storage_pet_photos.sql`: bucket privado e políticas.
   **Feito quando**: tutor A não lê objeto de tutor B (pgTAP ou teste de integração).
-- [ ] T029 [US1] [FE] `core/tags/public-tag.service.ts`: no servidor chama `resolve-tag` com tempo
+- [x] T029 [US1] [FE] `core/tags/public-tag.service.ts`: no servidor chama `resolve-tag` com tempo
   limite de 2,5 s e guarda no `TransferState`; no navegador só lê o estado transferido.
   **Feito quando**: teste unitário cobre sucesso, erro e tempo esgotado (vira `contingency`).
-- [ ] T030 [US1] [FE] `features/public/tag-page/tag-page.ts`: componente da rota que escolhe a tela
+- [x] T030 [US1] [FE] `features/public/tag-page/tag-page.ts`: componente da rota que escolhe a tela
   pelo estado. **Feito quando**: teste unitário cobre os cinco ramos.
-- [ ] T031 [US1] [FE] Tela de resgate (`rescue-view`) nas três larguras conforme
+- [x] T031 [US1] [FE] Tela de resgate (`rescue-view`) nas três larguras conforme
   `design/telas-v2/V2-resgate{,-tablet,-desktop}.dc.html`: foto, título na voz do pet, chips,
   cuidados, botão do WhatsApp como `<a href>`, "Enviar onde estou", rodapé navy. Sem foto: espaço
   reservado. **Feito quando**: teste de componente cobre com e sem cada campo opcional.
-- [ ] T032 [P] [US1] [FE] Tela "tag não encontrada" e a de contingência conforme
+- [x] T032 [P] [US1] [FE] Tela "tag não encontrada" e a de contingência conforme
   `V2-tag-nao-encontrada*.dc.html`. **Feito quando**: as duas renderizam em teste.
-- [ ] T033 [P] [US1] [FE] Tela "tag não ativada" conforme `V2-tag-nao-ativada*.dc.html`;
+- [x] T033 [P] [US1] [FE] Tela "tag não ativada" conforme `V2-tag-nao-ativada*.dc.html`;
   "Ativar minha tag" leva a `/ativar/<código>`. **Feito quando**: o link tem o código normalizado.
-- [ ] T034 [US1] [FE] Metadados da rota pública: `<title>` e Open Graph genéricos, `noindex`,
+- [x] T034 [US1] [FE] Metadados da rota pública: `<title>` e Open Graph genéricos, `noindex`,
   `Cache-Control: no-store`. **Feito quando**: teste de SSR confere os cabeçalhos e a ausência do
   nome do pet no `<head>`.
-- [ ] T034A [US1] [FE] Em `src/app/app.config.ts`, trocar a hidratação para
+- [x] T034A [US1] [FE] Em `src/app/app.config.ts`, trocar a hidratação para
   `provideClientHydration()` puro: saem `withEventReplay()` **e** `withIncrementalHydration()`
   (`contracts/integration-002-004.contract.md` §5.1). Não afrouxar a CSP. **Feito quando**:
   `npm run build` passa e nenhum HTML de `dist/` tem `<script>` embutido sem `src` além dos de
   dados (`type="application/json"`). **Se ainda houver, PARE e relate** (alternativa em §5.1).
-- [ ] T034B [US1] [FE] Tirar a autenticação do pacote da página pública (§5.2 do mesmo contrato):
+- [x] T034B [US1] [FE] Tirar a autenticação do pacote da página pública (§5.2 do mesmo contrato):
   todos os guards de `app.routes.ts` carregados sob demanda pelo auxiliar `lazyCanMatch`;
   `scripts/ui-checks/public-bundle.mjs` passa a
   **reprovar** se `core/auth` ou `@supabase/supabase-js` forem alcançáveis por import estático a

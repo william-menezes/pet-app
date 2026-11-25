@@ -272,3 +272,53 @@ Ver a seção "Verificação final" abaixo.
 - Deploy de `admin-create-batch` num projeto hospedado: não feito, de propósito (T011 e T085 pendentes).
 - Reimpressão idêntica (PDF), leitura física, matriz e máscara contra o lote-001 (T084 e T085, bloqueadas).
 - Rotação de chave do servidor com o app real (só os testes unitários e o script com a chave nova).
+
+## Frontend: Phases 1 a 3 (T002, T003, T005, T024, T029 a T034B; 2026-11-24 e 25)
+
+Sem Supabase local; nada foi escrito no projeto hospedado. A página foi vista com o servidor SSR construído contra Edge Functions de mentira
+(só no scratchpad). Não feitas: T024A (ver abaixo) e, por dependência, T025 (implementada, sem marcar).
+
+### Pendências e desvios
+
+1. **T024A não executada.** O preview da Vercel do PR nº 5 existe, mas está atrás do login da Vercel (302 para `vercel.com/sso-api`): não há
+   como chamar `/api/ping` sem um token de bypass. Não é reprovação, é impossível de verificar daqui. **T025 fica sem marcar**: o código e os
+   testes existem (`core/tags/server/scan-api.ts`, funções puras fora do `server.ts`, portáveis para `api/*.ts` se o gate falhar).
+2. **`security.allowedHosts` em `angular.json` estava `[]`.** Fora do localhost, o Angular 21 recusa o cabeçalho `Host` e **cai em renderização no
+   cliente**: em produção a página da tag nunca sairia do servidor (sem HTML de resgate, sem TransferState, só contingência). Acrescentei
+   `tagfaro.com.br`, `www.tagfaro.com.br` e `*.vercel.app` (previews). Decisão do William: confirmar a lista. T037A tem de conferir.
+3. **Texto neutro quanto ao gênero.** A projeção pública não traz sexo do pet nem do tutor. Onde a tela de referência diz "o Paçoca", "sozinho",
+   "Perdido há", "a Ana, minha tutora", usei: "Oi, eu sou Paçoca.", "Se você me encontrou, avise Ana. Minha família me leva de volta para casa.",
+   "Sou Paçoca. Me perdi de casa.", "Longe de casa há N dias/horas", "Recado de Ana", "Faro é a tag de identificação de Paçoca.". Se o William
+   quiser o artigo, o backend precisa devolver o sexo.
+4. **Textos que o contrato não trazia:** sem nome do tutor ("a família", "Recado de quem cuida de mim"); sem nenhum contato liberado (cartão
+   "Encontrou um pet?", o mesmo da tela "não encontrada"); telefone ("Ligar: (11) …", `tel:+55…`; o contrato só dá o texto de exibição, sem DDI);
+   localização negada; contingência ("Este pet tem dono." e "Não conseguimos abrir as informações desta tag agora…"); `**` do app ("Não
+   encontramos esta página.").
+5. **"Editar" da visão do dono leva a `/app`**, não a "O que estranhos veem": a projeção pública (e a resposta `owner`) não traz id de pet.
+6. **`/<código>/perdido` removida**; a política `tag` de cabeçalhos passou a cobrir também segmento com `%20` (`/7k3m%20q9xa%20c`) e manda
+   `Cache-Control: no-store` e `X-Robots-Tag: noindex`. `vercel.json` regenerado (`check:headers` verde, amostras novas).
+7. `session-bootstrap` saiu de `core/auth/` para `core/session/` (a checagem do pacote não aceita `core/auth` no fecho estático e não se isenta).
+8. Adiantei, sem marcar, o que a página precisa para funcionar inteira: visão do dono e sonda (T048), scan e localização no navegador (T054), modo
+   perdido (T061). T048, T054 e T061 continuam `[ ]`: faltam e2e e a revisão do QA.
+9. Link de "Ver a página do Paçoca" (T047) e qualquer link do app para `/<código>` tem de ser `<a href>`: navegação interna (routerLink) chega à
+   página sem TransferState e cai na contingência (o "Tentar de novo" resolve, mas é pior).
+
+### T034A (hidratação pura)
+
+`provideClientHydration()` sem opções. HTML servido de `/<código>` (conferido com o servidor construído): só `<script id="ng-state" type="application/json">` e dois
+`<script src>`; nenhum executável embutido. Os `.html` de `dist/faro/browser` também. Ressalva: `dist/faro/server/index.server.html` (modelo do servidor, nunca
+enviado como está) contém o `ng-event-dispatch-contract`; o servidor não o injeta na resposta. CSP não foi tocada.
+
+### T034B (guards sob demanda)
+
+`lazyCanMatch` em todos os guards de `app.routes.ts`; `check:bundle` reprova `core/auth`, `core/account`, `core/supabase` e `@supabase/*` no fecho estático. Passa.
+Inicial: 323 kB (gzip 106,5 kB; era 347 kB e 113,7 kB). **Rota da tag: 131,9 kB em gzip, acima dos 100 kB.** Do total, cerca de 95 kB são o Angular
+(`core` 54,6, `router` 21, `common` 7, `rxjs` 6,4, `platform-browser` 5,2); `tailwind-merge` 8,7 e os 33 ícones registrados globalmente 5,2.
+Sem router e sem `tailwind-merge`/ícones ainda sobrariam cerca de 75 + o resto: a meta não é atingível sem mexer no roteamento ou nos componentes
+compartilhados (fora do escopo). Número registrado; o script só informa, não reprova.
+
+### Verificação
+
+`npm run lint`, `npm test -- --watch=false` (96 arquivos, 892 testes, 1 pulado), `npm run build`, `check:ui`, `check:headers`, `check:bundle` (+ `--self-test`),
+e2e (`npm run e2e`, 166 passaram antes da fiação do scan; mais 5 novos em `e2e/tag-page-head.spec.ts`). Nenhum segredo em `dist/faro/browser`.
+O run 45530612559 (commit b09ad20) falhou porque aquele commit intermediário referenciava arquivos que só entraram no seguinte: não é defeito do código final.
