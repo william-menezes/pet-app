@@ -39,6 +39,19 @@ Deno.serve(createRegisterHandler({
     const r = await service().rpc(fn, args);
     return { data: r.data, error: r.error };
   },
+  globalLimit: async (scope, limit, windowSeconds) => {
+    const r = await service().rpc("global_rate_hit", { p_scope: scope, p_limit: limit, p_window_seconds: windowSeconds });
+    return r.error ? false : r.data === true;
+  },
+  rateHit: async (scope, key, limit, windowSeconds) => {
+    const r = await service().rpc("rate_limit_hit", {
+      p_scope: scope,
+      p_key: key,
+      p_limit: limit,
+      p_window_seconds: windowSeconds,
+    });
+    return r.error ? false : r.data === true;
+  },
   getViewer: async (jwt) => {
     const req = new Request("http://internal/", { headers: { authorization: `Bearer ${jwt}` } });
     const user = await getCaller(req, {

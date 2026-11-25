@@ -539,31 +539,41 @@ check "o token antigo deixa de valer (401)" test "$(fn_code account-delete '{"co
 SU="$(signup "$D1_EMAIL" "$DEL_PASS")"
 check "o mesmo e-mail consegue se cadastrar de novo (200)" test "$(http_code "$SU")" = "200"
 
-# Segunda conta: com fotos no bucket pet-photos sob <uid>/. O CLI do CI nao traz a spec 003, entao o bucket e criado aqui.
+# Segunda conta: com fotos no bucket pet-photos sob <uid>/. A migration 0032 ja cria o bucket (com os limites da 0035); a chamada abaixo e idempotente e so cobre um banco sem a spec 003.
 curl -s -o /dev/null -X POST "$API_URL/storage/v1/bucket" -H "apikey: $SERVICE_KEY" -H "Authorization: Bearer $SERVICE_KEY" \
   -H "Content-Type: application/json" -d '{"id":"pet-photos","name":"pet-photos","public":false}' || true
 mk_del_user D2_EMAIL D2_ID D2_TOKEN
 check "usuario de exclusao 2 criado e autenticado" test -n "$D2_ID" -a -n "$D2_TOKEN"
-for f in foto-1.txt foto-2.txt; do
+for f in foto-1.png foto-2.png; do
   curl -s -o /dev/null -X POST "$API_URL/storage/v1/object/pet-photos/$D2_ID/$f" -H "apikey: $SERVICE_KEY" \
-    -H "Authorization: Bearer $SERVICE_KEY" -H "Content-Type: text/plain" --data-binary 'x'
+    -H "Authorization: Bearer $SERVICE_KEY" -H "Content-Type: image/png" --data-binary 'x'
 done
-curl -s -o /dev/null -X POST "$API_URL/storage/v1/object/pet-photos/$D2_ID/pasta/foto-3.txt" -H "apikey: $SERVICE_KEY" \
-  -H "Authorization: Bearer $SERVICE_KEY" -H "Content-Type: text/plain" --data-binary 'x'
+curl -s -o /dev/null -X POST "$API_URL/storage/v1/object/pet-photos/$D2_ID/pasta/foto-3.png" -H "apikey: $SERVICE_KEY" \
+  -H "Authorization: Bearer $SERVICE_KEY" -H "Content-Type: image/png" --data-binary 'x'
 OTHER_ID="00000000-0000-0000-0000-00000000aaaa"
-curl -s -o /dev/null -X POST "$API_URL/storage/v1/object/pet-photos/$OTHER_ID/de-outro.txt" -H "apikey: $SERVICE_KEY" \
-  -H "Authorization: Bearer $SERVICE_KEY" -H "Content-Type: text/plain" --data-binary 'x'
+curl -s -o /dev/null -X POST "$API_URL/storage/v1/object/pet-photos/$OTHER_ID/de-outro.png" -H "apikey: $SERVICE_KEY" \
+  -H "Authorization: Bearer $SERVICE_KEY" -H "Content-Type: image/png" --data-binary 'x'
+# Limites do bucket (spec 003, contrato de endurecimento secao 4, migration 0035): 5 MB e so jpeg, png e webp.
+BAD_TYPE="$(curl -s -o /dev/null -w '%{http_code}' -X POST "$API_URL/storage/v1/object/pet-photos/$D2_ID/tipo-errado.txt" \
+  -H "apikey: $SERVICE_KEY" -H "Authorization: Bearer $SERVICE_KEY" -H "Content-Type: text/plain" --data-binary 'x')"
+check "bucket pet-photos recusa tipo fora de jpeg/png/webp (4xx)" bash -c '[ "$1" -ge 400 ] && [ "$1" -lt 500 ]' _ "$BAD_TYPE"
+BIG_FILE="$(mktemp)"
+head -c 6291456 /dev/zero > "$BIG_FILE"
+BAD_SIZE="$(curl -s -o /dev/null -w '%{http_code}' -X POST "$API_URL/storage/v1/object/pet-photos/$D2_ID/grande.png" \
+  -H "apikey: $SERVICE_KEY" -H "Authorization: Bearer $SERVICE_KEY" -H "Content-Type: image/png" --data-binary "@$BIG_FILE")"
+rm -f "$BIG_FILE"
+check "bucket pet-photos recusa arquivo de 6 MB (4xx)" bash -c '[ "$1" -ge 400 ] && [ "$1" -lt 500 ]' _ "$BAD_SIZE"
 storage_list() { # storage_list <prefixo>
   curl -s -X POST "$API_URL/storage/v1/object/list/pet-photos" -H "apikey: $SERVICE_KEY" -H "Authorization: Bearer $SERVICE_KEY" \
     -H "Content-Type: application/json" -d "{\"prefix\":\"$1\",\"limit\":100,\"offset\":0}"
 }
-check "as fotos da conta 2 existem antes da exclusao" has "$(storage_list "$D2_ID")" 'foto-1.txt'
+check "as fotos da conta 2 existem antes da exclusao" has "$(storage_list "$D2_ID")" 'foto-1.png'
 R="$(fn account-delete '{"confirm":"EXCLUIR","password":"SenhaDeTeste12345"}' "$D2_TOKEN")"
 echo "exclusao 2: $R"
 check "conta com fotos: { ok: true }" has "$R" '{"ok":true}'
 check "as fotos da conta (e da subpasta) foram removidas" bash -c '! printf "%s" "$1" | grep -q "foto-"' _ "$(storage_list "$D2_ID")"
 check "a foto da subpasta tambem sumiu" bash -c '! printf "%s" "$1" | grep -q "foto-3"' _ "$(storage_list "$D2_ID/pasta")"
-check "a foto de OUTRA conta nao foi tocada" has "$(storage_list "$OTHER_ID")" 'de-outro.txt'
+check "a foto de OUTRA conta nao foi tocada" has "$(storage_list "$OTHER_ID")" 'de-outro.png'
 check "o usuario 2 sumiu de auth.users" test "$(admin_user_status "$D2_ID")" = "404"
 
 for f in password-recovery account-delete; do
@@ -800,6 +810,17 @@ RS2="$(ssr_call register-scan "{\"code\":\"$CODE_AS\",\"ip_hash\":\"ci-scan-1\"}
 check "register-scan: o mesmo codigo e origem em seguida e duplicado (devolve token novo)" has "$RS2" '"scan_token"'
 check "register-scan: duplicado nao cria outra linha" test "$(rest GET 'scan_events?ip_hash=eq.ci-scan-1&select=id' | grep -o '"id"' | wc -l)" = "1"
 TOKEN_SCAN="$(printf '%s' "$RS2" | grep -oE '"scan_token":"[0-9a-f]{64}"' | cut -d'"' -f4)"
+# Endurecimento (T103, contrato secao 3): scan_ip_min = 20 por minuto por ip_hash. Do 21o em diante: 200 sem efeito (o duplicado
+# normal devolve um scan_token novo; o limitado devolve so {"owner":false}, e nenhum aviso sai).
+# A janela e fixa (minuto cheio): comeca nos 30 primeiros segundos do minuto para as 21 chamadas cairem na mesma janela.
+while [ "$(date +%S)" -ge 30 ]; do sleep 1; done
+RS_LAST=""
+for i in $(seq 1 20); do RS_LAST="$(ssr_call register-scan "{\"code\":\"$CODE_AS\",\"ip_hash\":\"ci-scan-flood\"}")"; done
+check "scan_ip_min: a 20a chamada do mesmo ip_hash ainda e atendida (traz scan_token)" has "$RS_LAST" '"scan_token"'
+RS_21="$(ssr_call register-scan "{\"code\":\"$CODE_AS\",\"ip_hash\":\"ci-scan-flood\"}")"
+check "scan_ip_min: a 21a chamada em um minuto devolve 200 sem efeito ({\"owner\":false}, sem scan_token)" test "$RS_21" = '{"owner":false}'
+check "scan_ip_min: o limite nao criou linha de scan a mais (1 scan para o ip_hash)" test "$(rest GET 'scan_events?ip_hash=eq.ci-scan-flood&select=id' | grep -o '"id"' | wc -l)" = "1"
+check "scan_ip_min: o contador do banco chegou a 21" has "$(rest GET 'rate_limits?scope=eq.scan_ip_min&key=eq.ci-scan-flood&select=count')" '"count":21'
 RS3="$(ssr_call register-scan "{\"code\":\"$CODE_AS\",\"ip_hash\":\"ci-scan-geo\",\"geo\":{\"lat\":-23.5505,\"lng\":-46.6333,\"city\":\"São Paulo\",\"region\":\"SP\"}}")"
 check "register-scan: com coordenadas do cabecalho grava metodo ip com margem de 3000 m" \
   bash -c 'printf "%s" "$1" | grep -q "\"geo_method\":\"ip\"" && printf "%s" "$1" | grep -q "\"accuracy_m\":3000"' _ "$(rest GET 'scan_events?ip_hash=eq.ci-scan-geo&select=geo_method,accuracy_m,city')"

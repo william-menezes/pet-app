@@ -25,6 +25,8 @@ import { format, isValid, normalize } from "../_shared/tag-code.ts";
 export const RESOLVE_FLOOR_MS = 150;
 /** Corpo maximo aceito. */
 export const RESOLVE_MAX_BODY = 2048;
+/** Teto global de chamadas por minuto (escopo `resolve_global_min`). */
+export const RESOLVE_GLOBAL_LIMIT = 3000;
 /** Validade da URL assinada da foto. */
 export const PHOTO_URL_TTL_SECONDS = 3600;
 
@@ -36,6 +38,12 @@ export interface ResolveDeps {
   signPhoto(path: string): Promise<string | null>;
   now(): number;
   sleep(ms: number): Promise<void>;
+  /**
+   * Teto global (security-hardening.contract.md secao 2): conta TODA chamada autorizada em `resolve_global_min` e devolve
+   * true quando estourou (um evento de auditoria por minuto, no banco). Fica fora de `rpc` de proposito: nao e consulta
+   * de tag. Se faltar ou falhar, a chamada segue (Rescue-First: o teto nunca derruba o resgate por falha propria).
+   */
+  globalLimit?(scope: string, limit: number, windowSeconds: number): Promise<boolean>;
 }
 
 type Rec = Record<string, unknown>;
@@ -124,6 +132,16 @@ async function resolve(req: Request, deps: ResolveDeps): Promise<Rec> {
   }
 }
 
+/** true se o teto global estourou. Falha ou ausencia da dependencia: nao estourou. */
+async function overGlobalCeiling(deps: ResolveDeps): Promise<boolean> {
+  if (!deps.globalLimit) return false;
+  try {
+    return (await deps.globalLimit("resolve_global_min", RESOLVE_GLOBAL_LIMIT, 60)) === true;
+  } catch {
+    return false;
+  }
+}
+
 /** Espera ate `RESOLVE_FLOOR_MS` desde `start`. */
 async function floor(deps: ResolveDeps, start: number): Promise<void> {
   const rest = RESOLVE_FLOOR_MS - (deps.now() - start);
@@ -139,7 +157,7 @@ export function createResolveHandler(deps: ResolveDeps): (req: Request) => Promi
     const start = deps.now();
     let result: Rec;
     try {
-      result = await resolve(req, deps);
+      result = (await overGlobalCeiling(deps)) ? { ...RATE_LIMITED } : await resolve(req, deps);
     } catch {
       result = { ...RATE_LIMITED };
     }

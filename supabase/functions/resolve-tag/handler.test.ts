@@ -9,7 +9,10 @@ const H = { "x-faro-ssr-key": KEY };
 
 type RpcReply = { data: unknown; error: unknown } | "throw";
 
-function setup(reply: RpcReply, opts: { sign?: (p: string) => Promise<string | null>; keys?: () => string[] } = {}) {
+function setup(
+  reply: RpcReply,
+  opts: { sign?: (p: string) => Promise<string | null>; keys?: () => string[]; globalLimit?: ResolveDeps["globalLimit"] } = {},
+) {
   const calls: Array<{ fn: string; args: Record<string, unknown> }> = [];
   const signed: string[] = [];
   const clock = fakeClock();
@@ -25,6 +28,7 @@ function setup(reply: RpcReply, opts: { sign?: (p: string) => Promise<string | n
     }),
     now: clock.now,
     sleep: clock.sleep,
+    globalLimit: opts.globalLimit,
   };
   return { handler: createResolveHandler(deps), calls, signed, slept: clock.state.slept };
 }
@@ -250,4 +254,36 @@ Deno.test("a funcao nao escreve log (nada de codigo, ip ou perfil no console)", 
     console.log = original;
   }
   assertEquals(lines.length, 0);
+});
+
+// ── Endurecimento (T102; security-hardening.contract.md secao 2) ────────────────────────────────────────────────────
+
+Deno.test("teto global resolve_global_min: no estouro devolve rate_limited sem tocar o banco, com o piso de tempo", async () => {
+  const seen: Array<[string, number, number]> = [];
+  const t = setup(ok({ state: "not_found" }), {
+    globalLimit: (scope, limit, window) => {
+      seen.push([scope, limit, window]);
+      return Promise.resolve(true);
+    },
+  });
+  const res = await t.handler(postJson({ code: CODE, ip_hash: "h" }, H));
+  assertEquals(res.status, 200);
+  assertEquals(await bodyOf(res), { state: "rate_limited" });
+  assertEquals(t.calls.length, 0);
+  assertEquals(seen, [["resolve_global_min", 3000, 60]]);
+  assertEquals(t.slept, [RESOLVE_FLOOR_MS]);
+});
+
+Deno.test("teto global: abaixo do teto a chamada segue; falha do contador tambem segue (Rescue-First)", async () => {
+  const below = setup(ok({ state: "available" }), { globalLimit: () => Promise.resolve(false) });
+  assertEquals(await bodyOf(await below.handler(postJson({ code: CODE, ip_hash: "h" }, H))), { state: "available", code: "ABCD-EFGH-V" });
+  const broken = setup(ok({ state: "available" }), { globalLimit: () => Promise.reject(new Error("banco fora")) });
+  assertEquals(await bodyOf(await broken.handler(postJson({ code: CODE, ip_hash: "h" }, H))), { state: "available", code: "ABCD-EFGH-V" });
+});
+
+Deno.test("teto global: chamada sem a chave nao conta no teto", async () => {
+  let counted = 0;
+  const t = setup(ok({ state: "not_found" }), { globalLimit: () => { counted++; return Promise.resolve(false); } });
+  assertEquals((await t.handler(postJson({ code: CODE, ip_hash: "h" }))).status, 401);
+  assertEquals(counted, 0);
 });

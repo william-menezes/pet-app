@@ -36,6 +36,7 @@ function setup(
   opts: {
     sender?: EmailSender | null;
     getViewer?: (jwt: string) => Promise<string | null>;
+    extra?: Partial<RegisterDeps>;
   } = {},
 ): Setup {
   const calls: Setup["calls"] = [];
@@ -58,6 +59,7 @@ function setup(
     sender: () => (opts.sender === undefined ? defaultSender : opts.sender),
     siteUrl: "https://app.faro.test",
     defer: (p) => void deferred.push(p),
+    ...(opts.extra ?? {}),
   };
   return {
     handler: createRegisterHandler(deps),
@@ -334,4 +336,78 @@ Deno.test("a funcao nao escreve log", async () => {
     console.log = original;
   }
   assertEquals(lines.length, 0);
+});
+
+// ── Endurecimento (T102/T103; security-hardening.contract.md secoes 2 e 3) ──────────────────────────────────────────
+
+/** Contador em memoria com a semantica de `rate_limit_hit`: a chamada conta a si mesma; true = estourou. */
+function memoryCounter() {
+  const counts = new Map<string, number>();
+  return (scope: string, key: string, limit: number): Promise<boolean> => {
+    const k = `${scope}|${key}`;
+    const n = (counts.get(k) ?? 0) + 1;
+    counts.set(k, n);
+    return Promise.resolve(n > limit);
+  };
+}
+
+Deno.test("scan_ip_min: o 21o pedido do mesmo ip_hash em um minuto devolve 200, nao grava scan e nao envia e-mail", async () => {
+  const hit = memoryCounter();
+  const t = setup({ register_scan: NEW_SCAN }, { extra: { rateHit: (s, k, l) => hit(s, k, l) } });
+  const bodies: Array<Record<string, unknown>> = [];
+  for (let i = 0; i < 21; i++) {
+    const res = await t.handler(postJson({ code: CODE, ip_hash: "mesmo-ip" }, H));
+    assertEquals(res.status, 200);
+    bodies.push(await bodyOf(res));
+  }
+  await t.flush();
+  assertEquals(t.calls.filter((c) => c.fn === "register_scan").length, 20);
+  assertEquals(t.sent.length, 20);
+  assertEquals(bodies[20], { owner: false });
+  assertFalse("scan_token" in bodies[20]);
+  // Outro ip_hash segue normalmente.
+  const other = await t.handler(postJson({ code: CODE, ip_hash: "outro-ip" }, H));
+  assertEquals(other.status, 200);
+  assertEquals(t.calls.filter((c) => c.fn === "register_scan").length, 21);
+});
+
+Deno.test("scan_ip_hour: o 201o pedido do mesmo ip_hash na hora e ignorado (200 sem efeito)", async () => {
+  // O contador por minuto nunca estoura aqui: so o da hora.
+  const hit = memoryCounter();
+  const t = setup({ register_scan: NEW_SCAN }, {
+    extra: { rateHit: (s, k, l) => (s === "scan_ip_min" ? Promise.resolve(false) : hit(s, k, l)) },
+  });
+  for (let i = 0; i < 201; i++) await t.handler(postJson({ code: CODE, ip_hash: "ip-hora" }, H));
+  assertEquals(t.calls.filter((c) => c.fn === "register_scan").length, 200);
+});
+
+Deno.test("teto global scan_global_min: no estouro, 200 sem efeito no formato de cada acao", async () => {
+  const t = setup({ register_scan: NEW_SCAN }, { extra: { globalLimit: () => Promise.resolve(true) } });
+  const scan = await t.handler(postJson({ code: CODE, ip_hash: "h" }, H));
+  assertEquals(scan.status, 200);
+  assertEquals(await bodyOf(scan), { owner: false });
+  const loc = await t.handler(postJson({ action: "location", scan_token: "t".repeat(64), lat: 1, lng: 2, accuracy_m: 3 }, H));
+  assertEquals(await bodyOf(loc), { updated: false });
+  const resend = await t.handler(postJson({ action: "resend" }, H));
+  assertEquals(await bodyOf(resend), { sent: 0, failed: 0 });
+  assertEquals(t.calls.length, 0);
+});
+
+Deno.test("teto global e contador por ip: falha do contador nao derruba o scan (segue sem limite)", async () => {
+  const t = setup({ register_scan: NEW_SCAN }, {
+    extra: {
+      globalLimit: () => Promise.reject(new Error("banco fora")),
+      rateHit: () => Promise.reject(new Error("banco fora")),
+    },
+  });
+  const res = await t.handler(postJson({ code: CODE, ip_hash: "h" }, H));
+  assertEquals(res.status, 200);
+  assertEquals(t.calls.filter((c) => c.fn === "register_scan").length, 1);
+});
+
+Deno.test("teto global: chamada sem a chave nem conta no teto", async () => {
+  let counted = 0;
+  const t = setup({}, { extra: { globalLimit: () => { counted++; return Promise.resolve(false); } } });
+  assertEquals((await t.handler(postJson({ code: CODE, ip_hash: "h" }))).status, 401);
+  assertEquals(counted, 0);
 });

@@ -39,6 +39,10 @@ Deno.serve(createResolveHandler({
     const { data, error } = await service().storage.from(PHOTOS_BUCKET).createSignedUrl(path, PHOTO_URL_TTL_SECONDS);
     return error ? null : (data?.signedUrl ?? null);
   },
+  globalLimit: async (scope, limit, windowSeconds) => {
+    const r = await service().rpc("global_rate_hit", { p_scope: scope, p_limit: limit, p_window_seconds: windowSeconds });
+    return r.error ? false : r.data === true;
+  },
   now: () => Date.now(),
   sleep: (ms) => new Promise<void>((resolve) => setTimeout(resolve, ms)),
 }));

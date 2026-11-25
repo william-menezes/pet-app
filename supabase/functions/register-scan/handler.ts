@@ -26,6 +26,11 @@ import { jsonResponse, methodNotAllowed } from "../_shared/responses.ts";
 
 /** Corpo maximo aceito. */
 export const SCAN_MAX_BODY = 4096;
+/** Teto global de chamadas por minuto (`scan_global_min`). */
+export const SCAN_GLOBAL_LIMIT = 600;
+/** Limites por ip_hash (security-hardening.contract.md secao 3). */
+export const SCAN_IP_MIN_LIMIT = 20;
+export const SCAN_IP_HOUR_LIMIT = 200;
 /** Reenvios por rodada do job. */
 export const RESEND_BATCH = 50;
 
@@ -39,6 +44,10 @@ export interface RegisterDeps {
   siteUrl: string;
   /** Roda a promessa fora do caminho da resposta (`EdgeRuntime.waitUntil`); a promessa nunca rejeita. */
   defer(p: Promise<unknown>): void;
+  /** Teto global (`scan_global_min`): true quando estourou. Falha ou ausencia: segue. */
+  globalLimit?(scope: string, limit: number, windowSeconds: number): Promise<boolean>;
+  /** Contador por chave (`rate_limit_hit`): true quando estourou. Falha ou ausencia: segue. */
+  rateHit?(scope: string, key: string, limit: number, windowSeconds: number): Promise<boolean>;
 }
 
 type Rec = Record<string, unknown>;
@@ -91,10 +100,27 @@ async function sendNotice(
   }
 }
 
+async function safeHit(fn: Promise<boolean> | undefined): Promise<boolean> {
+  if (fn === undefined) return false;
+  try {
+    return (await fn) === true;
+  } catch {
+    return false;
+  }
+}
+
+async function overIpLimit(deps: RegisterDeps, ipHash: string): Promise<boolean> {
+  if (!deps.rateHit) return false;
+  if (await safeHit(deps.rateHit("scan_ip_min", ipHash, SCAN_IP_MIN_LIMIT, 60))) return true;
+  return await safeHit(deps.rateHit("scan_ip_hour", ipHash, SCAN_IP_HOUR_LIMIT, 3600));
+}
+
 async function doScan(body: Rec, deps: RegisterDeps): Promise<Rec> {
   const code = str(body.code, 64);
   const ipHash = str(body.ip_hash, 128);
   if (code === null || ipHash === null) return { owner: false };
+  // Limites por origem: estouro devolve 200 sem efeito (nao consulta o dono, nao grava scan, nao envia e-mail).
+  if (await overIpLimit(deps, ipHash)) return { owner: false };
 
   let viewer: string | null = null;
   const jwt = str(body.user_jwt, 4096);
@@ -209,6 +235,10 @@ export function createRegisterHandler(deps: RegisterDeps): (req: Request) => Pro
     if (!isRec(body)) return jsonResponse({ owner: false });
 
     const action = body.action === undefined ? "scan" : body.action;
+    // Teto global: conta toda chamada autorizada; no estouro, 200 sem efeito no formato da acao.
+    if (deps.globalLimit && await safeHit(deps.globalLimit("scan_global_min", SCAN_GLOBAL_LIMIT, 60))) {
+      return jsonResponse(action === "location" ? { updated: false } : action === "resend" ? { sent: 0, failed: 0 } : { owner: false });
+    }
     try {
       switch (action) {
         case "scan":
