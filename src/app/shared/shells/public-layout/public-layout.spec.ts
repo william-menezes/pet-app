@@ -68,3 +68,42 @@ describe('PublicLayout e PublicFooter', () => {
     expect(byId(el, 'public-footer-code')?.textContent?.replace(/\s+/g, ' ').trim()).toBe('Tag 7K3M-Q9XA-C');
   });
 });
+
+@Component({
+  imports: [PublicLayout],
+  template: `
+    <app-public-layout media="photo-short" [lead]="lead()">
+      <div media>Faixa</div>
+      <div lead data-testid="host-lead">Bloco</div>
+      <p data-testid="host-body">Corpo</p>
+    </app-public-layout>
+  `,
+})
+class LeadHost {
+  readonly lead = signal(true);
+}
+
+describe('PublicLayout com [lead] (modo perdido)', () => {
+  const byId = (el: HTMLElement, id: string) => el.querySelector<HTMLElement>(`[data-testid="${id}"]`);
+
+  it('com lead: o bloco entra acima da folha e a folha perde o canto arredondado e o recuo', () => {
+    const fixture = TestBed.createComponent(LeadHost);
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    expect(byId(el, 'public-layout-lead')?.contains(byId(el, 'host-lead'))).toBe(true);
+    const sheet = byId(el, 'public-layout-sheet')?.className ?? '';
+    expect(sheet).not.toContain('rounded-t-3xl');
+    expect(sheet).not.toContain('-mt-7');
+  });
+
+  it('sem lead: o bloco não é desenhado e a folha mantém o canto e o recuo', () => {
+    const fixture = TestBed.createComponent(LeadHost);
+    fixture.componentInstance.lead.set(false);
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    expect(byId(el, 'public-layout-lead')).toBeNull();
+    const sheet = byId(el, 'public-layout-sheet')?.className ?? '';
+    expect(sheet).toContain('rounded-t-3xl');
+    expect(sheet).toContain('-mt-7');
+  });
+});

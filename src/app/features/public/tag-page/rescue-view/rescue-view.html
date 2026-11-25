@@ -1,0 +1,252 @@
+@if (ownerView()) {
+  <div
+    class="flex items-center gap-3 bg-brand px-4 py-3 md:px-8 md:py-3.5"
+    role="status"
+    data-testid="public-owner-banner"
+  >
+    <ng-icon name="eye" size="22" class="shrink-0 text-primary" aria-hidden="true" />
+    <div class="flex min-w-0 flex-1 flex-col gap-px">
+      <p class="text-[15px] font-semibold text-brand-foreground" i18n>Você está vendo como um estranho</p>
+      <p class="text-[13px] text-brand-muted" i18n>Este scan não gera aviso</p>
+    </div>
+    <a z-button zSize="md" href="/app" data-testid="public-owner-edit" i18n>Editar</a>
+  </div>
+}
+
+<app-public-layout [media]="isLost() ? 'photo-short' : 'photo'" [lead]="isLost()" data-testid="public-rescue-page">
+  <div media class="relative">
+    @if (photo(); as url) {
+      <img
+        [src]="url"
+        [alt]="photoAlt()"
+        width="1200"
+        height="900"
+        fetchpriority="high"
+        loading="eager"
+        decoding="async"
+        referrerpolicy="no-referrer"
+        class="absolute inset-0 size-full object-cover object-[center_28%] xl:object-[center_30%]"
+        data-testid="public-rescue-photo"
+      />
+    } @else {
+      <div class="absolute inset-0 flex items-center justify-center" data-testid="public-rescue-photo-placeholder">
+        <app-focinho class="w-36 text-foreground/10 md:w-44 xl:w-64" />
+      </div>
+    }
+    <div class="absolute top-4 left-4 md:top-6 md:left-6 xl:top-8 xl:left-8">
+      <div class="md:hidden"><app-brand-mark [size]="44" /></div>
+      <div class="hidden md:block xl:hidden"><app-brand-mark [size]="52" /></div>
+      <div class="hidden xl:block"><app-brand-mark [size]="56" /></div>
+    </div>
+  </div>
+
+  @if (isLost()) {
+    <div
+      lead
+      class="rounded-t-3xl bg-lost text-lost-foreground md:rounded-t-4xl"
+      data-testid="public-rescue-lost"
+    >
+      <div
+        class="mx-auto flex w-full flex-col px-5 pt-[22px] pb-5 md:max-w-[560px] md:px-0 md:pt-9 md:pb-8 xl:max-w-none xl:px-24 xl:pt-[88px] xl:pb-11"
+      >
+        <h1
+          class="font-display text-[40px] leading-[1.02] font-bold tracking-[-0.03em] text-lost-foreground md:text-[56px] xl:text-[64px]"
+          data-testid="public-rescue-title"
+        >
+          <ng-container i18n>Sou {{ name() }}.</ng-container>
+          <br />
+          <ng-container i18n>Me perdi de casa.</ng-container>
+        </h1>
+        <p class="mt-2.5 max-w-[480px] text-base leading-[1.45] md:mt-3.5 md:text-lg xl:mt-4 xl:text-[19px]" i18n>
+          Minha família está me procurando. Você me ajuda a voltar para casa?
+        </p>
+        @if (elapsed() !== null || reward()) {
+          <div class="mt-3.5 flex flex-wrap gap-2">
+            @if (elapsed(); as time) {
+              <span
+                class="inline-flex h-8 items-center gap-1.5 rounded-full bg-white px-3 text-[13px] font-semibold text-warning-foreground"
+                data-testid="public-rescue-elapsed"
+              >
+                <ng-icon name="clock" size="16" aria-hidden="true" />
+                @if (time.unit === 'hours') {
+                  <span i18n>
+                    Longe de casa há {{ time.amount }} {time.amount, plural, =1 {hora} other {horas}}
+                  </span>
+                } @else {
+                  <span i18n>
+                    Longe de casa há {{ time.amount }} {time.amount, plural, =1 {dia} other {dias}}
+                  </span>
+                }
+              </span>
+            }
+            @if (reward()) {
+              <span
+                class="inline-flex h-8 items-center rounded-full bg-white px-3 text-[13px] font-semibold text-warning-foreground"
+                data-testid="public-rescue-reward"
+                i18n
+              >
+                Há recompensa
+              </span>
+            }
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+  @if (isLost()) {
+    <div class="flex flex-1 flex-col gap-3.5">
+      @if (lostMessage(); as message) {
+        <div class="flex flex-col gap-1.5 rounded-xl bg-card px-4 py-3.5" data-testid="public-rescue-message">
+          @if (tutor(); as who) {
+            <span class="text-[13px] font-semibold text-muted-foreground" i18n>Recado de {{ who }}</span>
+          } @else {
+            <span class="text-[13px] font-semibold text-muted-foreground" i18n>Recado de quem cuida de mim</span>
+          }
+          <p class="text-[15px] leading-[1.45] text-foreground">{{ message }}</p>
+        </div>
+      }
+      <ng-container *ngTemplateOutlet="details" />
+      <div class="min-h-3 flex-1 xl:hidden"></div>
+      <ng-container *ngTemplateOutlet="actions" />
+    </div>
+  } @else {
+    <div class="flex flex-1 flex-col">
+      <h1
+        class="font-display text-[46px] leading-none font-bold tracking-[-0.03em] text-foreground md:text-[64px] xl:text-[72px]"
+        data-testid="public-rescue-title"
+      >
+        <ng-container i18n>Oi, eu sou</ng-container>
+        <br />
+        {{ name() }}.
+      </h1>
+      <p class="mt-3 max-w-[480px] text-[17px] leading-[1.45] text-text md:mt-4 md:text-[19px] xl:mt-[18px] xl:text-xl" data-testid="public-rescue-lead">
+        @if (tutor(); as who) {
+          <ng-container i18n>Se você me encontrou, avise {{ who }}. Minha família me leva de volta para casa.</ng-container>
+        } @else {
+          <ng-container i18n>Se você me encontrou, avise minha família. Ela me leva de volta para casa.</ng-container>
+        }
+      </p>
+      <div class="mt-3.5 flex flex-col gap-3.5 md:mt-4 xl:mt-5">
+        <ng-container *ngTemplateOutlet="details" />
+      </div>
+      <div class="min-h-3 flex-1 xl:hidden"></div>
+      <div class="hidden h-7 shrink-0 xl:block"></div>
+      <ng-container *ngTemplateOutlet="actions" />
+    </div>
+  }
+
+  <app-public-footer footer [trust]="trust()" [code]="profile().code" />
+</app-public-layout>
+
+<!-- Temperamento e cuidados: só o que o tutor liberou. -->
+<ng-template #details>
+  @if (temperament().length > 0) {
+    <ul class="flex flex-wrap gap-2" data-testid="public-rescue-temperament">
+      @for (item of temperament(); track $index) {
+        <li class="inline-flex h-8 items-center rounded-full border border-border bg-card px-3 text-[13px] font-semibold text-foreground">
+          {{ item }}
+        </li>
+      }
+    </ul>
+  }
+  @if (care(); as notes) {
+    <div class="flex items-center gap-3 rounded-xl bg-card px-3.5 py-3" data-testid="public-rescue-care">
+      <app-icon-tile icon="warn" />
+      <p class="text-[15px] leading-[1.4] text-foreground">{{ notes }}</p>
+    </div>
+  }
+  @if (!hasContact()) {
+    <app-info-card icon="info" title="Encontrou um pet?" i18n-title data-testid="public-rescue-no-contact">
+      <ng-container i18n>
+        Uma clínica veterinária ou ONG pode ler o microchip do animal e localizar a família.
+      </ng-container>
+    </app-info-card>
+  }
+</ng-template>
+
+<!-- Contato: WhatsApp (link no HTML do servidor), telefone e "Enviar onde estou". -->
+<ng-template #actions>
+  @if (whatsapp(); as url) {
+    @if (ownerView()) {
+      <button type="button" z-button zSize="rescue" [zDisabled]="true" disabled data-testid="public-rescue-whatsapp">
+        <ng-icon name="whats" size="22" aria-hidden="true" />
+        @if (tutor(); as who) {
+          <span i18n>Avisar {{ who }} no WhatsApp</span>
+        } @else {
+          <span i18n>Avisar a família no WhatsApp</span>
+        }
+      </button>
+    } @else {
+      <a z-button zSize="rescue" [href]="url" target="_blank" rel="noopener noreferrer" data-testid="public-rescue-whatsapp">
+        <ng-icon name="whats" size="22" aria-hidden="true" />
+        @if (tutor(); as who) {
+          <span i18n>Avisar {{ who }} no WhatsApp</span>
+        } @else {
+          <span i18n>Avisar a família no WhatsApp</span>
+        }
+      </a>
+    }
+  }
+
+  @if (phone(); as display) {
+    @if (phoneHref(); as href) {
+      @if (ownerView()) {
+        <span class="flex min-h-11 items-center justify-center text-[15px] font-semibold text-disabled-foreground" data-testid="public-rescue-phone">
+          <span i18n>Ligar: {{ display }}</span>
+        </span>
+      } @else {
+        <a
+          [href]="href"
+          class="flex min-h-11 items-center justify-center text-[15px] font-semibold text-foreground underline underline-offset-[3px]"
+          data-testid="public-rescue-phone"
+        >
+          <span i18n>Ligar: {{ display }}</span>
+        </a>
+      }
+    } @else {
+      <p class="flex min-h-11 items-center justify-center text-[15px] font-semibold text-foreground" data-testid="public-rescue-phone">
+        <span i18n>Telefone: {{ display }}</span>
+      </p>
+    }
+  }
+
+  @if (locationStatus() !== 'unavailable' && hasContact()) {
+    @if (locationStatus() === 'sent') {
+      <p class="flex min-h-11 items-center justify-center gap-2 text-[15px] font-semibold text-foreground" role="status" data-testid="public-rescue-location-sent">
+        <ng-icon name="checkCircle" size="18" aria-hidden="true" />
+        @if (tutor(); as who) {
+          <span i18n>Localização enviada para {{ who }}</span>
+        } @else {
+          <span i18n>Localização enviada para a família</span>
+        }
+      </p>
+    } @else {
+      <button
+        type="button"
+        class="mt-0.5 flex min-h-11 w-full items-center justify-center gap-2 text-[15px] font-semibold text-foreground underline underline-offset-[3px] disabled:text-disabled-foreground disabled:no-underline"
+        [disabled]="ownerView() || locationStatus() === 'sending'"
+        (click)="shareLocation.emit()"
+        data-testid="public-rescue-location"
+      >
+        <ng-icon name="pin" size="18" aria-hidden="true" />
+        @if (tutor(); as who) {
+          <span i18n>Enviar onde estou para {{ who }}</span>
+        } @else {
+          <span i18n>Enviar onde estou para a família</span>
+        }
+      </button>
+      @if (locationStatus() === 'denied') {
+        <p class="text-center text-[13px] leading-[1.4] text-muted-foreground" role="status" data-testid="public-rescue-location-denied" i18n>
+          Sem a permissão de localização não conseguimos enviar. Use o botão de mensagem para avisar.
+        </p>
+      }
+    }
+  }
+
+  @if (ownerView()) {
+    <p class="mt-1.5 text-center text-[13px] leading-[1.4] text-muted-foreground" data-testid="public-owner-note" i18n>
+      Os botões ficam desativados na sua visão. Assim você não envia mensagem para o seu próprio número.
+    </p>
+  }
+</ng-template>
