@@ -201,7 +201,7 @@ test.describe('Storage pet-photos (real)', () => {
     fetch(`${stack.url}/storage/v1/object/pet-photos/${path}`, {
       method: 'POST',
       headers: { apikey: stack.anonKey, Authorization: `Bearer ${token}`, 'Content-Type': type },
-      body,
+      body: typeof body === 'string' ? body : new Uint8Array(body),
     });
 
   test('A grava e le no proprio prefixo; B, anon e o prefixo alheio sao negados; tipo e tamanho tem teto', async () => {
