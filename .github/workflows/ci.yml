@@ -135,9 +135,21 @@ jobs:
           E2E_PROD_DEAD_URL: http://localhost:4301
         run: npx playwright test -c playwright.e2e-real.config.ts
       # Gate (spec 003): nenhum PIN do pool do E2E nos logs das funcoes nem do servidor de producao.
+      # O PostgREST, o Auth, o gateway e o banco veem o PIN em claro a caminho da funcao: os logs dos containers tambem entram.
+      - name: Logs dos containers do Supabase
+        if: ${{ always() }}
+        run: |
+          for c in $(docker ps --format '{{.Names}}' | grep '^supabase_'); do docker logs "$c" > "/tmp/ctr-$c.log" 2>&1 || true; done
+          ls -l /tmp/ctr-*.log
       - name: PINs nos logs
         if: ${{ always() }}
-        run: node scripts/ci/check-pins-in-log.mjs /tmp/functions-serve.log /tmp/ssr-prod.log /tmp/ssr-prod-dead.log
+        run: node scripts/ci/check-pins-in-log.mjs /tmp/functions-serve.log /tmp/ssr-prod.log /tmp/ssr-prod-dead.log /tmp/ctr-*.log
+      # Os PINs do lote de 500 (criado em admin.spec.ts) nao estao no pool de 48: arquivo proprio, mesmos logs.
+      - name: PINs do lote de 500 nos logs
+        if: ${{ always() }}
+        env:
+          PIN_POOL_FILE: /tmp/faro-e2e-pool-lote500.json
+        run: node scripts/ci/check-pins-in-log.mjs /tmp/functions-serve.log /tmp/ssr-prod.log /tmp/ssr-prod-dead.log /tmp/ctr-*.log
       # Gate (T094/T108): senha e codigo de SMS nunca no log das Edge Functions. Valores de teste obvios, sem segredo real.
       - name: Segredos no log das Edge Functions
         if: ${{ always() }}

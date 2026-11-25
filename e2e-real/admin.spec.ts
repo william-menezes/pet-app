@@ -1,4 +1,6 @@
-import { readFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
 import { expect, test, type Page } from '@playwright/test';
 
@@ -184,5 +186,17 @@ for (const quantity of [54, 500]) {
     expect(r.tags).toHaveLength(quantity);
     expect(new Set(r.tags.map((t) => t.code)).size).toBe(quantity);
     for (const t of r.tags) expect(t.pin).toMatch(/^[0-9A-HJKMNP-TV-Z]{6}$/);
+    if (quantity === 500) {
+      // Os PINs do lote de 500 vao para um arquivo temporario do sistema (fora do repositorio): o passo do CI `check-pins-in-log` os
+      // procura nos logs (PIN_POOL_FILE). Sem isso, so os 48 PINs do pool do E2E eram conferidos.
+      writeFileSync(join(tmpdir(), 'faro-e2e-pool-lote500.json'), JSON.stringify({ batchId: r.batchId, tags: r.tags }));
+      // O par codigo/PIN do pacote confere com o hash gravado em CADA fatia de 10 (primeiro, do meio e ultimo): ativar prova a ordem.
+      const t = await newTutor();
+      for (const idx of [0, 249, 499]) {
+        const pet = await createPet(t, `Lote${idx}`);
+        const act = await rpc(t, 'activate_tag', { p_code: r.tags[idx].code, p_pin: r.tags[idx].pin, p_pet_id: pet, p_replace: false, p_enable_whatsapp: false });
+        expect(act.body.ok, `ativar o codigo ${idx} do lote com o PIN do pacote`).toBe(true);
+      }
+    }
   });
 }

@@ -685,3 +685,68 @@ Veredito de segurança: nenhuma expectativa falhou. Veredito geral: AMARELO (DEF
 | `@ng-icons/core`, `tslib`, `cva`, `clsx`, `localize` | ~3,5 |
 
   Piso: Angular (core + router + common + platform-browser + rxjs + tslib + localize) ≈ 94,8 kB. Cortes avaliados e nao feitos: (a) registrar so os icones da pagina publica na raiz e o resto nas rotas autenticadas, ~3 kB, exige reorganizar `app.routes.ts` e arrisca icone ausente em overlays; (b) trocar `tailwind-merge` por `clsx` nos 3 componentes alcancados, ~8,7 kB, muda a resolucao de classes em sobrescritas (`w-full text-lg` sobre o tamanho do botao). Com os dois, ~122 kB; 100 kB nao e alcancavel sem tirar o roteador.
+
+## QA: auditoria, contadores de PIN e conferência da 0036 (2026-11-25)
+
+**Veredito do gate: VERDE, com um achado de gate que já foi corrigido (DEF-003-04) e três riscos registrados (R-AUD-1, R-AUD-2, R-HASH-1).**
+Pilha local própria da rodada (db reset, `supabase test db` completo na base limpa: 30 arquivos, PASS). Nada do Supabase hospedado foi tocado.
+
+### DEF-003-04: o gate "nenhum PIN nos logs" nunca podia falhar (gravidade ALTA para o gate, nenhuma para o produto)
+
+`scripts/ci/check-pins-in-log.mjs` montava o padrão com `` new RegExp(`\b${pin}\b`) ``. Em template literal `\b` é o caractere de retrocesso (U+0008), não o limite de palavra: o padrão **nunca casava**, mesmo com o PIN plantado no log. O passo "PINs nos logs" do CI (inclusive no run 45580957555) passava vazio. Medido: com o padrão antigo, um texto com o PIN dá `false`; com `\\b`, `true`.
+Correção (é script de teste, não produto): `\\b`, uma **prova de que o detector detecta** (planta o primeiro PIN num texto e exige o casamento; senão sai com 2) e `PIN_POOL_FILE` para conferir outros lotes. Controle feito: log com PIN plantado dá `exit 1`.
+Agora o passo confere também os **logs dos containers do Supabase** (PostgREST, banco, gateway, Auth: o PIN em claro passa por eles a caminho da função) e os **500 PINs do lote grande** (`admin.spec.ts` grava o arquivo temporário).
+Medida local depois da correção, com o detector provado: 48 PINs do pool e 500 PINs do lote de 500, em 11 logs (os 10 containers e o `functions serve`): **nenhum**. Os logs não estavam vazios (banco 680 KB, gateway 187 KB, chamadas a `admin_hash_pins` visíveis no gateway).
+
+### 1. Auditoria: evento → onde é gravado → teste
+
+Lista: constituição, Princípio VII, e CLAUDE.md "Auditoria".
+
+| Evento da lista | Gravado em | Prova |
+| --- | --- | --- |
+| Scans | `scan_events` (linha ligada ao vínculo vigente; `ip_hash`), por `register_scan` (0030); não vai para `audit_log` (por desenho) | `rpc_register_scan`, `rls_scans`, `gate-security.spec` (isolamento entre vínculos) |
+| Criação de lote | `audit_log`: `batch_created` (só a quantidade), `batch_package_downloaded`, `codes_exported`, `admin_rate_limited` (0034, 0035, 0036) | `rpc_admin`; **novo** `auditoria_eventos`, `batch_atomicidade` |
+| Emissão e reemissão de PIN | `batch_created` (emissão do lote), `pin_reissued` (reemissão do admin), `tag_released` (o PIN novo do tutor sai na liberação; não há evento próprio) | `rpc_admin`, `rpc_release_tag`; **novo** `auditoria_eventos`, `pin-counters.spec` |
+| Tentativas de ativação falhas e bloqueios | `activation_failed`, `activation_locked_account`, `activation_locked_tag` (0035) | `rpc_activate_tag`; **novo** `auditoria_eventos`, `pin_contadores_laterais`, `pin-counters.spec` |
+| Criar vínculo | `tag_activated` (0035) | `rpc_activate_tag`; **novo** `auditoria_eventos` |
+| Encerrar vínculo | `tag_released` (liberar, trocar), `assignment_ended_by_admin`, `account_tags_released` (exclusão de conta), `tag_status_changed` (2ª via perdida) | `rpc_release_tag`, `rpc_admin`, `account_tags`; **novo** `auditoria_eventos` |
+| Transferir vínculo | `tag_released` com `reason = transferred` | `rpc_release_tag`; **novo** `auditoria_eventos` |
+| Mudança de status do código | `tag_status_changed` (de, para, observação do admin) | `rpc_admin`, `rpc_release_tag`; **novo** `auditoria_eventos` |
+| Reimpressão | **não gravado**: `labels_reprinted` só existe nos contratos; `admin-labels` (T084 🔒) não existe, e os botões de reimpressão estão desativados | nenhuma (não aplicável até a T084); quando a T084 entrar sem o evento, vira defeito |
+| Eventos de autenticação | `auth_audit_log`: `conta_criada`, `termos_aceitos`, `logout`, `email_confirmado`, `senha_alterada`, `senha_recuperacao_solicitada`, `login_sucesso`, `login_falha`, `login_bloqueado` | `auditoria_auth_users`, `funcoes_conta`, `conta_estado_inicial`; `login-guard/handler.test.ts` (falsos); **novo** `audit-events.spec` (`login_sucesso` e `login_falha` pela função real) |
+| Acessos e exclusões de dados | `dados_exportados` e `conta_excluida` (`auth_audit_log`), `account_tags_released` | `conta_privacidade`, `account.spec`, `account_tags`. **Leituras do admin** (`admin_code_detail`, `admin_list_codes`, `admin_scan_queue`, `admin_audit`) **não geram evento**: R-AUD-2 |
+
+Testes novos desta parte: `supabase/tests/auditoria_eventos.test.sql` (44 asserções) dispara 17 eventos com chamadas reais e prova (a) o conjunto exato, (b) chaves do detalhe numa lista fechada, (c) nenhum PIN antigo ou novo, telefone, e-mail ou IP em `detail`, `entity`, `entity_id` nem `actor_role` (o cenário planta telefone e e-mail no recado do modo perdido e no cadastro), (d) ator vindo do JWT, (e) inventário: toda chamada `audit('...')` do banco está na lista, (f) a tabela é só de inserção, até para `service_role`. `e2e-real/zz-audit-sweep.spec.ts` roda por último e varre **todas** as linhas de `audit_log` e `auth_audit_log` da rodada contra os PINs do pool e do lote de 500; controle feito (linha plantada com PIN reprova).
+
+**R-AUD-1 (baixo)**: a observação livre do admin em `admin_set_status` (até 200 caracteres) vai inteira para `detail.note`. A barreira da tabela só olha nomes de chave; um telefone ou e-mail digitado na observação fica para sempre no `audit_log`. Teste `todo` documentado em `auditoria_eventos` (falha esperada). Sugestão: avisar na tela "não escreva dados pessoais" ou recusar dígitos e `@` na observação.
+**R-AUD-2 (baixo a médio)**: o Princípio VII lista "acessos a dados". As leituras do admin devolvem nome curto, nome do pet e cidade/região dos scans, sem registro. Decisão do William: aceitar para o MVP ou gravar `admin_viewed_code`.
+
+### 2. Contadores de PIN não se desfazem por caminho lateral
+
+`supabase/tests/pin_contadores_laterais.test.sql` (84 asserções, chamadas reais) e `e2e-real/pin-counters.spec.ts` (pilha inteira). Para a conta e para a tag, com o bloqueio de pé e sem ele:
+
+| Caminho | Resultado |
+| --- | --- |
+| PIN certo de OUTRA tag | contadores e instante do bloqueio intactos |
+| Liberar outra tag; trocar a tag de um pet (`p_replace`); trocar de pet entre as tentativas | intactos |
+| Criar e remover pet | intacto |
+| Começar e abandonar ativação pendente | intacto |
+| Sair e entrar de novo | intacto; no e2e, `logout` e novo login reais no Auth, o 5º erro (3 da sessão antiga + 2) bloqueia, o PIN certo continua recusado e o instante do bloqueio não muda |
+| PIN certo durante o bloqueio da conta e da tag | `locked`; não reduz nem aumenta contador |
+| Outra conta na mesma tag | soma na tag, não mexe na conta de A; 4 contas x 5 erros = 20 travam a tag por 24 h para todos, e conta que nunca errou com o PIN certo recebe `locked` |
+| Jobs do cron (`cron_cleanup_tags`, `cron_resend_scan_notices`) | não tocam em contadores nem em bloqueios; só apagam `rate_limits` com mais de 48 h e ativações pendentes vencidas (controle: apagam o que é velho e mantêm o de 47 h); `cron.job` tem só os dois jobs, e os comandos são só essas funções |
+| Reemissão de PIN pelo admin | **zera de propósito**: tentativas de todas as contas, contador da tag e bloqueio; PIN antigo passa a ser `wrong_pin`; PIN novo ativa. Bate com `admin.contract.md` ("gera PIN novo, zera contadores"). É o único caminho que levanta um bloqueio antes da hora, e é auditado (`pin_reissued`, detalhe vazio) |
+| Excluir a conta | zera a linha da conta (cascata), **não** o contador da tag nem o bloqueio dela |
+
+Risco registrado, não defeito: o contador por conta é reiniciável por excluir e recriar a conta (celular novo confirmado por SMS); a salvaguarda é o limite por tag (20 em 24 h), provado.
+
+### 3. Conferência da 0036
+
+- `admin_hash_pins` por HTTP real (`e2e-real/batch-hash.spec.ts`): `anon`, tutor novo, tutor do seed e admin logado recebem 401/403, **nunca 404**, e a resposta não ecoa o PIN. Atenção: o `gate-security.spec` chama as RPCs com corpo `{}` e aceita 404; para uma função com argumento obrigatório essa prova pode ser vazia (risco de harness, não alterado). Aqui a chamada tem o formato certo, e o controle com a chave de serviço devolve hashes bcrypt custo 12.
+- Entrada inválida (service_role): minúsculas, fora do alfabeto, tamanho errado, nulo, vazio, 11 PINs: 22023 sem o valor. **R-HASH-1 (informativo)**: com o tipo errado (texto no lugar de array) quem rejeita é o cast do PostgREST (`22P02 malformed array literal: "<valor>"`), que ecoa o valor; só `service_role` chega lá, e a Edge Function só manda `text[]` montado por ela. Demais papéis recebem 403 sem eco.
+- Nenhum PIN nos logs depois do lote de 500: provado (ver DEF-003-04). Além disso, o par código/PIN do pacote confere com o hash de cada fatia: o teste ativa o 1º, o 250º e o 500º código do lote com o PIN do pacote.
+- Falha no meio do lote: **prova real no banco** (`batch_atomicidade.test.sql`, 13 asserções): gatilho de teste que levanta no 3º código (os 2 primeiros já inseridos) e outro na auditoria (lote e códigos já inseridos); depois de cada falha, zero lotes, zero códigos, zero `batch_created`; o controle sem gatilho grava tudo e exatamente um evento. A falha de uma fatia de `admin_hash_pins` (antes de qualquer gravação) continua só com falsos (`handler.test.ts`): não há como derrubar uma chamada HTTP no meio.
+
+### Não verificado
+
+`deno test` (sem deno na máquina; o CI roda). O e2e real completo (precisa do `ng serve`); só os specs de API foram executados aqui, mais o de 500 e o de 54.
