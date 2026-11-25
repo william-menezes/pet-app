@@ -48,7 +48,7 @@
     "tslib": "^2.3.0"
   },
   "devDependencies": {
-    "@angular/build": "^21.2.30",
+    "@angular/build": "^22.3.0",
     "@angular/cli": "^21.2.30",
     "@angular/compiler-cli": "^21.2.26",
     "@angular/localize": "^21.2.26",
