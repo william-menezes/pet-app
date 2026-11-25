@@ -15,6 +15,7 @@
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.108.1";
 import { getCaller } from "../_shared/clients.ts";
+import { resolvePublicKey } from "../_shared/env.ts";
 import { createHandler, type GuardEnv } from "./handler.ts";
 
 function readEnv(): GuardEnv {
@@ -31,7 +32,7 @@ Deno.serve(createHandler({
   svc: (env) => createClient(env.supabaseUrl, env.serviceRoleKey, { auth: { persistSession: false } }),
   actorId: async (req, env) => {
     try {
-      const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+      const anonKey = resolvePublicKey((name) => Deno.env.get(name));
       const user = await getCaller(req, { supabaseUrl: env.supabaseUrl, anonKey });
       return user?.id ?? null;
     } catch {

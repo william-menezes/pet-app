@@ -11,8 +11,8 @@
  *  2. SEM chave nas duas: não importa nada e devolve `null` (a chamada segue sem `Authorization`);
  *  3. com chave: importa `core/supabase/supabase.service` por `import()` dinâmico e pede a sessão ao
  *     cliente (que renova o token se preciso);
- *  4. se o cliente não achar a sessão (a volátil, de `sessionStorage`, não é lida por ele; defeito
- *     DEF-001 da 004), usa o token gravado na própria chave, desde que ainda não tenha vencido.
+ *  4. rede de segurança: se o cliente não achar a sessão (antes do DEF-001 da 004 ele não lia a volátil,
+ *     de `sessionStorage`), usa o token gravado na própria chave, desde que ainda não tenha vencido.
  * Qualquer falha devolve `null`: o visitante segue como anônimo.
  */
 import { Injectable, Injector, PLATFORM_ID, inject } from '@angular/core';

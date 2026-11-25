@@ -31,16 +31,48 @@ test('recarregar a pagina mantem a sessao (/app continua em /app)', async ({ pag
   await expect(page).toHaveURL(/\/app\/conta/);
 });
 
-// DEF-001 (produto, spec 001/004): sem "Manter conectado" o AuthService grava a sessao no sessionStorage (auth.storage = ...),
-// mas o cliente Supabase novo, criado a cada carga da pagina, le so o localStorage. Recarregar a aba perde a sessao
-// ("Sua sessao expirou"), embora o contrato diga que o sessionStorage vive ate fechar a aba. Fica como falha esperada ate o
-// frontend corrigir; quando corrigir, este teste passa e o Playwright o reprova ("expected to fail"), forcando a remocao do test.fail.
+// DEF-001 (corrigido): o cliente Supabase de cada carga le o storage onde a sessao esta (local com "Manter conectado",
+// session sem ele). Sem "Manter conectado" a sessao sobrevive ao F5 na mesma aba; nada fica orfao ao sair.
+const TOKEN_KEY = /^sb-.+-auth-token$/;
+const chaves = (page: import('@playwright/test').Page) =>
+  page.evaluate((src) => {
+    const re = new RegExp(src);
+    const pega = (st: Storage) => Object.keys(st).filter((k) => re.test(k));
+    return { local: pega(localStorage), session: pega(sessionStorage) };
+  }, TOKEN_KEY.source);
+
 test('DEF-001: sem "Manter conectado", recarregar a mesma aba mantem a sessao', async ({ page }) => {
-  test.fail(true, 'DEF-001: a sessao volatil nao sobrevive ao recarregamento');
   await loginViaUi(page, SEED.tutorA.email, SEED.password, { remember: false });
+  await expect(page).toHaveURL(/localhost:4200\/app(\?|$|\/)/);
+  expect(await chaves(page)).toEqual({ local: [], session: [expect.any(String)] });
+  await page.reload();
   await expect(page).toHaveURL(/localhost:4200\/app(\?|$|\/)/);
   await page.goto('/app/conta');
   await expect(page.locator(tid('account-home'))).toBeVisible();
+  await page.reload();
+  await expect(page.locator(tid('account-home'))).toBeVisible();
+  expect(await chaves(page)).toEqual({ local: [], session: [expect.any(String)] });
+});
+
+test('DEF-001: com "Manter conectado" a sessao fica no localStorage e sobrevive ao F5', async ({ page }) => {
+  await loginViaUi(page, SEED.tutorA.email, SEED.password, { remember: true });
+  await expect(page).toHaveURL(/localhost:4200\/app(\?|$|\/)/);
+  expect(await chaves(page)).toEqual({ local: [expect.any(String)], session: [] });
+  await page.goto('/app/conta');
+  await expect(page.locator(tid('account-home'))).toBeVisible();
+  await page.reload();
+  await expect(page.locator(tid('account-home'))).toBeVisible();
+});
+
+test('DEF-001: sair limpa o token dos dois storages', async ({ page }) => {
+  await loginViaUi(page, SEED.tutorA.email, SEED.password, { remember: false });
+  await expect(page).toHaveURL(/localhost:4200\/app(\?|$|\/)/);
+  await page.goto('/app/conta');
+  await page.locator(tid('account-logout')).click();
+  await expect(page).toHaveURL(/localhost:4200\/auth(\?|$|\/)/);
+  expect(await chaves(page)).toEqual({ local: [], session: [] });
+  await page.reload();
+  expect(await chaves(page)).toEqual({ local: [], session: [] });
 });
 
 test('papel pelo servidor: current_user_role de cada usuario do seed', async () => {

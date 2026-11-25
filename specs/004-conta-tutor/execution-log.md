@@ -733,3 +733,70 @@ Progresso registrado a cada passo (a sessão caiu mais de uma vez). Nenhum teste
 - **Desvio de caminho**: os testes ficam em `e2e-real/` (nao em `e2e/...` como no `tasks.md`), porque `npm run e2e` (testDir `e2e/`) roda na maquina de
   desenvolvimento, onde o ambiente aponta para o projeto hospedado. `e2e-real/global-setup.ts` ABORTA se `E2E_SUPABASE_URL` ou `environment.e2e.ts` nao forem locais.
 - `workers: 1`: os limites de taxa (IP, conta) sao compartilhados no runner; cada teste usa e-mail e celular unicos.
+
+## QA, retomada (2026-11-25): CI do job `e2e`
+
+- Run 45520627830 (vermelho, 12 falhas): causas, as duas **de teste ou de produto**, nao do workflow.
+  1. **Teste**: `typeSmsCode` testava `isEnabled()` do botao "Confirmar" logo depois de digitar; o valor chega ao formulario um instante depois,
+     o clique era pulado e o codigo nunca ia ao servidor (o trace de T060b nao tem nenhum `phone-verify-confirm`). Agora espera `toBeEnabled()`.
+  2. **Produto, DEF-001**: entrar **sem** "Manter conectado" grava a sessao no `sessionStorage` (`AuthService.setRememberMe` troca `auth.storage`),
+     mas o cliente Supabase criado a cada carga da pagina (`SupabaseService`) so le o `localStorage`. Recarregar ou `page.goto` na mesma aba
+     perde a sessao e cai em `/auth/login?reason=session_expired`. O login do teste agora marca "Manter conectado" (padrao), e
+     `session-and-isolation.spec.ts` ganhou o teste `DEF-001` como `test.fail` com o motivo, que passa a falhar (e avisa) quando o frontend corrigir.
+  3. **Teste**: T060b esperava "restam 4"; o texto real (e o do contrato) e "Voce tem mais 4 tentativas". T086 usava `account-phone-badge`; o
+     `data-testid` real e `account-phone-status`.
+- Run 45525027303: job `e2e` com 27 passando e T086 (corrigido no commit seguinte); `supabase` e `app` verdes.
+
+### Estado dos testes reais e tarefas `[QA]` (2026-11-25)
+
+- Run verde de referencia: 45527719725 (`app` 701 unitarios, `supabase` pgTAP `Result: PASS` e `deno test` 211, `e2e` 112 passando, 1 falha esperada
+  `DEF-001`, 1 flaky `seed: admin` cuja causa provavel e preencher o login antes do app iniciar; o login agora espera `networkidle`).
+- Marcadas `[x]`: T038, T039, T040, T060, T064, T072, T082, T086, T090, T091, T106, T107. Desvio de caminho: os e2e reais ficam em `e2e-real/`
+  (nao `e2e/`), pelo motivo ja registrado.
+- **T091**: axe (WCAG 2.0/2.1 A e AA, `serious`/`critical`) e "sem rolagem horizontal" em 320, 390, 768 e 1440 px passaram em `/auth`, `/auth/criar-conta`,
+  `/auth/login`, `/auth/recuperar-senha`, `/auth/nova-senha` (estado "link invalido"), `/legal/termos`, `/legal/privacidade`, `/auth/termos`, `/auth/celular`,
+  `/auth/confirmar-celular` e nas seis telas de `/app/conta` (claro e escuro). `/auth/confirmar-email` so e coberta pelo e2e simulado (`e2e/`, 166 passam).
+- **Gate de log**: passo `Segredos no log das Edge Functions` (workflow) reprova se `424242` ou uma senha de teste aparecer no log do `functions serve`.
+- **T108**: `e2e-real/headers.spec.ts` cobre `/`, `/auth/login` e a politica `tag` em `ng serve`; o arquivo estatico e coberto por um passo do job `app`
+  contra o servidor construido (o dev server nao envia cabecalhos em estatico). **`captcha.spec.ts` NAO feito**: o desafio esta desligado no Auth
+  (T104, ultimo passo, depende da chave Cloudflare). Pendencia.
+- **Pendentes**: T065 (Google real), T093 (`git diff develop...HEAD -- src/app/features/public` mostra a landing, mudanca prevista da 004; a rota de
+  tag nao existe nesta branch, entao "abre sem sessao" nao e verificavel), T094, T095, T096, T108 (captcha).
+
+### DEF-001 corrigido (2026-11-25)
+
+- **Causa**: `AuthService.setRememberMe(false)` trocava `auth.storage` so no cliente da pagina atual; a cada carga o `SupabaseService` criava um
+  cliente novo que lia so o `localStorage`. A sessao volatil ficava no `sessionStorage`, o F5 nao a achava e o token ficava orfao.
+- **Correcao** (`core/auth/session-persistence.ts`, `core/supabase/supabase.service.ts`, `core/auth/auth.service.ts`, `core/auth/session-bootstrap.ts`):
+  - `findPersistedStorage()` acha o storage com `sb-…-auth-token`; se houver nos dois, vale o `localStorage` e o do `sessionStorage` e apagado.
+  - `SupabaseService` cria o cliente com `auth.storage` = esse storage (so no navegador; no servidor nada muda). O bootstrap reusa a mesma funcao.
+  - `clearPersistedSessions()` apaga sessao e usuario do Supabase dos DOIS storages; roda em `signOut`, em `setRememberMe` (antes do novo login),
+    quando a restauracao nao acha sessao valida e quando o estado de auth vira "sem sessao". O `-code-verifier` do PKCE (Google) nao e tocado.
+- **Testes**: unitarios novos em `session-persistence.spec.ts` (so session, so local, nos dois, nenhum, storage que lanca, limpeza); e2e real
+  `session-and-isolation.spec.ts`: o `test.fail` saiu; casos "sem Manter conectado sobrevive ao F5", "com Manter conectado sobrevive ao F5" e
+  "sair limpa os dois storages".
+
+### Chave pública e verify_jwt (2026-11-25)
+
+- **Contexto**: o projeto hospedado usa a chave pública nova (`sb_publishable_…`, não é JWT). A tarefa partia de que o portão
+  `verify_jwt` devolveria 401 a `Authorization: Bearer sb_publishable_…`.
+- **O que a documentação diz** (lida em 2026-11-25: `/guides/functions/auth-headers` e `/guides/functions/auth`): o portão é ligado por padrão e
+  rejeita cabeçalho ausente, malformado ou de assinatura errada, **mas** "publishable and secret keys are not JWTs, but the check still accepts
+  them in the Authorization header" (e em `apikey`) "for migration compatibility"; o portão sozinho "não autentica" quem manda só chave de API.
+  Ou seja: pela documentação a premissa do 401 **não** se confirma, e a aceitação é transitória. Não foi testado no hospedado (proibido escrever/chamar lá).
+  Localmente (CLI 3.2.0) a chave publishable real passou o portão de `phone-verify-start` e o 401 veio do código (`unauthorized`).
+- **Decisão** (menor desvio seguro): `verify_jwt = false` só em `login-guard` e `password-recovery`, que são pré-sessão por contrato. Assim o login
+  não depende de uma compatibilidade declarada transitória. As outras três seguem `true`. Alternativa documentada e não adotada:
+  `withSupabase({ auth: 'publishable' })` (`@supabase/server`), que traria dependência nova sem ganho para uma chave pública.
+- **Variáveis** (`/guides/functions/secrets`): o hospedado injeta `SUPABASE_PUBLISHABLE_KEYS` e `SUPABASE_SECRET_KEYS` (JSON) e mantém, como legadas,
+  `SUPABASE_ANON_KEY` e `SUPABASE_SERVICE_ROLE_KEY`. `env.ts` agora resolve a chave pública por `resolvePublicKey`: `SUPABASE_PUBLISHABLE_KEYS`
+  (`default`) → `SUPABASE_PUBLISHABLE_KEY` → `SUPABASE_ANON_KEY`; nenhuma ⇒ `MisconfiguredError` (falha fechada). A role de serviço continua em
+  `SUPABASE_SERVICE_ROLE_KEY` (ainda injetada). `login-guard/index.ts` usa o mesmo resolvedor (antes lia `SUPABASE_ANON_KEY` direto).
+- **`getCaller`**: não compara mais com `SUPABASE_ANON_KEY`. A lógica pura (`_shared/caller.ts`) só envia ao `auth.getUser` o que tem forma de JWT;
+  ausente, publishable, lixo e erro ⇒ `null`; a chave anon legada (JWT sem usuário) é recusada pelo `getUser` ⇒ `null`. Nunca lança.
+- **Trade-offs do portão aberto**: as duas funções aceitam chamada sem nenhuma chave; `guard:ip:m` falha aberta por contrato; `post_result` com
+  `success:true` é aceito sem JWT (já era assim com o portão ligado; o ator da auditoria só vem de JWT válido). Compensam: limite por IP e por conta,
+  CORS por lista, só POST/OPTIONS, corpo limitado e com chaves conhecidas, anti-enumeração e piso de tempo.
+- **Testes**: `caller.test.ts` (sete casos: ausente, publishable, lixo, anon legada, JWT inválido, JWT válido, verificador que lança) e seis casos novos
+  em `env.test.ts`; `scripts/ci/supabase-checks.sh` ganhou o bloco "Chave pública nova e verify_jwt por função" (login-guard e password-recovery com
+  publishable falsa, lixo e sem cabeçalho chegam ao código; as de sessão seguem 401). Esse bloco prova o `config.toml` no stack local, não o hospedado.

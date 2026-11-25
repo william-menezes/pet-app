@@ -63,7 +63,8 @@ Regras:
 - **Não** habilitar nenhum provedor em `[auth.sms.*]` nem `[auth.hook.send_sms]`: o SMS desta spec
   não passa pelo Auth.
 - `[auth.external.google]` continua como na `001`.
-- `[functions]`: `verify_jwt = true` para as quatro funções novas (padrão atual do arquivo).
+- `[functions]`: `verify_jwt = true` em `phone-verify-start`, `phone-verify-confirm` e `account-delete` (exigem sessão);
+  `verify_jwt = false` em `login-guard` e `password-recovery` (pré-sessão; chave pública nova, ver `shared-edge.contract.md`).
 - No projeto hospedado, os mesmos valores e os dois modelos são aplicados pelo painel ou por
   `supabase config push`. Registrar a conferência no checklist de produção (`quickstart.md` §9).
 

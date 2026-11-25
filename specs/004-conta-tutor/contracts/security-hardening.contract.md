@@ -152,7 +152,10 @@ Valem para as quatro funções desta spec e para `login-guard`:
   do limite, `413`. Corpo que não é objeto JSON: `400`.
 - Chave desconhecida no corpo: `400` (`unknown_field`). Nada de repassar o corpo inteiro adiante.
 - Só `POST` e `OPTIONS`. Qualquer outro método: `405` com os cabeçalhos de CORS do contrato.
-- `verify_jwt` declarado **por função** no `config.toml`, não só no bloco global.
+- `verify_jwt` declarado **por função** no `config.toml`, não só no bloco global. `false` só em `login-guard` e
+  `password-recovery` (pré-sessão); o que compensa o portão aberto é o próprio código: limite por IP (`guard:ip:m`, falha
+  aberta por contrato no login-guard) e por conta, CORS por lista de origens, só `POST`/`OPTIONS`, corpo limitado e com
+  chaves conhecidas, resposta única e piso de tempo na recuperação.
 - Dependências fixadas: `supabase/functions/deno.json` com mapa de importação em **versão exata**,
   e `supabase/functions/deno.lock` versionado. Nenhum `https://esm.sh/...@2` flutuante.
 - Resposta de erro nunca traz mensagem interna, pilha ou nome de tabela.

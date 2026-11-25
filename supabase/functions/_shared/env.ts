@@ -37,6 +37,37 @@ type Reader = (name: string) => string | undefined;
 
 const denoReader: Reader = (name) => Deno.env.get(name);
 
+/** `default` do dicionario JSON de chaves (ou a primeira chave texto); '' se invalido. */
+function keyFromDictionary(raw: string): string {
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (parsed === null || typeof parsed !== "object") return "";
+    const values = Object.entries(parsed as Record<string, unknown>)
+      .filter((e): e is [string, string] => typeof e[1] === "string" && e[1].trim() !== "");
+    const chosen = values.find(([name]) => name === "default") ?? values[0];
+    return chosen ? chosen[1].trim() : "";
+  } catch {
+    return "";
+  }
+}
+
+/**
+ * Chave publica do projeto (a que o navegador manda em `apikey`), nos dois ambientes:
+ *  1. SUPABASE_PUBLISHABLE_KEYS: JSON `{ "default": "sb_publishable_..." }` (injetada no hospedado);
+ *  2. SUPABASE_PUBLISHABLE_KEY: valor unico (CLI local);
+ *  3. SUPABASE_ANON_KEY: legada (JWT), ainda injetada no hospedado e no local.
+ * Devolve '' se nenhuma existir (o chamador falha fechado). Nunca lanca; nunca escreve valor em log.
+ */
+export function resolvePublicKey(read: Reader): string {
+  const fromDict = keyFromDictionary(read("SUPABASE_PUBLISHABLE_KEYS") ?? "");
+  if (fromDict !== "") return fromDict;
+  for (const name of ["SUPABASE_PUBLISHABLE_KEY", "SUPABASE_ANON_KEY"]) {
+    const v = (read(name) ?? "").trim();
+    if (v !== "") return v;
+  }
+  return "";
+}
+
 /**
  * `read` e injetavel para os testes (o CI roda `deno test` sem permissao de env).
  * Em producao usa Deno.env.get.
@@ -52,7 +83,8 @@ export function loadEnv(
   };
 
   const supabaseUrl = required("SUPABASE_URL");
-  const anonKey = required("SUPABASE_ANON_KEY");
+  const anonKey = resolvePublicKey(read);
+  if (anonKey === "") throw new MisconfiguredError("SUPABASE_PUBLISHABLE_KEYS");
   const serviceRoleKey = required("SUPABASE_SERVICE_ROLE_KEY");
 
   const hashSalt = required("HASH_SALT");

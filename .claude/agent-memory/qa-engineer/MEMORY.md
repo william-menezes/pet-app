@@ -1,0 +1,1 @@
+- [E2E real da 004: armadilhas](project-004-e2e-real-armadilhas.md) — falsos vermelhos do job e2e, DEF-001, limites, cuidados de edicao no Windows

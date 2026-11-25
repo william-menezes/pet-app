@@ -98,8 +98,12 @@ redirect_uri = "http://localhost:54321/auth/v1/callback"
 enabled = false
 
 # Edge Functions: verify_jwt é configurado por função (a chave global não existe mais).
+# Chave publica NOVA (sb_publishable_..., nao e JWT): login-guard e password-recovery rodam ANTES de existir sessao.
+# O portao da plataforma nao autentica quem manda so chave de API, e a aceitacao da chave publishable no
+# Authorization e documentada como "compatibilidade de migracao" (transitoria). Por isso, nestas DUAS, o portao fica
+# desligado e o codigo e a barreira (limite por IP e por conta, CORS, metodo, corpo, anti-enumeracao, piso de tempo).
 [functions.login-guard]
-verify_jwt = true
+verify_jwt = false
 
 # Spec 004: confirmacao de celular. Exigem usuario autenticado (a propria funcao valida o JWT com getUser).
 [functions.phone-verify-start]
@@ -108,9 +112,9 @@ verify_jwt = true
 [functions.phone-verify-confirm]
 verify_jwt = true
 
-# Spec 004: recuperacao de senha. Aceita a chave anonima (qualquer visitante); a funcao nao exige usuario.
+# Spec 004: recuperacao de senha. Pre-sessao (qualquer visitante); a funcao nao exige usuario. Ver a nota acima.
 [functions.password-recovery]
-verify_jwt = true
+verify_jwt = false
 
 # Spec 004: exclusao da propria conta. Exige usuario autenticado (a funcao valida o JWT com getUser).
 [functions.account-delete]

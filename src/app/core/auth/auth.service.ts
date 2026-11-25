@@ -19,7 +19,7 @@ import { AuthStore, Role } from './auth.store';
 import { SupabaseService } from '../supabase/supabase.service';
 import { AccountStore } from '../account/account.store';
 import { ReturnUrlService } from './return-url';
-import { getSessionStorage } from './session-persistence';
+import { clearPersistedSessions, findPersistedStorage, getSessionStorage } from '../session/session-persistence';
 import { environment } from '../../../environments/environment';
 
 export interface AuthResult {
@@ -80,10 +80,20 @@ export class AuthService {
   async restoreSession(): Promise<void> {
     if (!this.isBrowser) return;
 
-    const { data } = await this.supabase.client.auth.getSession();
+    // O cliente já nasce no storage certo (SupabaseService); reafirma aqui por segurança (DEF-001).
+    const persisted = findPersistedStorage();
+    if (persisted) {
+      (this.supabase.client.auth as unknown as { storage: Storage }).storage = persisted;
+    }
+
+    const { data, error } = await this.supabase.client.auth.getSession();
     if (data.session) {
       this.store.setSession(data.session);
       await this._resolveRole();
+    } else if (persisted && !error) {
+      // Havia credencial gravada, mas sem sessão válida: limpa só deste aparelho, sem token órfão em nenhum storage.
+      await this.supabase.client.auth.signOut({ scope: 'local' }).catch(() => undefined);
+      clearPersistedSessions();
     }
 
     this.supabase.client.auth.onAuthStateChange(async (event, session) => {
@@ -92,6 +102,7 @@ export class AuthService {
         await this._resolveRole();
       } else {
         this.store.setRole(null);
+        clearPersistedSessions();
       }
     });
   }
@@ -107,6 +118,8 @@ export class AuthService {
   setRememberMe(remember: boolean): void {
     this.rememberMe = remember;
     if (this.isBrowser) {
+      // Um token velho no outro storage faria a carga seguinte escolher o storage errado.
+      clearPersistedSessions();
       // Configura o storage no cliente Supabase para a próxima sessão.
       // O supabase-js aceita storage customizado; aqui aplicamos antes do signIn.
       (this.supabase.client.auth as unknown as { storage: Storage }).storage =
@@ -303,6 +316,7 @@ export class AuthService {
     try {
       await this.supabase.client.auth.signOut();
     } finally {
+      if (this.isBrowser) clearPersistedSessions();
       this.store.reset();
       this.accountStore.reset();
       // o destino guardado é de quem acabou de sair: não pode sobrar para o próximo login da aba

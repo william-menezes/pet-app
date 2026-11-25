@@ -35,6 +35,18 @@ jobs:
       - run: npm run check:ui
       - run: npm run check:bundle
       - run: npm run check:headers
+      - name: Cabecalhos no servidor construido (arquivo estatico, HTTP e HTTPS)
+        run: |
+          PORT=4010 node dist/faro/server/server.mjs > /tmp/ssr.log 2>&1 &
+          for i in $(seq 1 30); do curl -sf -o /dev/null http://localhost:4010/favicon.ico && break; sleep 1; done
+          h=$(curl -sI http://localhost:4010/favicon.ico); echo "$h"
+          for k in x-content-type-options content-security-policy referrer-policy permissions-policy cross-origin-resource-policy cross-origin-opener-policy; do
+            echo "$h" | grep -qi "^$k:" || { echo "::error::arquivo estatico sem $k"; exit 1; }
+          done
+          hs=$(curl -sI -H "x-forwarded-proto: https" http://localhost:4010/favicon.ico)
+          echo "$hs" | grep -qi "^strict-transport-security: max-age=63072000; includeSubDomains" || { echo "::error::sem HSTS por HTTPS"; exit 1; }
+          if echo "$h" | grep -qi "^strict-transport-security"; then echo "::error::HSTS em HTTP"; exit 1; fi
+          kill %1 || true
       - run: npm run check:secrets
       - run: npm run check:templates
       - run: npm run test:scripts
@@ -106,6 +118,14 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: E2E com backend real
         run: npx playwright test -c playwright.e2e-real.config.ts
+      # Gate (T094/T108): senha e codigo de SMS nunca no log das Edge Functions. Valores de teste obvios, sem segredo real.
+      - name: Segredos no log das Edge Functions
+        if: ${{ always() }}
+        run: |
+          if grep -nE '424242|SenhaDeTeste12345|SenhaErrada00000|TesteSenha123!' /tmp/functions-serve.log; then
+            echo "::error::senha ou codigo de SMS apareceu no log das Edge Functions"; exit 1
+          fi
+          echo "log das Edge Functions sem senha nem codigo de SMS"
       - name: Relatorio do Playwright
         if: ${{ failure() }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
