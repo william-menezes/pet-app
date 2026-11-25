@@ -20,6 +20,9 @@ const authGuard = lazyCanMatch(() => import('./core/auth/auth.guard').then((m) =
 const adminGuard = lazyCanMatch(() => import('./core/auth/admin.guard').then((m) => m.adminGuard));
 const anonGuard = lazyCanMatch(() => import('./core/auth/anon.guard').then((m) => m.anonGuard));
 const termsGuard = lazyCanMatch(() => import('./core/auth/terms.guard').then((m) => m.termsGuard));
+const activationGuard = lazyCanMatch(() =>
+  import('./core/tags/activation.guard').then((m) => m.activationGuard),
+);
 const phoneConfirmedGuard = lazyCanMatch(() =>
   import('./core/account/phone-confirmed.guard').then((m) => m.phoneConfirmedGuard),
 );
@@ -251,13 +254,12 @@ export const routes: Routes = [
     : []),
 
   // ── Fluxos (casca de fluxo, fora do pai `app`; CSR em app.routes.server.ts) ──
-  // Telas reais: T042 em diante. O guard da ativação (T042) ainda não existe: por enquanto valem os
-  // guards de `app` mais o celular confirmado.
+  // O guard da ativação vai na frente: o roteador dá prioridade ao primeiro guard que não devolve true, e sem
+  // sessão a ativação leva ao cadastro (não à tela de entrada).
   {
     path: 'ativar/:code',
-    canMatch: [authGuard, termsGuard, phoneConfirmedGuard],
-    loadComponent: shellFallback,
-    data: { home: '/app' },
+    canMatch: [activationGuard, authGuard, termsGuard, phoneConfirmedGuard],
+    loadComponent: () => import('./features/activation/activation').then((m) => m.Activation),
     title: $localize`Ativar tag — Faro`,
   },
   {

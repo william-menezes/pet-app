@@ -36,9 +36,7 @@ function setup(opts: { user?: boolean; processor?: (f: Blob) => Promise<Blob> } 
     ],
   });
   if (opts.user !== false) {
-    // AuthStore só tem leitura pública; o teste fixa o usuário pelo sinal interno.
-    const store = TestBed.inject(AuthStore);
-    (store as unknown as { _session: { set(v: unknown): void } })._session.set({ user: { id: UID } });
+    TestBed.inject(AuthStore).setSession({ user: { id: UID } } as never);
   }
   return {
     service: TestBed.inject(PetService),

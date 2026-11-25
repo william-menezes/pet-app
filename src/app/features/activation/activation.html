@@ -1,0 +1,51 @@
+<!--
+  Container da ativação. Cada passo traz a própria casca de fluxo (o rodapé de ações é projetado por passo).
+  Código inválido na URL: mesma mensagem do contrato ("Confira o código. Ele fica embaixo do QR.") e um próximo passo.
+-->
+@switch (view()) {
+  @case ('invalid') {
+    <app-flow-shell barTitle="Ativar tag" i18n-barTitle [back]="'close'" [backLink]="'/app'">
+      <div data-testid="activation-invalid">
+        <h1 class="font-display text-[32px] leading-[1.04] font-bold tracking-[-0.03em] text-foreground md:text-[42px]" i18n>
+          Confira o código
+        </h1>
+        <p class="mt-2.5 text-base leading-[1.45] text-text" data-testid="activation-invalid-text">{{ invalidMessage }}</p>
+      </div>
+      <a footer z-button zSize="lg" class="w-full text-lg" routerLink="/app" data-testid="activation-invalid-panel" i18n>
+        Ir para o painel
+      </a>
+    </app-flow-shell>
+  }
+  @case ('pet') {
+    <app-activation-pet-step
+      [code]="display()"
+      [pets]="pets()"
+      [state]="petState()"
+      [notice]="petNotice()"
+      [(selectedId)]="selectedId"
+      [(confirmReplace)]="confirmReplace"
+      (picked)="onPicked($event)"
+      (addPet)="onAddPet()"
+      (retry)="loadPets()" />
+  }
+  @case ('pin') {
+    @if (chosen(); as pet) {
+      <app-activation-pin-step
+        [pet]="pet"
+        [code]="display()"
+        [submitting]="submitting()"
+        [problem]="problem()"
+        (submitted)="onSubmit($event)"
+        (changePet)="onChangePet()" />
+    }
+  }
+  @case ('done') {
+    @if (result(); as done) {
+      <app-activation-done-step
+        [petName]="done.petName"
+        [petId]="done.petId"
+        [code]="done.code"
+        [whatsappEnabled]="done.whatsappEnabled" />
+    }
+  }
+}

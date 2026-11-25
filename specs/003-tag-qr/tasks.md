@@ -276,12 +276,12 @@ Igual à `004`: a máquina não tem Docker nem a CLI do Supabase. Todo "Feito qu
 - [x] T041 [P] [US2] [FE] `core/pets/pet.service.ts`: criar, editar, remover e listar pets; upload
   de foto (redimensiona para 1600 px, converte para WebP, grava em `pet-photos/<uid>/<pet>/…`).
   **Feito quando**: teste unitário com o cliente Supabase simulado.
-- [ ] T042 [US2] [FE] Guard e rota `/ativar/:code`: sem sessão, redireciona para
+- [x] T042 [US2] [FE] Guard e rota `/ativar/:code`: sem sessão, redireciona para
   `/auth/criar-conta?returnUrl=/ativar/<código normalizado>`; com sessão, chama
   `set_pending_activation` e abre o passo 1. A rota também leva o `phoneConfirmedGuard` da `004`.
   Ao receber `phone_not_confirmed` de uma RPC, navegar para `/auth/celular?returnUrl=<rota atual>`.
   **Feito quando**: teste do guard cobre os dois casos e o endereço exato do redirecionamento.
-- [ ] T043 [US2] [FE] Passo 1, escolher o pet, conforme `V2-ativacao-pet*.dc.html`: lista de pets
+- [x] T043 [US2] [FE] Passo 1, escolher o pet, conforme `V2-ativacao-pet*.dc.html`: lista de pets
   do tutor, "Cadastrar um pet novo", aviso e confirmação quando o pet já tem tag (`pet_has_tag` →
   reenviar com `p_replace`). **Feito quando**: teste de componente cobre pet sem tag e com tag.
 - [ ] T044 [P] [US2] [FE] Novo pet, passo 1 (dados), conforme `V2-novo-pet-dados*.dc.html`.
@@ -289,7 +289,7 @@ Igual à `004`: a máquina não tem Docker nem a CLI do Supabase. Todo "Feito qu
 - [ ] T045 [P] [US2] [FE] Novo pet, passo 2 (foto, temperamento, cuidados), conforme
   `V2-novo-pet-resgate*.dc.html`, com "Pular por enquanto". Ao salvar, volta para onde veio
   (ativação ou painel). **Feito quando**: teste cobre salvar e pular.
-- [ ] T046 [US2] [FE] Passo 2, PIN, conforme `V2-ativacao-pin*.dc.html`: seis células, normalização
+- [x] T046 [US2] [FE] Passo 2, PIN, conforme `V2-ativacao-pin*.dc.html`: seis células, normalização
   da entrada, colar o PIN inteiro, resumo com "Trocar", nota de bloqueio, erros `wrong_pin`,
   `locked`, `phone_not_confirmed` (leva à confirmação do celular e volta). Incluir o controle
   "Quero que quem achar o [pet] possa me chamar no WhatsApp", **marcado por padrão**, com o aviso
@@ -298,7 +298,7 @@ Igual à `004`: a máquina não tem Docker nem a CLI do Supabase. Todo "Feito qu
   `p_enable_whatsapp`. Posição e desenho conforme `V2-ativacao-pin*.dc.html`. **Feito quando**:
   teste de componente cobre os três erros, os dois estados do controle e que o aviso está visível
   sem rolar no celular.
-- [ ] T047 [US2] [FE] Tela "Tag ativa!" conforme `V2-ativacao-sucesso*.dc.html`; "Ver a página do
+- [x] T047 [US2] [FE] Tela "Tag ativa!" conforme `V2-ativacao-sucesso*.dc.html`; "Ver a página do
   Paçoca" abre `/<código>`. A primeira linha da lista reflete a escolha: "WhatsApp liberado para
   quem escanear" ou, se o tutor não marcou, "WhatsApp desligado" com o atalho "Ligar agora" (leva a
   "O que estranhos veem"). **Feito quando**: renderiza com o nome do pet, o código e os dois estados.
