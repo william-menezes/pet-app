@@ -4,3 +4,7 @@
 - [Armadilhas da Phase 4 (SMS)](project-004-sms-armadilhas.md) — deno test no CI, Kong/CORS no POST, driver log, now() e claims em pgTAP
 - [Armadilhas das Phases 6 e 7](project-004-privacidade-armadilhas.md) — pgTAP com SAVEPOINT sem finish(), recuperacao, exclusao, script de CI
 - [Armadilhas da Phase 10 (endurecimento)](project-004-endurecimento-armadilhas.md) — privilegios padrao e helpers pgTAP, handlers testaveis, deno.json/lock, auth.captcha
+- [Armadilhas da fundacao da 003](project-003-fundacao-armadilhas.md) — grants de tabela nova, seed sem PIN, testes com seed presente, node -e e SQL
+- [Armadilhas das Phases 3 a 6 da 003](project-003-fases3a6-armadilhas.md) — edicao com $$, pgTAP, seed, CI verificado, decisoes e pendencias
+- [RLS e contratos finais da 003](rls-matrix-feature-003.md) — acesso por objeto, EXECUTE por role, armadilhas das Phases 8-12 e pendencias
+- [Chave publica e verify_jwt (004)](project-004-chave-publica-verify-jwt.md) — docs dizem que o portao aceita publishable; verify_jwt=false so nas 2 pre-sessao
