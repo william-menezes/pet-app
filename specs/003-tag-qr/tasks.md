@@ -241,7 +241,7 @@ Igual à `004`: a máquina não tem Docker nem a CLI do Supabase. Todo "Feito qu
   partir do pacote inicial. **Feito quando**: `npm run check:bundle` passa; o JavaScript baixado
   pela rota pública fica em 100 KB (gzip) ou menos; os testes de guard e o e2e de login continuam
   verdes.
-- [ ] T035 [US1] [QA] `e2e/tag-page.spec.ts`: resgate; sem JavaScript (`javaScriptEnabled: false`);
+- [x] T035 [US1] [QA] `e2e/tag-page.spec.ts`: resgate; sem JavaScript (`javaScriptEnabled: false`);
   normalização (`/7k3m q9xa c`); inexistente, bloqueado e anulado com HTML idêntico; contingência
   com a função derrubada. **Feito quando**: passa em Chromium nas três larguras.
 - [x] T036 [US1] [QA] `supabase/tests/rpc_resolve_tag.test.sql`: anti-enumeração e Rescue-First de
@@ -307,7 +307,7 @@ Igual à `004`: a máquina não tem Docker nem a CLI do Supabase. Todo "Feito qu
   e liga "Editar" a "O que estranhos veem". O token vem de `core/tags/owner-probe.service.ts`
   (`contracts/integration-002-004.contract.md` §5.2): sem chave de sessão no `localStorage`, nada é
   importado; com chave, o cliente Supabase é importado dinamicamente. Nenhum import de `core/auth`. **Feito quando**: teste cobre `owner` verdadeiro e falso.
-- [ ] T049 [US2] [QA] `e2e/activation.spec.ts`: tag não ativada → cadastro (com SMS simulado) →
+- [x] T049 [US2] [QA] `e2e/activation.spec.ts`: tag não ativada → cadastro (com SMS simulado) →
   novo pet → PIN → sucesso → visão do dono; PIN errado; bloqueio após 5 erros.
   **Feito quando**: passa nas três larguras.
 
@@ -340,7 +340,7 @@ Igual à `004`: a máquina não tem Docker nem a CLI do Supabase. Todo "Feito qu
   filtros, cartão do mapa com Leaflet carregado sob demanda (círculo para aproximada, pino com raio
   para precisa), lista agrupada por mês, nota de privacidade, estado vazio.
   **Feito quando**: teste de componente; o chunk do Leaflet não entra no bundle inicial.
-- [ ] T057 [US3] [QA] `e2e/scans.spec.ts`: abrir a página gera 1 scan e 1 e-mail (provedor
+- [x] T057 [US3] [QA] `e2e/scans.spec.ts`: abrir a página gera 1 scan e 1 e-mail (provedor
   simulado); recarregar não duplica; buscar o HTML sem JS não gera; dono não gera; localização
   precisa atualiza o scan. **Feito quando**: passa.
 - [x] T058 [US3] [QA] `supabase/tests/rls_scans.test.sql`: "Testes de isolamento entre vínculos".
@@ -360,7 +360,7 @@ Igual à `004`: a máquina não tem Docker nem a CLI do Supabase. Todo "Feito qu
   só aparece se veio na projeção. **Feito quando**: teste de componente cobre as combinações.
 - [x] T062 [US4] [FE] Desativar ("Pet encontrado") a partir da página do pet, com confirmação
   simples. **Feito quando**: teste de componente.
-- [ ] T063 [US4] [QA] e2e: ativar → página pública muda → desativar → volta ao normal; item
+- [x] T063 [US4] [QA] e2e: ativar → página pública muda → desativar → volta ao normal; item
   desligado não aparece no HTML. **Feito quando**: passa.
 
 ---
@@ -375,7 +375,7 @@ Igual à `004`: a máquina não tem Docker nem a CLI do Supabase. Todo "Feito qu
   **Feito quando**: teste de componente cobre o aviso.
 - [x] T066 [US5] [FE] Prévia: reutilizar os componentes da página de resgate com as escolhas ainda
   não salvas, na visão do dono. **Feito quando**: a prévia reflete um interruptor alterado sem salvar.
-- [ ] T067 [US5] [QA] e2e: desligar "Cuidados", salvar, abrir a página pública sem login e conferir
+- [x] T067 [US5] [QA] e2e: desligar "Cuidados", salvar, abrir a página pública sem login e conferir
   que o texto não está no HTML bruto. **Feito quando**: passa.
 
 ---
@@ -401,7 +401,7 @@ Igual à `004`: a máquina não tem Docker nem a CLI do Supabase. Todo "Feito qu
   **Feito quando**: teste cobre câmera indisponível e código inválido.
 - [x] T073 [US6] [FE] Vincular tag, passo 2 (PIN), conforme `V2-vincular-pin*.dc.html`,
   reutilizando o componente de PIN de T046. **Feito quando**: vincula com o seed em teste de integração.
-- [ ] T074 [US6] [QA] e2e: entrar, abrir a Mel, vincular `2FX8-CN73-F` digitando código e PIN;
+- [x] T074 [US6] [QA] e2e: entrar, abrir a Mel, vincular `2FX8-CN73-F` digitando código e PIN;
   conferir as três larguras e o tema escuro com axe. **Feito quando**: passa sem violações AA.
 
 ---
@@ -427,7 +427,7 @@ Igual à `004`: a máquina não tem Docker nem a CLI do Supabase. Todo "Feito qu
   travadas, conforme `V2-admin-fila*.dc.html` (três seções, filtro por chips; no celular, um cartão por linha). **Feito quando**: teste de componente.
 - [x] T082 [P] [US7] [FE] Tela "Auditoria" conforme `V2-admin-auditoria*.dc.html`: lista filtrável por evento e por código, com "Carregar mais".
   **Feito quando**: teste de componente.
-- [ ] T083 [US7] [QA] `e2e/admin.spec.ts`: criar lote, baixar o pacote, bloquear um código e
+- [x] T083 [US7] [QA] `e2e/admin.spec.ts`: criar lote, baixar o pacote, bloquear um código e
   conferir "tag não encontrada" na página pública, reemitir PIN, encerrar vínculo; tutor comum não
   entra em `/admin`. **Feito quando**: passa.
 - [ ] T084 🔒 [US7] [BE] Edge Function `admin-labels` e inclusão de `etiquetas.pdf` no pacote do
@@ -454,7 +454,7 @@ Igual à `004`: a máquina não tem Docker nem a CLI do Supabase. Todo "Feito qu
 - [x] T090 [US8] [FE] Fluxo de segunda via: danificada (confirmação e mensagem de pedido
   registrado) e perdida (confirmação explicando que o endereço antigo para de funcionar).
   **Feito quando**: teste de componente cobre os dois.
-- [ ] T091 [US8] [QA] e2e: Ana passa a tag adiante; outra conta (criada pelo próprio teste, pela
+- [x] T091 [US8] [QA] e2e: Ana passa a tag adiante; outra conta (criada pelo próprio teste, pela
   API de admin, com celular confirmado) ativa com o PIN novo; o PIN antigo
   falha; a outra conta não vê scans da Ana. **Feito quando**: passa.
 
@@ -462,7 +462,7 @@ Igual à `004`: a máquina não tem Docker nem a CLI do Supabase. Todo "Feito qu
 
 ## Phase 11: Polish
 
-- [ ] T092 [P] [QA] Gate completo de `contracts/rls-expectations.md`, incluindo a busca por
+- [x] T092 [P] [QA] Gate completo de `contracts/rls-expectations.md`, incluindo a busca por
   segredos em `dist/` e a checagem dos chunks do bundle público. **Feito quando**: tudo verde.
 - [ ] T093 [P] [QA] axe em todas as telas desta spec, três larguras, claro e escuro onde houver.
   **Feito quando**: zero violações AA.

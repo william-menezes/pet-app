@@ -203,3 +203,28 @@ test('tag invalida, bloqueada, anulada e inexistente na ativacao: mesma resposta
   const bad = await call('ZZZZZZZZZ');
   expect(bad.body).toMatchObject({ ok: false, error: 'invalid_code' });
 });
+
+for (const size of [WIDTHS.tablet, WIDTHS.desktop]) {
+  test(`ativacao em ${size.width}px: passo do pet, passo do PIN e "Tag ativa!" (dados reais)`, async ({ page }) => {
+    await page.setViewportSize(size);
+    const t = await newTutor();
+    const petId = await createPet(t, 'Bolota');
+    const tag = takeTag();
+    await loginAndOpen(page, t, `/ativar/${tag.code}`);
+    await expect(page.locator(tid('activation-pet-list'))).toBeVisible({ timeout: 20_000 });
+    await page.waitForTimeout(450);
+    await expectNoHorizontalScroll(page);
+    await expectNoSeriousA11y(page);
+    await page.locator(`${tid('activation-pet-' + petId)} input`).check({ force: true });
+    await page.locator(tid('activation-continue')).click();
+    await expect(page.locator(tid('activation-pin-cell-1'))).toBeVisible();
+    await page.waitForTimeout(450);
+    await expectNoHorizontalScroll(page);
+    await expectNoSeriousA11y(page);
+    await typePin(page, tag.pin);
+    await page.locator(tid('activation-submit')).click();
+    await expect(page.locator(tid('activation-done'))).toBeVisible({ timeout: 30_000 });
+    await expectNoHorizontalScroll(page);
+    await expectNoSeriousA11y(page);
+  });
+}

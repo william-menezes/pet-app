@@ -560,3 +560,99 @@ Resolve o item 1 dos desvios da rodada de frontend: "Criar lote" não funcionava
 - **`remove-pet` perdia o PIN novo (defeito).** O PIN da tag liberada aparecia num `z-alert-dialog`, que fecha com Esc, e é a única vez em que ele é mostrado. Agora o diálogo só confirma; o PIN fica numa seção da página (`remove-pet-pin-panel`), a tela rola até ela e o foco vai para o título depois que o diálogo termina de fechar (`zAfterClose`, o mesmo cuidado de "Gerenciar tag"). Há "Copiar PIN", o aviso "Anote agora. Ele não aparece de novo." e o PIN só some em "Concluir", ao trocar de pet (`petId` muda: tudo é zerado) ou ao sair da rota (`DestroyRef`). Se a remoção do pet falha depois de a tag ser liberada, a seção continua com o PIN, mostra o erro e oferece "Tentar remover de novo" (não libera a tag outra vez). Não reusei `admin/pin-reveal`: ele tem os testids e o texto do admin e a seção daqui precisa do aviso de erro e do botão de tentar de novo; a fronteira (nada de admin no app do tutor) fica intacta. Testes: unitários (PIN fora do overlay, Esc, foco, copiar, trocar de pet, erro depois da liberação) e e2e simulado nas três larguras, com e sem preferência de tema escuro guardada (a edição é um fluxo, sempre claro: o e2e confere que não há `.dark`), com axe, sem rolagem horizontal e com o PIN na tela e com foco.
 - **T106, o que faltava.** Passo do pet da ativação e edição do pet usam o texto do contrato para `too_many_requests` ("Muitas ações em pouco tempo. Aguarde um minuto.", com o tempo do servidor quando houver). Na edição, se `my_dashboard` falha (qualquer motivo), a tela não abre mais pela metade: antes o pet carregava sem a tag e "Remover pet" apagaria o pet sem liberar a tag. Testes novos nas duas telas.
 - **T095.** A tabela do checklist foi copiada para a descrição do PR nº 5.
+
+
+## QA: e2e real, gate de segurança e defeitos (2026-11-25)
+
+Ambiente: Supabase LOCAL (Docker), Edge Functions locais (`functions serve`), `ng serve --configuration e2e` com o servidor SSR falando com as funções (chave do servidor sorteada por rodada) e o servidor de produção construído (`dist/faro/server/server.mjs`). Nada foi enviado ao projeto hospedado. O `environment.e2e.ts` foi gerado localmente a partir de `supabase status`, como o CI faz (ignorado pelo git).
+
+### O que o harness ganhou
+
+- `playwright.e2e-real.config.ts`: o `webServer` passa `SUPABASE_URL`, `SUPABASE_FUNCTIONS_URL`, `FARO_SSR_KEY` e `IP_HASH_SECRET` (da rodada) ao `ng serve`; `reuseExistingServer` só fora do CI.
+- `scripts/ci/e2e-prepare.sh`: sorteia `FARO_SSR_KEY` e `IP_HASH_SECRET` por rodada (`openssl rand`, mascarados, nunca versionados; o `check:secrets` barra valor literal) e grava `FARO_SSR_KEY` e `EMAIL_DRIVER=log` no ambiente das funções.
+- `e2e-real/global-setup.ts`: cria o pool de tags pelo mesmo caminho do admin (`admin-create-batch`, dois lotes de 24) e guarda código/PIN num arquivo temporário do sistema, fora do repositório. Cada teste que muda uma tag pega um par novo (`takeTag`): `retries` nunca encontra tag já vinculada; o seed só é lido.
+- Job `e2e` do CI: constrói a produção e sobe duas instâncias (porta 4300 com as funções locais; 4301 com a URL das funções morta) com `NG_ALLOWED_HOSTS=localhost` (o build só aceita os hosts do produto: sem isso `localhost` recebe 400). Passo novo `scripts/ci/check-pins-in-log.mjs`: procura cada PIN do pool nos logs das funções e do servidor.
+- Limites compartilhados: cada teste de página injeta `x-real-ip` próprio nas chamadas a `localhost:4200`, para os limites por origem (30 resolve/min, 20 scan/min) não se misturarem.
+
+### Testes novos (`e2e-real/`)
+
+| Arquivo | Cobre |
+|---|---|
+| `tag-page.spec.ts` | T035, T057 e parte de T063/T067: cinco estados; sem JavaScript; bloqueada = anulada = inexistente (HTML idêntico fora o código); piso de 150 ms; 3 larguras com axe; 1 scan + aviso (`notified_at`); repetição não duplica; robô e dono não geram scan; localização precisa (`gps`); campo desligado fora do HTML bruto; WhatsApp só com opt-in e celular confirmado; modo perdido |
+| `activation.spec.ts` | T049: cadastro pela tela (SMS simulado) → novo pet → PIN → página muda; PIN errado; 5 erros travam a conta e o PIN certo no bloqueio é recusado; 20 erros em várias contas travam a tag; troca (`p_replace`) mantém o PIN da tag antiga; uso único; PIN novo ao liberar e o antigo recusado; mensagem única; tablet e desktop |
+| `owner.spec.ts` | T074 (vincular pelo app, item (b)), T057/T091 (histórico do dono; passar adiante; outra conta com o PIN novo; isolamento de scans, vínculos e pets), T067, T063, T071 (PIN à vista; Esc não o esconde), T088 a T090 (2ª via danificada e perdida), painel |
+| `admin.spec.ts` | T083: criar lote pela tela e ler o `pins.csv` baixado; ativar com o PIN do arquivo; PIN fora de log, tabela e auditoria; bloquear e desbloquear; scan de tag bloqueada na fila; encerrar vínculo e reemitir PIN; tutor comum fora do `/admin` e `forbidden` em toda RPC `admin_*` |
+| `gate-security.spec.ts` | T092/T107: `anon` sem nenhuma das 12 tabelas/visões e sem nenhuma das 30 funções; funções só de servidor negadas a tutor e admin; isolamento A/B (pets, perfil, vínculos, pedidos, scans, colunas privadas, escrita alheia); Storage real; contrato físico (`code`, DELETE, `void`, dígito); anti-enumeração; chave do servidor; limites de taxa; `/api/scan` 413/400/415; nenhum host de terceiro; sem segredo no HTML |
+| `prod-server.spec.ts` | T037 e T092 (build): TTFB, LCP e JS no servidor de produção; axe nas telas públicas; contingência com as funções fora do ar (nunca 5xx nem erro técnico) |
+| `a11y-screens.spec.ts` | T093: axe e rolagem horizontal em todas as telas do tutor (claro e escuro), fluxos e admin, 3 larguras, dados reais |
+
+### Defeitos de produto (nada foi corrigido; cada um tem `test.fail` com identificador)
+
+| Id | Gravidade | Resumo |
+|---|---|---|
+| DEF-003-01 | Alta (bloqueia a produção do lote real; não é de segurança) | `admin-create-batch` com 54 códigos (o tamanho do lote real) devolve 500. `admin_insert_batch` gasta ~0,2 s de bcrypt por código e o PostgREST cancela a chamada em 8 s (`authenticator.statement_timeout=8s`): 30 códigos levam ~6 s e passam, 60 voltam 500 após 8,1 s, 54 levam ~8,1 s no CI e falham. A tela "Criar lote" cai no mesmo erro. Esperado: o lote de 54 sai. Onde: `0034_rpc_admin.sql` (bcrypt em transação única) e `admin-create-batch`; sair em fatias de ~20 códigos ou subir o timeout do papel de serviço. Teste: `admin.spec.ts` "DEF-003-01" |
+| DEF-003-02 | Média (T037) | JS da rota da tag: 134,2 kB gzip em 29 arquivos, medido no servidor de produção; o orçamento é 100 kB (o log do FE já registrava 133 a 134 kB). TTFB (45 ms) e LCP (112 ms) ficam muito abaixo, na máquina local e com o backend ao lado. Teste: `prod-server.spec.ts` "DEF-003-02" |
+| DEF-003-03 | Média | O aviso (toast) do `ngx-sonner` é uma `<ol>` cujos filhos não são `<li>`: axe `list` (serious) enquanto há aviso na tela (reproduzido ao reemitir um PIN no admin). Os e2e simulados esperam o aviso sair. Componente copiado do ZardUI. Teste: `a11y-screens.spec.ts` "DEF-003-03" |
+| OBS-1 | Baixa | O HTML de um código com dígito inválido não traz o `TransferState` `faro-tag:<código>` que o de um código válido sem tag (bloqueado, anulado, inexistente) traz; a tela é a mesma. Só distingue "dígito inválido" de "dígito válido", o que o algoritmo público já permite; não revela existência, bloqueio nem anulação |
+| OBS-2 | Baixa | `POST /rest/v1/my_scans` como `anon` responde 500 ("view não atualizável") em vez de 401/403. Nenhum dado, nenhuma escrita |
+| OBS-3 | Baixa | `tag_pin_attempts`, `tag_batches`, `audit_log` e `rate_limits` têm privilégio de SELECT para `authenticated` e a RLS devolve zero linhas (não 403). O resultado é o mesmo (nega); o teste prova com controle positivo (o `service_role` vê linhas) |
+| OBS-4 | Baixa | O servidor de produção construído recusa `localhost` com 400 (`allowedHosts`): o roteiro do quickstart (`npm run build && npm run serve:ssr:faro`, abrir `localhost:4000`) não funciona como está; precisa de `NG_ALLOWED_HOSTS=localhost` |
+
+### Respostas aos itens (a) e (b)
+
+- (a) `login-guard` com `phase: post_result, success: true` sem sessão NÃO zera o contador. Não há `DELETE` nem reset: a linha de sucesso é uma inclusão e `record_login_attempt` conta só as falhas da janela de 15 min (por identidade e por IP). Provado por leitura da função e por chamada real (depois do bloqueio, `success:true` continua devolvendo `block`). O limite por conta não é contornável por esse caminho. Efeito conhecido: o eixo por IP bloqueia todas as contas que usam o mesmo IP por 15 min.
+- (b) O WhatsApp vem MARCADO também na tela de PIN do "vincular tag pelo app" (`/vincular/<pet>`), com o mesmo aviso da ativação. O CLAUDE.md fala em marcado só na ativação. Registrado, não alterado (`owner.spec.ts`, T074, `toBeChecked()` com comentário). Desmarcar na tela funciona: a página pública sai sem `wa.me`.
+
+### Rotação da chave do servidor (T107, parte executada)
+
+Executada uma vez na pilha local, nos dois passos do contrato: (1) só a chave antiga: antiga 200, nova 401; (2) `FARO_SSR_KEY` = nova e `FARO_SSR_KEY_PREVIOUS` = antiga: as duas 200; (3) apaga a `_PREVIOUS`: antiga 401, nova 200. Estado inicial restaurado. O passo a passo ainda não está em `quickstart.md` (não posso editar `specs/` além das caixas): T107 fica aberta.
+
+### Tarefas
+
+- Fechadas com prova: T035, T049, T057, T063, T067, T074, T083, T091, T092.
+- Abertas: T037 (DEF-003-02), T093 (DEF-003-03), T097 (divergências abaixo; não edito `specs/`), T107 (falta o roteiro de rotação no quickstart), T098 (gate humano: `/security-review` e `/code-review`).
+- Bloqueadas por decisão: T084 e T085 (etiquetas), T024A e T037A (preview da Vercel atrás de SSO), T025, T099, T100.
+- 004: T093 a T096 NÃO fechadas. Os itens que dependem da rota da tag passam (a rota abre sem sessão e sem redirecionar para `/auth`, `check:ui` verde, nada de `primeng`), mas `git diff develop -- src/app/features/public` não é vazio por construção (a 003 implementou a página pública), e T094 (os 12 itens do portão da 004) e T096 pertencem à rodada de QA da 004.
+
+### Divergências do quickstart (T097)
+
+1. "senha de desenvolvimento no `seed.sql`" e "Tutora `ana@email.com`": o seed tem `tutor.a@faro.test`, `tutor.b@faro.test` e `admin@faro.test`; a senha é a do script de CI.
+2. "PIN de desenvolvimento no `seed.sql`": os PINs estão em `e2e/fixtures/seed-codes.json` (`devPins`, só das três tags `available`).
+3. `functions serve` cita `admin-labels` (não existe) e o roteiro 10 fala em "baixar o pacote" com etiquetas (só há `pins.csv`).
+4. As variáveis do servidor SSR "em `.env` local": o servidor Node lê `process.env`, não carrega `.env`.
+5. `npm run build && npm run serve:ssr:faro` e abrir `localhost:4000`: 400 por `allowedHosts` (OBS-4). O roteiro 10 manda criar "um lote de 6", que funciona; um lote de 54 não (DEF-003-01).
+6. Os passos 1 a 10 foram exercitados pelos testes acima (resgate, mesma mensagem, normalização, scan, ativação, PIN errado, modo perdido, visibilidade, passar adiante, admin), e não por uma execução manual em máquina limpa.
+
+### Gate de segurança: expectativa → prova
+
+Veredito de segurança: nenhuma expectativa falhou. Veredito geral: AMARELO (DEF-003-01 a 03 abertos; T037, T093, T097 e T107 abertas).
+
+| Expectativa | Prova (arquivo: teste) |
+|---|---|
+| Tutor A não lê nem altera pets, perfil, vínculos, pedidos, scans de B | `gate-security.spec.ts`: "isolamento entre tutores"; pgTAP `rls_tags_base`, `rls_scans`, `rpc_my_dashboard`, `rls_perfis*` |
+| `anon` sem tabela e sem função | `gate-security.spec.ts`: "anon não lê <tabela>" (12) e "anon não executa nenhuma função da spec" (30); pgTAP `security_catalog`, `rls_tags_base`; `supabase-checks.sh` |
+| Funções só de servidor negadas a tutor e admin | `gate-security.spec.ts`: "funções só de servidor"; pgTAP `rls_tags_base` |
+| `authenticated` sem `activation_pin_hash`, `ip_hash`, token de localização | `gate-security.spec.ts`: "colunas privadas"; pgTAP `rls_tags_base`, `rls_scans` |
+| Página pública só mostra o consentido (cada interruptor; WhatsApp só com opt-in e celular confirmado) | `tag-page.spec.ts`: "campo desligado ... HTML bruto", "WhatsApp e telefone não ligam sem celular confirmado"; `owner.spec.ts` T067; pgTAP `rpc_resolve_tag` |
+| Scans de um vínculo antigo não aparecem para o novo dono, nem os novos para o antigo | `owner.spec.ts` T057/T091; pgTAP `rls_scans`, `account_tags` |
+| PIN: sem PIN certo não há vínculo; 5 erros bloqueiam a conta; PIN certo no bloqueio é recusado | `activation.spec.ts`: "PIN errado: ... 5 erros bloqueiam"; pgTAP `rpc_activate_tag` |
+| PIN: 20 erros em 24 h travam a tag (até para o PIN certo) | `activation.spec.ts`: "bloqueio por tag" |
+| PIN: uso único; PIN novo ao liberar; PIN antigo recusado | `activation.spec.ts`: "uso único"; `owner.spec.ts` T071; `admin.spec.ts` reemitir |
+| PIN mantido na troca de tag e na exclusão de conta | `activation.spec.ts`: "pet que já tem tag"; pgTAP `rpc_activate_tag` (troca), `account_tags` ("PIN vigente é mantido") |
+| Contadores de PIN não são desfeitos por caminho lateral | pgTAP `rpc_activate_tag`, `account_tags`; NÃO reexaminado em navegador |
+| PIN nunca em log, resposta de erro, tabela, URL, storage, auditoria | `scripts/ci/check-pins-in-log.mjs` (CI); `activation.spec.ts` (URL e storage); `admin.spec.ts` e `gate-security.spec.ts` (tabela, auditoria); pgTAP `rpc_activate_tag` |
+| Mensagem única (inexistente = bloqueado = anulado), também na ativação | `tag-page.spec.ts` (HTML idêntico); `gate-security.spec.ts` (corpo, status e cabeçalhos); `activation.spec.ts` ("tag inválida, bloqueada..."); pgTAP `rpc_resolve_tag` |
+| Dígito inválido não chega ao banco; limite por origem | `gate-security.spec.ts` ("anti-enumeração", "limite por origem"); `activation.spec.ts` (`invalid_code`); pgTAP `rpc_resolve_tag` |
+| Piso de 150 ms nos estados que não são o resgate | `tag-page.spec.ts`; `gate-security.spec.ts` (servidor real) |
+| Chave do servidor errada ou ausente: 401 de corpo vazio | `gate-security.spec.ts`; `deno test` (`_shared/auth`) |
+| Limites de taxa no servidor (resolve 30/min, scan 20/min, ativação 30/15 min, lote 10/h) | `gate-security.spec.ts`; pgTAP `endurecimento_tags` (31ª de `activate_tag` = `locked`); 429 do `admin-create-batch` visto ao esgotar as 10/h |
+| Contrato físico: `code` imutável, nunca apagado, `void` irreversível, dígito inválido recusado | `gate-security.spec.ts`: "contrato físico" (até com `service_role`); pgTAP `rls_tags_base` |
+| Código: normalização e vetores idênticos no TS e no SQL | `tag-code.sql-sync.spec.ts` (app), `tag_code.test.sql` (pgTAP), `_shared/tag-code.test.ts` (deno); `activation.spec.ts` e `gate-security.spec.ts` (`invalid_code` na entrada) |
+| Nenhuma URL de tag usa outro domínio | `gate-security.spec.ts` ("nenhuma URL de tag..."; `qr-payload` só aceita o domínio); `qr-payload.spec.ts` |
+| Rescue-First: contingência com a função fora do ar | `prod-server.spec.ts` (servidor de produção com URL morta, nunca 5xx nem texto técnico) |
+| `resolve_tag` e `register_scan` sem cobrança; scans de tag bloqueada na fila do admin | pgTAP `rpc_resolve_tag`, `rpc_register_scan`, `rpc_admin`; `admin.spec.ts` (fila) |
+| Robô e dono não geram scan nem e-mail; repetição em 10 min não duplica | `tag-page.spec.ts`; pgTAP `rpc_register_scan` |
+| Admin só com `is_admin()` (RPC e Edge Function) | `admin.spec.ts`: "tutor comum não entra no admin"; pgTAP `rpc_admin`, `endurecimento_tags`; `deno test` |
+| Auditoria sem dado pessoal nem PIN | `admin.spec.ts`; pgTAP `rpc_activate_tag`, `account_tags`, constraint de `audit_log` |
+| Storage `pet-photos`: A lê e grava no prefixo; B, anon e prefixo alheio negados; tipo e 5 MB | `gate-security.spec.ts`: "Storage pet-photos (real)"; pgTAP `storage_pet_photos` |
+| Nenhum segredo em `dist/`; bundle público sem chunks do app autenticado; nenhum `primeng` | `npm run check:secrets` (varre `dist/`), `check:bundle`, `check:ui` (job `app`); `prod-server.spec.ts` (HTML e scripts da rota sem segredo nem código do app autenticado) |
