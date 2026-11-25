@@ -90,8 +90,9 @@ export class AuthService {
     if (data.session) {
       this.store.setSession(data.session);
       await this._resolveRole();
-    } else if (!error) {
-      // Havia credencial gravada, mas sem sessão válida: não deixa token órfão em nenhum storage.
+    } else if (persisted && !error) {
+      // Havia credencial gravada, mas sem sessão válida: limpa só deste aparelho, sem token órfão em nenhum storage.
+      await this.supabase.client.auth.signOut({ scope: 'local' }).catch(() => undefined);
       clearPersistedSessions();
     }
 
