@@ -11,9 +11,9 @@ export const toggleVariants = cva(
     variants: {
       zType: {
         default:
-          'border-border bg-card text-foreground hover:bg-background data-[state=on]:border-foreground data-[state=on]:bg-foreground data-[state=on]:text-background',
+          'border-border bg-card text-foreground hover:not-data-[state=on]:bg-background data-[state=on]:border-foreground data-[state=on]:bg-foreground data-[state=on]:text-background',
         outline:
-          'border-input bg-card text-foreground hover:bg-background data-[state=on]:border-foreground data-[state=on]:bg-foreground data-[state=on]:text-background',
+          'border-input bg-card text-foreground hover:not-data-[state=on]:bg-background data-[state=on]:border-foreground data-[state=on]:bg-foreground data-[state=on]:text-background',
         segmented:
           'h-10 border-0 bg-transparent px-3 text-sm text-foreground after:-inset-y-0.5 data-[state=on]:bg-foreground data-[state=on]:text-background',
       },

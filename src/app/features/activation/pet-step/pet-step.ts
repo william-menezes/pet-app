@@ -38,6 +38,8 @@ export class PetStep {
 
   protected readonly selected = computed(() => this.pets().find((p) => p.id === this.selectedId()) ?? null);
   protected readonly label = speciesLabel;
+  protected readonly headline = [$localize`Uma tag,`, $localize`um pet.`];
+  protected readonly sub = $localize`Você escolhe para quem é a tag e confirma com o PIN do cartão.`;
 
   protected select(id: string): void {
     this.selectedId.set(id);
@@ -54,7 +56,7 @@ export class PetStep {
     this.picked.emit({ petId: pet.id, replace: pet.hasTag });
   }
 
-  protected sub(pet: PetOption): string {
+  protected petSub(pet: PetOption): string {
     return pet.hasTag ? $localize`${speciesLabel(pet.species)}:species: · com tag` : $localize`${speciesLabel(pet.species)}:species: · sem tag`;
   }
 }

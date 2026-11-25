@@ -58,6 +58,8 @@ export class PinStep {
 
   protected readonly pin = new FormControl('', { nonNullable: true });
   protected readonly whatsapp = new FormControl(true, { nonNullable: true });
+  protected readonly headline = [$localize`O PIN prova`, $localize`que a tag`, $localize`é sua.`];
+  protected readonly sub = $localize`Ele vem no cartão dentro da embalagem e nunca na etiqueta.`;
   private readonly pinLength = signal(0);
   private readonly otp = viewChild(ZardInputOtpComponent);
 

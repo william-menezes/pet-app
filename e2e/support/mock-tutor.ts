@@ -47,6 +47,8 @@ export interface TutorState {
   activateBodies: unknown[];
   /** Corpos das inserções em `pets` (novo pet). */
   petInserts: unknown[];
+  /** Caminhos enviados ao bucket `pet-photos`. */
+  uploads: string[];
   pendingCodes: string[];
   scansRows: unknown[];
   blocked: string[];
@@ -62,6 +64,7 @@ export function newTutorState(over: Partial<TutorState> = {}): TutorState {
     activateReplies: [{ ok: true, code: '7K3M-Q9XA-C', pet_id: 'p1', pet_name: 'Paçoca', whatsapp_enabled: true }],
     activateBodies: [],
     petInserts: [],
+    uploads: [],
     pendingCodes: [],
     scansRows: [],
     blocked: [],
@@ -129,6 +132,10 @@ export async function mockTutorBackend(page: Page, state: TutorState): Promise<T
     const reply = state.activateReplies[Math.min(state.activateBodies.length, state.activateReplies.length - 1)];
     state.activateBodies.push(body);
     return route.fulfill(json(reply));
+  });
+  await page.route('**/storage/v1/object/pet-photos/**', (route) => {
+    state.uploads.push(new URL(route.request().url()).pathname);
+    return route.fulfill(json({ Key: 'pet-photos/simulado' }));
   });
   await page.route('**/rest/v1/pets**', (route) => {
     const req = route.request();

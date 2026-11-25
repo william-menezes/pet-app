@@ -284,9 +284,9 @@ Igual à `004`: a máquina não tem Docker nem a CLI do Supabase. Todo "Feito qu
 - [x] T043 [US2] [FE] Passo 1, escolher o pet, conforme `V2-ativacao-pet*.dc.html`: lista de pets
   do tutor, "Cadastrar um pet novo", aviso e confirmação quando o pet já tem tag (`pet_has_tag` →
   reenviar com `p_replace`). **Feito quando**: teste de componente cobre pet sem tag e com tag.
-- [ ] T044 [P] [US2] [FE] Novo pet, passo 1 (dados), conforme `V2-novo-pet-dados*.dc.html`.
+- [x] T044 [P] [US2] [FE] Novo pet, passo 1 (dados), conforme `V2-novo-pet-dados*.dc.html`.
   **Feito quando**: validação de nome obrigatório e espécie; teste de componente.
-- [ ] T045 [P] [US2] [FE] Novo pet, passo 2 (foto, temperamento, cuidados), conforme
+- [x] T045 [P] [US2] [FE] Novo pet, passo 2 (foto, temperamento, cuidados), conforme
   `V2-novo-pet-resgate*.dc.html`, com "Pular por enquanto". Ao salvar, volta para onde veio
   (ativação ou painel). **Feito quando**: teste cobre salvar e pular.
 - [x] T046 [US2] [FE] Passo 2, PIN, conforme `V2-ativacao-pin*.dc.html`: seis células, normalização

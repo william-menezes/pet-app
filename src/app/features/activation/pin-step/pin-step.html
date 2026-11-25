@@ -7,6 +7,8 @@
   i18n-barTitle
   [back]="'back'"
   [step]="{ current: 2, total: 2 }"
+  [headline]="headline"
+  [sub]="sub"
   (backClick)="changePet.emit()">
   <div [attr.aria-busy]="submitting()">
     <h1 class="font-display text-[32px] leading-[1.04] font-bold tracking-[-0.03em] text-foreground md:text-[42px]" i18n>

@@ -7,7 +7,9 @@
   i18n-barTitle
   [back]="'close'"
   [backLink]="'/app'"
-  [step]="{ current: 1, total: 2 }">
+  [step]="{ current: 1, total: 2 }"
+  [headline]="headline"
+  [sub]="sub">
   <div>
     <span
       class="inline-flex min-h-9 items-center gap-2 rounded-full bg-card px-3.5 font-display text-[15px] font-semibold tracking-[0.04em] text-foreground"
@@ -70,7 +72,7 @@
                 <app-pet-avatar [photoUrl]="pet.photoUrl" />
                 <span class="flex min-w-0 flex-1 flex-col">
                   <span class="truncate font-display text-[17px] font-semibold text-foreground">{{ pet.name }}</span>
-                  <span class="text-sm text-muted-foreground">{{ sub(pet) }}</span>
+                  <span class="text-sm text-muted-foreground">{{ petSub(pet) }}</span>
                 </span>
                 <span
                   class="flex size-6 shrink-0 items-center justify-center rounded-full border-2 border-border"

@@ -27,6 +27,8 @@ export class DoneStep {
   readonly code = input.required<string>();
   readonly whatsappEnabled = input(false);
 
+  protected readonly headline = computed(() => [$localize`Pronto.`, this.petName(), $localize`tem como`, $localize`voltar.`]);
+  protected readonly sub = $localize`A partir de agora, quem escanear a tag fala direto com você.`;
   protected readonly pageHref = computed(() => `/${normalize(this.code())}`);
   protected readonly visibilityLink = computed(() => ['/app/pets', this.petId(), 'visibilidade']);
 }

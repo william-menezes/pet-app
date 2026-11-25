@@ -265,8 +265,7 @@ export const routes: Routes = [
   {
     path: 'novo-pet',
     canMatch: [authGuard, termsGuard],
-    loadComponent: shellFallback,
-    data: { home: '/app' },
+    loadComponent: () => import('./features/pets/new-pet/new-pet').then((m) => m.NewPet),
     title: $localize`Novo pet — Faro`,
   },
   {
