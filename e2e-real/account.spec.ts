@@ -132,7 +132,7 @@ test('T086: trocar celular com senha errada nao muda nada; com a certa mantem o 
   acct = (await rest('rpc/my_account', { token: session!.access_token, body: {} })).body;
   expect(acct.celular).toBe(e164(novo));
   expect(acct.celular_pendente).toBeNull();
-  await expect(page.locator(tid('account-phone-badge'))).toContainText(/confirmado/i);
+  await expect(page.locator(tid('account-phone-status'))).toContainText(/confirmado/i);
 });
 
 test('T090a: alterar o nome aparece em /app/conta', async ({ page }) => {
