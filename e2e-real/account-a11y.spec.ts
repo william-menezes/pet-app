@@ -78,7 +78,7 @@ for (const size of SIZES) {
     await page.setViewportSize(size);
     const u = await adminCreateUser({});
     await loginViaUi(page, u.email, u.password);
-    await expect(page).toHaveURL(/localhost:4200/(app|auth/celular)(?|$|/)/);
+    await expect(page).toHaveURL(/localhost:4200\/(app|auth\/celular)(\?|$|\/)/);
     await page.goto('/auth/celular');
     await page.waitForLoadState('networkidle');
     await expectNoHorizontalScroll(page);
