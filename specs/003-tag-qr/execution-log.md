@@ -151,7 +151,8 @@ Edge Functions: `resolve-tag`, `register-scan` (`handler.ts` testável + `index.
 - `deno test`: 302 testes (eram 237); lock inalterado.
 - `supabase-checks.sh`: 242 PASS, 0 FAIL (eram 182). Inclui corrida (1 sucesso e 3 `tag_unavailable`), `rate_limited` na 31ª chamada, cabeçalhos idênticos de bloqueado, anulado e inexistente, e aviso gravado com `notified_at` pelo driver `log`.
 - Job `app`: 641 testes, 1 pulado, verde.
-- Execuções de CI nesta fase: 2 (a primeira falhou em 3 arquivos de teste e 1 verificação do script, corrigidos).
+- Tempo de uma verificação de PIN (bcrypt custo 12, média de 5, T039): 229 ms no CI (run 45505863780).
+- Execuções de CI nesta fase: 4 (as duas primeiras falharam por erro de teste e uma verificação do script que dependia de fração de segundo; corrigidos). Último verde: run 45505863780, commit 5deb311.
 
 ### Não verificado
 
