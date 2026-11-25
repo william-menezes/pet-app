@@ -15,29 +15,16 @@
  */
 import { Injector, PLATFORM_ID, inject } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
-
-const SESSION_KEY = /^sb-.+-auth-token$/;
+import { findPersistedStorage } from './session-persistence';
 
 interface SessionRestorer {
   restoreSession(): Promise<void>;
 }
 type RestorerLoader = () => Promise<{ AuthService: new (...args: never[]) => SessionRestorer }>;
 
-function hasKey(storage: Storage): boolean {
-  for (let i = 0; i < storage.length; i++) {
-    const key = storage.key(i);
-    if (key !== null && SESSION_KEY.test(key)) return true;
-  }
-  return false;
-}
-
 /** Há uma sessão do Supabase gravada neste navegador? */
 export function hasPersistedSession(): boolean {
-  try {
-    return hasKey(localStorage) || hasKey(sessionStorage);
-  } catch {
-    return false;
-  }
+  return findPersistedStorage() !== null;
 }
 
 /** Chamar em contexto de injeção (inicializador do app). O `load` existe para os testes. */

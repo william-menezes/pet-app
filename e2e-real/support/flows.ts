@@ -31,7 +31,7 @@ export async function loginViaUi(
   await page.locator(tid('login-email')).fill(email);
   await page.locator(tid('login-password')).fill(password);
   // 'Manter conectado' marcado por padrao nos testes: sem ele a sessao vai para o sessionStorage e some ao recarregar
-  // (defeito DEF-001 do QA, provado em session-and-isolation.spec.ts). Quem testa o comportamento padrao passa remember: false.
+  // (DEF-001, corrigido; os casos dos dois modos estao em session-and-isolation.spec.ts). Quem testa o comportamento padrao passa remember: false.
   if (opts.remember ?? true) await page.locator(`${tid('login-remember')} input`).click();
   await page.locator(tid('login-submit')).click();
 }

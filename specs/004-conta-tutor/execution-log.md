@@ -762,3 +762,16 @@ Progresso registrado a cada passo (a sessão caiu mais de uma vez). Nenhum teste
   (T104, ultimo passo, depende da chave Cloudflare). Pendencia.
 - **Pendentes**: T065 (Google real), T093 (`git diff develop...HEAD -- src/app/features/public` mostra a landing, mudanca prevista da 004; a rota de
   tag nao existe nesta branch, entao "abre sem sessao" nao e verificavel), T094, T095, T096, T108 (captcha).
+
+### DEF-001 corrigido (2026-11-25)
+
+- **Causa**: `AuthService.setRememberMe(false)` trocava `auth.storage` so no cliente da pagina atual; a cada carga o `SupabaseService` criava um
+  cliente novo que lia so o `localStorage`. A sessao volatil ficava no `sessionStorage`, o F5 nao a achava e o token ficava orfao.
+- **Correcao** (`core/auth/session-persistence.ts`, `core/supabase/supabase.service.ts`, `core/auth/auth.service.ts`, `core/auth/session-bootstrap.ts`):
+  - `findPersistedStorage()` acha o storage com `sb-…-auth-token`; se houver nos dois, vale o `localStorage` e o do `sessionStorage` e apagado.
+  - `SupabaseService` cria o cliente com `auth.storage` = esse storage (so no navegador; no servidor nada muda). O bootstrap reusa a mesma funcao.
+  - `clearPersistedSessions()` apaga sessao e usuario do Supabase dos DOIS storages; roda em `signOut`, em `setRememberMe` (antes do novo login),
+    quando a restauracao nao acha sessao valida e quando o estado de auth vira "sem sessao". O `-code-verifier` do PKCE (Google) nao e tocado.
+- **Testes**: unitarios novos em `session-persistence.spec.ts` (so session, so local, nos dois, nenhum, storage que lanca, limpeza); e2e real
+  `session-and-isolation.spec.ts`: o `test.fail` saiu; casos "sem Manter conectado sobrevive ao F5", "com Manter conectado sobrevive ao F5" e
+  "sair limpa os dois storages".
