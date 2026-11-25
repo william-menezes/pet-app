@@ -650,6 +650,38 @@ GQ="$(curl -s -o /dev/null -w '%{http_code}' -X POST "$API_URL/graphql/v1" -H "a
 echo "GraphQL: HTTP $GQ"
 check "o endpoint GraphQL nao responde 200" bash -c '[ "$1" != "200" ]' _ "$GQ"
 
+echo "== Chave publica nova (sb_publishable_..., nao e JWT) e verify_jwt por funcao =="
+# O app hospedado manda 'Authorization: Bearer sb_publishable_...' quando nao ha sessao. login-guard e password-recovery
+# (verify_jwt = false) tem de chegar ao codigo e responder a forma de negocio; as tres funcoes de sessao seguem com o
+# portao (401). Isto prova o config.toml no stack LOCAL; o comportamento do portao hospedado vem da documentacao.
+FAKE_PUB="sb_publishable_chavefalsa0123456789"
+guard_pre() { # guard_pre [valor-do-Authorization]  (sem argumento: sem o cabecalho)
+  local auth=()
+  if [ $# -gt 0 ]; then auth=(-H "Authorization: $1"); fi
+  curl -s -w '|%{http_code}' -X POST "$API_URL/functions/v1/login-guard" -H "apikey: $ANON_KEY" "${auth[@]}" \
+    -H "Content-Type: application/json" -d '{"phase":"pre_attempt","email":"ci-sem-conta-pub@faro.test"}'
+}
+for label_auth in "chave publishable falsa|Bearer $FAKE_PUB" "lixo|Bearer lixo" "JWT mal formado|Bearer aaa.bbb.ccc"; do
+  GR="$(guard_pre "${label_auth#*|}")"
+  check "login-guard com Authorization = ${label_auth%%|*}: 200 com a decisao (chega ao codigo, sem 401 do portao)" \
+    bash -c 'printf "%s" "$1" | grep -q "\"decision\":\"allow\"" && [ "${1##*|}" = "200" ]' _ "$GR"
+done
+GR="$(guard_pre)"
+check "login-guard sem Authorization: 200 com a decisao" \
+  bash -c 'printf "%s" "$1" | grep -q "\"decision\":\"allow\"" && [ "${1##*|}" = "200" ]' _ "$GR"
+for auth in "Bearer $FAKE_PUB" "Bearer lixo"; do
+  RR="$(curl -s -w '|%{http_code}' -X POST "$API_URL/functions/v1/password-recovery" -H "apikey: $ANON_KEY" \
+    -H "Authorization: $auth" -H "Content-Type: application/json" -d '{"email":"isto-nao-e-um-email","captcha_token":null}')"
+  check "password-recovery com Authorization nao-JWT: { ok: true } e 200 (e-mail invalido, sem gastar limite)" \
+    bash -c '[ "$1" = "{\"ok\":true}|200" ]' _ "$RR"
+done
+check "phone-verify-start com a chave publishable falsa no Authorization: 401 (portao ligado)" \
+  test "$(fn_code phone-verify-start '{}' "$FAKE_PUB")" = "401"
+check "phone-verify-start sem Authorization: 401 (portao ligado)" test "$(curl -s -o /dev/null -w '%{http_code}' -X POST \
+  "$API_URL/functions/v1/phone-verify-start" -H "apikey: $ANON_KEY" -H "Content-Type: application/json" -d '{}')" = "401"
+check "account-delete sem Authorization: 401 (portao ligado)" test "$(curl -s -o /dev/null -w '%{http_code}' -X POST \
+  "$API_URL/functions/v1/account-delete" -H "apikey: $ANON_KEY" -H "Content-Type: application/json" -d '{"confirm":"EXCLUIR"}')" = "401"
+
 echo "== T099: guard:ip:m (60 chamadas por minuto por IP) =="
 FLOOD=0
 for _ in $(seq 1 80); do

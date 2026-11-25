@@ -55,14 +55,16 @@ export function loadEnv(need: { pepper?: boolean }): FaroEnv;   // lança Miscon
 
 Regras (testadas com `deno test`):
 
-- `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `HASH_SALT` são sempre
-  obrigatórios. `HASH_SALT` com menos de 16 caracteres ⇒ `MisconfiguredError`.
+- `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `HASH_SALT` e **uma chave pública** são sempre
+  obrigatórios. A chave pública (`anonKey` no `FaroEnv`) é resolvida nesta ordem: `SUPABASE_PUBLISHABLE_KEYS`
+  (JSON, entrada `default`), `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_ANON_KEY` (legada). Nenhuma presente ⇒
+  `MisconfiguredError`. `HASH_SALT` com menos de 16 caracteres ⇒ `MisconfiguredError`.
 - `PHONE_OTP_PEPPER` obrigatório quando `need.pepper`; menos de 32 caracteres ⇒ erro.
 - `FARO_ENV` ausente ou fora da lista ⇒ tratado como `'production'`.
 
 | Variável | Obrigatória | Exemplo local | Observação |
 |---|---|---|---|
-| `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` | sim | do `supabase status` | injetadas pela plataforma em produção |
+| `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, e uma de `SUPABASE_PUBLISHABLE_KEYS` / `SUPABASE_PUBLISHABLE_KEY` / `SUPABASE_ANON_KEY` | sim | do `supabase status` | injetadas pela plataforma em produção (a `ANON`/`SERVICE_ROLE` são as chaves legadas) |
 | `HASH_SALT` | sim | `local-dev-salt-0123456789` | já existe na `001` |
 | `PHONE_OTP_PEPPER` | sim (funções de celular) | 32+ caracteres aleatórios | **nunca** no banco nem no cliente |
 | `FARO_ENV` | sim | `local` | `local`, `test`, `staging`, `production` |
@@ -158,7 +160,13 @@ export function serviceClient(env: FaroEnv): SupabaseClient;                 // 
 export async function getCaller(req: Request, env: FaroEnv): Promise<User | null>; // valida o JWT do Authorization com auth.getUser()
 ```
 
-`getCaller` devolve `null` para a chave anônima ou token inválido.
+`getCaller` devolve `null` para token ausente, chave publishable (`sb_publishable_…`, não é JWT), chave anon legada (JWT sem
+usuário), lixo ou qualquer erro; nunca lança. Decide pela **forma** do token (três segmentos base64url), sem comparar com
+uma chave configurada; só um JWT é enviado ao `auth.getUser(token)`. A lógica pura está em `_shared/caller.ts`.
+
+**`verify_jwt` por função** (chave pública nova): `login-guard` e `password-recovery` rodam antes de existir sessão e ficam
+com `verify_jwt = false`; o código é a única barreira (limites, CORS, método, corpo, anti-enumeração). As três de sessão
+(`phone-verify-start`, `phone-verify-confirm`, `account-delete`) ficam com `true` e ainda checam o usuário com `getCaller`.
 
 ## `audit.ts`
 

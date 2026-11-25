@@ -775,3 +775,28 @@ Progresso registrado a cada passo (a sessão caiu mais de uma vez). Nenhum teste
 - **Testes**: unitarios novos em `session-persistence.spec.ts` (so session, so local, nos dois, nenhum, storage que lanca, limpeza); e2e real
   `session-and-isolation.spec.ts`: o `test.fail` saiu; casos "sem Manter conectado sobrevive ao F5", "com Manter conectado sobrevive ao F5" e
   "sair limpa os dois storages".
+
+### Chave pública e verify_jwt (2026-11-25)
+
+- **Contexto**: o projeto hospedado usa a chave pública nova (`sb_publishable_…`, não é JWT). A tarefa partia de que o portão
+  `verify_jwt` devolveria 401 a `Authorization: Bearer sb_publishable_…`.
+- **O que a documentação diz** (lida em 2026-11-25: `/guides/functions/auth-headers` e `/guides/functions/auth`): o portão é ligado por padrão e
+  rejeita cabeçalho ausente, malformado ou de assinatura errada, **mas** "publishable and secret keys are not JWTs, but the check still accepts
+  them in the Authorization header" (e em `apikey`) "for migration compatibility"; o portão sozinho "não autentica" quem manda só chave de API.
+  Ou seja: pela documentação a premissa do 401 **não** se confirma, e a aceitação é transitória. Não foi testado no hospedado (proibido escrever/chamar lá).
+  Localmente (CLI 3.2.0) a chave publishable real passou o portão de `phone-verify-start` e o 401 veio do código (`unauthorized`).
+- **Decisão** (menor desvio seguro): `verify_jwt = false` só em `login-guard` e `password-recovery`, que são pré-sessão por contrato. Assim o login
+  não depende de uma compatibilidade declarada transitória. As outras três seguem `true`. Alternativa documentada e não adotada:
+  `withSupabase({ auth: 'publishable' })` (`@supabase/server`), que traria dependência nova sem ganho para uma chave pública.
+- **Variáveis** (`/guides/functions/secrets`): o hospedado injeta `SUPABASE_PUBLISHABLE_KEYS` e `SUPABASE_SECRET_KEYS` (JSON) e mantém, como legadas,
+  `SUPABASE_ANON_KEY` e `SUPABASE_SERVICE_ROLE_KEY`. `env.ts` agora resolve a chave pública por `resolvePublicKey`: `SUPABASE_PUBLISHABLE_KEYS`
+  (`default`) → `SUPABASE_PUBLISHABLE_KEY` → `SUPABASE_ANON_KEY`; nenhuma ⇒ `MisconfiguredError` (falha fechada). A role de serviço continua em
+  `SUPABASE_SERVICE_ROLE_KEY` (ainda injetada). `login-guard/index.ts` usa o mesmo resolvedor (antes lia `SUPABASE_ANON_KEY` direto).
+- **`getCaller`**: não compara mais com `SUPABASE_ANON_KEY`. A lógica pura (`_shared/caller.ts`) só envia ao `auth.getUser` o que tem forma de JWT;
+  ausente, publishable, lixo e erro ⇒ `null`; a chave anon legada (JWT sem usuário) é recusada pelo `getUser` ⇒ `null`. Nunca lança.
+- **Trade-offs do portão aberto**: as duas funções aceitam chamada sem nenhuma chave; `guard:ip:m` falha aberta por contrato; `post_result` com
+  `success:true` é aceito sem JWT (já era assim com o portão ligado; o ator da auditoria só vem de JWT válido). Compensam: limite por IP e por conta,
+  CORS por lista, só POST/OPTIONS, corpo limitado e com chaves conhecidas, anti-enumeração e piso de tempo.
+- **Testes**: `caller.test.ts` (sete casos: ausente, publishable, lixo, anon legada, JWT inválido, JWT válido, verificador que lança) e seis casos novos
+  em `env.test.ts`; `scripts/ci/supabase-checks.sh` ganhou o bloco "Chave pública nova e verify_jwt por função" (login-guard e password-recovery com
+  publishable falsa, lixo e sem cabeçalho chegam ao código; as de sessão seguem 401). Esse bloco prova o `config.toml` no stack local, não o hospedado.

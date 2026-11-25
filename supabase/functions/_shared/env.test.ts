@@ -91,3 +91,38 @@ Deno.test("a mensagem do erro traz o nome da variavel e nunca o valor", () => {
   assertEquals(caught!.message.includes("segredo-curto"), false);
   assertEquals(caught!.message.includes("PHONE_OTP_PEPPER"), true);
 });
+
+// Chave publica: o hospedado injeta SUPABASE_PUBLISHABLE_KEYS (JSON) e, como legada, SUPABASE_ANON_KEY; o local, a anon.
+const NO_ANON = { SUPABASE_ANON_KEY: undefined };
+
+Deno.test("chave publica: SUPABASE_PUBLISHABLE_KEYS (default) tem prioridade sobre a anon legada", () => {
+  const env = loadEnv({}, reader({ SUPABASE_PUBLISHABLE_KEYS: '{"default":"sb_publishable_teste"}' }));
+  assertEquals(env.anonKey, "sb_publishable_teste");
+});
+
+Deno.test("chave publica: so o dicionario, sem a anon legada, e aceito (hospedado sem chaves legadas)", () => {
+  const env = loadEnv({}, reader({ ...NO_ANON, SUPABASE_PUBLISHABLE_KEYS: '{"default":"sb_publishable_teste"}' }));
+  assertEquals(env.anonKey, "sb_publishable_teste");
+});
+
+Deno.test("chave publica: sem 'default', usa a primeira chave texto do dicionario", () => {
+  const env = loadEnv({}, reader({ ...NO_ANON, SUPABASE_PUBLISHABLE_KEYS: '{"web":"sb_publishable_web"}' }));
+  assertEquals(env.anonKey, "sb_publishable_web");
+});
+
+Deno.test("chave publica: SUPABASE_PUBLISHABLE_KEY (valor unico) vale quando nao ha dicionario", () => {
+  const env = loadEnv({}, reader({ ...NO_ANON, SUPABASE_PUBLISHABLE_KEY: "sb_publishable_unica" }));
+  assertEquals(env.anonKey, "sb_publishable_unica");
+});
+
+Deno.test("chave publica: dicionario invalido cai para a anon legada", () => {
+  const env = loadEnv({}, reader({ SUPABASE_PUBLISHABLE_KEYS: "{nao-e-json" }));
+  assertEquals(env.anonKey, "anon-test-key");
+});
+
+Deno.test("chave publica: nenhuma das tres => MisconfiguredError (falha fechada)", () => {
+  assertThrows(
+    () => loadEnv({}, reader({ ...NO_ANON, SUPABASE_PUBLISHABLE_KEYS: '{"default":"  "}' })),
+    MisconfiguredError,
+  );
+});
