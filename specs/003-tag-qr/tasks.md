@@ -382,7 +382,7 @@ Igual à `004`: a máquina não tem Docker nem a CLI do Supabase. Todo "Feito qu
 
 ## Phase 8: User Story 6 — App do tutor e vínculo pelo app (P2)
 
-- [ ] T068 [US6] [BE] `my_dashboard()` em `0031_rpc_tutor.sql`. **Feito quando**: pgTAP confere o
+- [x] T068 [US6] [BE] `my_dashboard()` em `0031_rpc_tutor.sql`. **Feito quando**: pgTAP confere o
   conteúdo para a Ana do seed e que não traz nada de outro tutor.
 - [ ] T069 [US6] [FE] Painel conforme `V2-painel*.dc.html` (claro e escuro, três larguras): capa do
   pet com seletor quando há mais de um, cartão lima do último scan (só se houver scan nas últimas
@@ -408,10 +408,10 @@ Igual à `004`: a máquina não tem Docker nem a CLI do Supabase. Todo "Feito qu
 
 ## Phase 9: User Story 7 — Admin (P2)
 
-- [ ] T075 [US7] [BE] `0034_rpc_admin.sql` (arquivo próprio, separado das RPCs do tutor; não usar
+- [x] T075 [US7] [BE] `0034_rpc_admin.sql` (arquivo próprio, separado das RPCs do tutor; não usar
   `0031b`): todas as RPCs `admin_*` de `contracts/admin.contract.md` e `admin_insert_batch`.
   **Feito quando**: pgTAP cobre `forbidden` para tutor e as transições de situação.
-- [ ] T076 [US7] [BE] ⚠ **Só desenvolvimento até T011 passar: não fazer deploy em produção nem gerar lote real.** Edge Function `admin-create-batch`: geração de códigos e PINs, cálculo da
+- [x] T076 [US7] [BE] ⚠ **Só desenvolvimento até T011 passar: não fazer deploy em produção nem gerar lote real.** Edge Function `admin-create-batch`: geração de códigos e PINs, cálculo da
   máscara, inserção, e o pacote **só com `pins.csv`** enquanto a etiqueta não existe (o PDF entra em
   T084). **Feito quando**: `deno test` gera um lote de 54, todos válidos e distintos; o PIN do CSV
   ativa o código; nenhum PIN aparece na saída de log do teste.
@@ -435,7 +435,7 @@ Igual à `004`: a máquina não tem Docker nem a CLI do Supabase. Todo "Feito qu
   `JetBrainsMono-Bold.ttf` e as máscaras do lote-001 chegarem. **Feito quando**: os critérios de aceite 1, 2, 3 e 5 do contrato passam em teste.
 - [ ] T085 🔒 [US7] [QA] Teste cruzado de matriz e máscara contra o lote-001 e roteiro de leitura
   física em `quickstart.md`. **Bloqueada** como T084. **Feito quando**: passa e o roteiro está escrito.
-- [ ] T086 [US7] [BE] Enquanto T084 estiver bloqueada: botão "Exportar códigos do lote" (CSV só
+- [x] T086 [US7] [BE] Enquanto T084 estiver bloqueada: botão "Exportar códigos do lote" (CSV só
   com códigos, sem PINs) e instrução de usar o script local, em `docs/producao-tags.md`, junto das
   notas de produção do contrato. **Feito quando**: o CSV sai e o documento existe.
 
@@ -443,7 +443,7 @@ Igual à `004`: a máquina não tem Docker nem a CLI do Supabase. Todo "Feito qu
 
 ## Phase 10: User Story 8 — Passar adiante e segunda via (P3)
 
-- [ ] T087 [US8] [BE] `release_tag` e `request_tag_replacement` em `0031_rpc_tutor.sql`
+- [x] T087 [US8] [BE] `release_tag` e `request_tag_replacement` em `0031_rpc_tutor.sql`
   (`end_assignments_for_account` já existe desde T019A). **Feito quando**: pgTAP cobre os itens do
   contrato e o isolamento após a troca de dono.
 - [ ] T088 [US8] [FE] Tela "Gerenciar tag" conforme `V2-tag*.dc.html` (claro e escuro): cartão do
@@ -470,7 +470,7 @@ Igual à `004`: a máquina não tem Docker nem a CLI do Supabase. Todo "Feito qu
   componente. **Feito quando**: `ng extract-i18n` não deixa texto de fora.
 - [ ] T095 [P] [FE] Estados vazios, de carregamento e de erro em todas as listas, cada um
   terminando com um próximo passo. **Feito quando**: checklist por tela no PR.
-- [ ] T096 [BE] Atualizar a memória do agente de backend com a matriz de RLS final e os contratos
+- [x] T096 [BE] Atualizar a memória do agente de backend com a matriz de RLS final e os contratos
   expostos. **Feito quando**: arquivo em `.claude/agent-memory/backend-supabase/`.
 - [ ] T097 [QA] Rodar `specs/003-tag-qr/quickstart.md` do começo ao fim e corrigir o que divergir.
   **Feito quando**: todos os passos funcionam numa máquina limpa.
@@ -505,23 +505,23 @@ impresso antes de o MVP ficar pronto.
 2026-11-21). Depende da fase de endurecimento da `004` (portão de catálogo, cabeçalhos, CI). Leia
 os dois contratos antes da primeira tarefa.
 
-- [ ] T101 [BE] Migration `0035_endurecimento_tags.sql`: `rpc_guard`, os escopos novos, o teto de
+- [x] T101 [BE] Migration `0035_endurecimento_tags.sql`: `rpc_guard`, os escopos novos, o teto de
   20 pets por tutor, o teto de 3 pedidos de 2ª via abertos e os limites do bucket `pet-photos`
   (contrato §4 e §6). Chamar `rpc_guard` no começo de cada RPC da tabela do §4.
   **Feito quando**: `supabase/tests/endurecimento_tags.test.sql` passa e o portão
   `security_catalog.test.sql` continua verde com todas as tabelas da `003`.
-- [ ] T102 [BE] Chave do servidor (contrato §2): comparação em tempo constante, chave anterior
+- [x] T102 [BE] Chave do servidor (contrato §2): comparação em tempo constante, chave anterior
   aceita durante a rotação, recusa de chave com menos de 32 caracteres, tetos globais
   `resolve_global_min` e `scan_global_min` com um evento de auditoria por minuto.
   **Feito quando**: `deno test` cobre os seis casos do contrato §7.
-- [ ] T103 [BE] `register-scan`: limites `scan_ip_min` e `scan_ip_hour` (contrato §3).
+- [x] T103 [BE] `register-scan`: limites `scan_ip_min` e `scan_ip_hour` (contrato §3).
   **Feito quando**: o 21º pedido do mesmo `ip_hash` em um minuto devolve `200` e não grava scan
   nem envia e-mail.
 - [ ] T104 [FE] `POST /api/scan` e `/api/scan/location` no servidor do app: só JSON, até 2 KB,
   chave desconhecida recusada, IP só dos cabeçalhos da Vercel (contrato §3). Política `tag` de
   cabeçalhos nas rotas públicas da tag e piso de 150 ms nos três estados (contrato §1).
   **Feito quando**: teste do servidor cobre `413`, `415` e `400`, e `npm run check:headers` passa.
-- [ ] T105 [P] [BE] Admin (contrato §5): `is_admin()` conferido dentro de `admin-labels`; limites
+- [x] T105 [P] [BE] Admin (contrato §5): `is_admin()` conferido dentro de `admin-labels`; limites
   de `admin-create-batch`, `admin_reissue_pin` e `admin_end_assignment`.
   **Feito quando**: pgTAP e `deno test` cobrem `forbidden` para tutor e `too_many_requests` no
   estouro.

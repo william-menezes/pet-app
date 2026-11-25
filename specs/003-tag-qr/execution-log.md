@@ -160,3 +160,115 @@ Edge Functions: `resolve-tag`, `register-scan` (`handler.ts` testável + `index.
 - E-mail real: não há provedor (`TODO(EMAIL_PROVIDER)`).
 - Job de reenvio chamando a função por `pg_net` com Vault configurado.
 - T057 (e2e de navegador) não é desta execução.
+
+## Backend: Phases 8 a 12 (T068, T075, T076, T086, T087, T101, T102, T103, T105; 2026-11-24 e 25)
+
+Mesmo ambiente (sem Docker, CLI ou Python locais; verificação no CI, PR nº 5). Nenhum projeto hospedado foi tocado. O trabalho
+foi feito por dois agentes: o primeiro escreveu as migrations 0031 (parte nova), 0034 e 0035, as Edge Functions e os testes, e
+parou com o CI vermelho; o segundo corrigiu, revisou cada tarefa contra o "Feito quando" e fechou.
+
+### O que quebrava no CI e como ficou
+
+`admin_list_batches` (0034) usava `count(...) FILTER` dentro de `jsonb_agg(jsonb_build_object(...))` na mesma consulta:
+`aggregate function calls cannot be nested`. Só `rpc_admin.test.sql` caiu (7 de 128 asserções rodaram). Corrigido na própria
+0034 (ainda não tinha passado no CI): subconsulta que agrupa por lote e o `jsonb_agg` por fora. Sem outra mudança de teste.
+
+### Migrations e funções
+
+| Migration | Conteúdo |
+|---|---|
+| `0031_rpc_tutor.sql` (parte nova) | `my_dashboard` (T068); `release_tag` e `request_tag_replacement` (T087); gatilho `pets_guard_delete` (recusa apagar pet com vínculo ativo, `pet_has_active_tag`) |
+| `0034_rpc_admin.sql` | `admin_list_batches`, `admin_list_codes`, `admin_code_detail`, `admin_set_status`, `admin_reissue_pin`, `admin_end_assignment`, `admin_resolve_replacement`, `admin_scan_queue`, `admin_audit`, `admin_dashboard_counters`, `admin_export_codes` (T086), `admin_insert_batch` e `admin_mark_package_downloaded` (só `service_role`), auxiliar `tutor_short_name` |
+| `0035_endurecimento_tags.sql` | `rpc_guard`, `rate_hit_audited`, `global_rate_hit`, `admin_rate_hit`; gatilhos `pets_guard_limit` (20 pets) e `replacement_requests_guard_limit` (3 pedidos abertos); limites do bucket `pet-photos` (5 MB; jpeg, png, webp); redefinição de `activate_tag`, `set_lost_mode`, `set/get/clear_pending_activation` com a guarda no começo |
+
+Edge Functions: `admin-create-batch` (`handler.ts` testável + `index.ts`; `verify_jwt = true` e `requireAdmin` por dentro), `_shared/qr.ts`
+(matriz do QR v3-H e `chooseMask`), `_shared/zip.ts` (ZIP sem compressão). `resolve-tag` e `register-scan` ganharam o teto global e
+(no `register-scan`) os limites por `ip_hash`. Documento novo: `docs/producao-tags.md`.
+
+### Decisões e desvios
+
+1. **Id do lote.** `admin_insert_batch` usa o maior número da faixa 1 a 899, no mínimo 2 (`lote-002` mesmo sem o lote-001 no banco);
+   900 a 999 são do seed e de testes e não contam; acima de 899: `batch_range_exhausted`. Provado em pgTAP (o seed tem `lote-900`) e
+   pelo gateway no script de CI (`X-Batch-Id: lote-002`, depois `lote-003`).
+2. **Máscara do QR.** `chooseMask` (penalidade) vale só para lotes novos. O lote-001 nunca recebe máscara calculada: ela é lida das
+   etiquetas impressas (`docs/importar-lote-001.md`, passo 1). O texto do fim desse documento sugeria que `admin-create-batch` "gera
+   máscaras" para qualquer lote; foi reescrito. Nada no código atribui máscara ao lote-001. A conferência da matriz contra o `segno`
+   do script é a T085 (bloqueada).
+3. **Pacote só com `pins.csv`** (cabeçalho `code,pin`, código em exibição) até a etiqueta existir (T084). O segundo pedido do pacote
+   é recusado pelo banco (`package_already_downloaded`); o PIN em claro só existe na memória da função e no corpo da resposta.
+4. **Erro de negócio é retorno, nunca exceção (13A).** Exceções que sobram, de propósito: `p_on` nulo, `p_reason` e `p_kind`
+   inválidos (erro de programação) e os gatilhos de tabela (`pet_limit`, `replacement_limit`, `pet_has_active_tag`,
+   `tag_code_never_deleted`): tabela não tem como devolver `{"ok":false}`.
+5. **`rpc_guard`** não conta sem sessão (`auth.uid()` nulo); com sessão toda chamada conta, inclusive as que falham antes do PIN.
+   Escopos: `activate_calls` 30 em 15 min (`locked`); `tutor_write_min` 30/min e `tutor_read_min` 120/min (`too_many_requests`).
+   Admin: `admin_reissue_hour` e `admin_end_hour` 60/h, `admin_batch_hour` 10/h. Estouro grava **um** evento por janela
+   (`admin_rate_limited`, `global_rate_limit`).
+6. **`release_tag`** mantém `blocked` se a tag estava bloqueada (só o vínculo acaba), desliga o modo perdido, zera contadores e
+   tentativas, gera PIN novo (hash bcrypt custo 12) e devolve `new_pin` uma vez; auditoria `tag_released` só com o motivo.
+   `request_tag_replacement('lost')` anula o código na hora (`void`).
+7. **Teste do T068 usa uma "Ana" sintética** (como todos os pgTAP, que não podem depender do seed), não o usuário do seed.
+8. **T076, "PIN do CSV ativa o código":** o pgTAP prova pela RPC (`admin_insert_batch` + `activate_tag`); o script de CI prova de
+   ponta a ponta pelo gateway (admin do seed cria lote de 3, lê `pins.csv`, ativa um código com a Ana, confere que o PIN não está
+   no log da função nem na auditoria, nem em tabela).
+9. **Custo do lote grande (risco não medido).** Cada código custa um bcrypt de custo 12 (cerca de 0,2 s no CI). Um lote de 500 faz
+   cerca de 100 s numa única transação, que pode estourar o tempo do PostgREST ou da Edge Function. Lote de 54 (o caso real) fica em
+   cerca de 11 s. Se for preciso 500, gerar em fatias ou subir o timeout; não foi alterado nem medido.
+
+### Formas de resposta (para o frontend)
+
+- `my_dashboard()`: `{"ok":true,"pets":[{id, name, species, photo_path, lost_mode, lost_since, has_tag, tag_code (XXXX-XXXX-X ou null), tag_status (available|assigned|blocked|void ou null), scans_month, last_scan:{occurred_at, geo_method}|null, visible_shown, visible_total (5)}],"pending_activation":"XXXX-XXXX-X"|null}`. Erro: `too_many_requests` (com `retry_after_seconds`). A URL da foto sai no cliente.
+- `release_tag(p_code, p_reason in released|transferred)`: `{"ok":true,"code","new_pin"}`; erros `not_owner` (também para tag inexistente ou de outra pessoa), `invalid_code`, `too_many_requests`. Motivo fora da lista lança exceção.
+- `request_tag_replacement(p_code, p_kind in damaged|lost)`: `{"ok":true,"request_id"}`; erros `not_owner`, `invalid_code`, `replacement_limit`, `too_many_requests`.
+- Gatilhos (exceção P0001, mensagem = código): `pet_limit` (21º pet), `pet_has_active_tag` (apagar pet com tag), `replacement_limit`.
+- `admin_list_batches()`: `{ok, batches:[{id, quantity, created_at, notes, package_downloaded_at, counts:{available,assigned,blocked,void}}]}`.
+- `admin_list_codes(p_search, p_status, p_batch, p_limit 1..100, p_offset)`: `{ok, total, rows:[{code, batch_id, status, pet_name, tutor ("Ana S."), last_scan_at}]}`; erros `forbidden`, `invalid_status`.
+- `admin_code_detail(p_code)`: `{ok, code, batch_id, status, created_at, updated_at, qr_version, qr_mask, notes, assignment:{id, started_at, pet_name, tutor}|null, history:[{id, started_at, ended_at, end_reason, pet_name, tutor}], scans:[{id, occurred_at, status_at_scan, geo_method, lat, lng, accuracy_m, city, region, assignment_id}] (até 100), pin:{used, used_at, fail_count_24h, locked_until}, replacement_requests:[{id, kind, status, created_at, resolved_at}]}`; erros `forbidden`, `invalid_code`, `not_found`.
+- `admin_set_status(p_code, p_status in available|blocked|void, p_note)`: `{ok, code, status}` (status final: `assigned` se desbloqueou tag vinculada); erros `forbidden`, `invalid_status`, `invalid_code`, `not_found`, `invalid_transition`.
+- `admin_reissue_pin(p_code)` e `admin_end_assignment(p_code, p_reason in admin|damaged|lost)`: `{ok, code, new_pin}` uma vez; erros `forbidden`, `invalid_code`, `not_found`, `tag_not_available` (reemitir em tag que não é `available`), `no_active_assignment`, `invalid_reason`, `too_many_requests`.
+- `admin_resolve_replacement(p_request, p_status in done|cancelled)`: `{ok}`; erros `forbidden`, `invalid_status`, `not_found`, `invalid_transition` (pedido já fechado).
+- `admin_scan_queue(p_limit, p_offset)`: `{ok, scans:[{id, code, status_at_scan, occurred_at, geo_method, city, region}], replacements:[{id, code, kind, created_at}], locked_tags:[{code, locked_until}]}`.
+- `admin_audit(p_event, p_entity_id, p_limit 1..200, p_offset)`: `{ok, rows:[{id, at, actor_id, actor_role, event, entity, entity_id, detail}]}`; `p_entity_id` aceita a forma de exibição.
+- `admin_dashboard_counters()`: `{ok, generated, available, active, blocked, void}`.
+- `admin_export_codes(p_batch)`: `{ok, batch_id, count, csv}` com `code,qr_version,qr_mask` (sem PIN); erro `not_found`.
+- `admin-create-batch` (POST, JWT de admin; corpo `{quantity 1..500, notes?}` até 1 KB): 200 `application/zip` (só `pins.csv`), `Cache-Control: no-store`, `X-Batch-Id`; 401 sem admin válido (corpo vazio), 403 usuário não admin, 400 `invalid_input`, 429 `too_many_requests`, 409 `batch_range_exhausted`, 500 sem detalhe.
+
+### Pendência da foto (registrada, não resolvida)
+
+A URL assinada da foto carrega `<tutor_id>/<pet_id>/<arquivo>`, o que põe identificadores internos numa URL que o visitante da página
+pública vê e que ele pode guardar (a assinatura vence, o caminho não). Saídas: (A) caminho com identificador opaco por pet
+(`pets.photo_key uuid` aleatório; `photo_path = <photo_key>/<arquivo>`): exige coluna nova, mudar as quatro políticas de storage
+(hoje por prefixo `<uid>/`, que passaria a ser verificado por consulta a `pets`) e migrar as fotos já enviadas; custo médio, o
+tutor segue enviando direto ao Storage. (B) servir a foto por rota do servidor do app (`/foto/<código>`, que chama a função com a
+chave do servidor e transmite os bytes): a URL não revela nada, o bucket deixa de ter URL assinada para estranhos; custo maior, a
+foto passa a trafegar pelo servidor SSR (banda e cache) e a rota é nova no app. Nada foi alterado.
+
+### Verificação (CI)
+
+Ver a seção "Verificação final" abaixo.
+
+## Verificação final (Phases 8 a 12, backend)
+
+- CI, run 45525406840 (commit do script de CI com o gateway do `admin-create-batch`): job `app` verde (79 arquivos, 641 testes, 1 pulado,
+  lint e build); job `supabase` verde: pgTAP 27 arquivos, 1377 asserções, PASS (eram 23 e 1094); `deno test` 330 testes (eram 302);
+  `supabase-checks.sh` 259 PASS, 0 FAIL (eram 242, mais 15 do bloco T076 e o resto das fases anteriores). `security_catalog.test.sql`
+  e `conta_privacidade.test.sql` da 004 passaram sem mudança, com os objetos reais da 003.
+- Execuções de CI desta rodada: 2 (a correção do agregado aninhado; o bloco novo do script).
+- Cobertura do gate de banco de `contracts/rls-expectations.md` (T092, parte de banco): a matriz, o isolamento entre vínculos (release_tag,
+  troca de dono, `end_assignments_for_account`, `export_tutor_tag_data`), o contrato físico (código imutável e nunca apagado, `void`
+  irreversível, dígito inválido, índices únicos parciais), Rescue-First (corpo de `resolve_tag`/`register_scan` sem cobrança) e
+  anti-enumeração estão em `rls_tags_base`, `rls_scans`, `rpc_*`, `account_tags`, `storage_pet_photos` e `security_catalog`. Não
+  marcada: falta a parte de navegador e de build (segredos em `dist/`, chunks do bundle público, axe, orçamento de desempenho).
+- T097 (quickstart): divergências a corrigir por quem tem o navegador, sem eu poder editar `specs/`: o quickstart diz "PIN de desenvolvimento no
+  `seed.sql`" (ele está em `e2e/fixtures/seed-codes.json`, `devPins`); "senha de desenvolvimento no seed" (é a do script de CI, `TesteSenha123!`);
+  o passo 10 fala em "baixar o pacote" com etiquetas (hoje o pacote só tem `pins.csv`); cita `admin-labels` em `functions serve` (não existe).
+  Os passos de banco e função foram conferidos pelo CI; o roteiro de navegador não foi executado.
+- T105: o `Feito quando` (pgTAP e deno com `forbidden` para tutor e `too_many_requests` no estouro) passa para `admin-create-batch`,
+  `admin_reissue_pin` e `admin_end_assignment`. `admin-labels` ainda não existe (T084 bloqueada): quando existir, tem de chamar
+  `requireAdmin` (já existe em `_shared/auth.ts`, com testes) antes de qualquer outra coisa.
+
+### Não verificado (Phases 8 a 12)
+
+- Lote grande (500 códigos) contra o tempo limite da função e do banco (ver desvio 9).
+- Deploy de `admin-create-batch` num projeto hospedado: não feito, de propósito (T011 e T085 pendentes).
+- Reimpressão idêntica (PDF), leitura física, matriz e máscara contra o lote-001 (T084 e T085, bloqueadas).
+- Rotação de chave do servidor com o app real (só os testes unitários e o script com a chave nova).
