@@ -19,3 +19,4 @@
 - [Fases 6 e 7 da spec 004](gotcha-spec004-fase6-7.md) — ng test com arquivo, signOut com scope, overlay no document, e2e do Google
 - [Fases 8 e 9 da spec 004](gotcha-spec004-fase8-9.md) — testid em z-toggle-group e sonner, modo troca de celular, CRLF em scripts, flake do ui-shells
 - [Fase 10 da spec 004](gotcha-spec004-fase10.md) — Turnstile sem chave some do layout, cabeçalhos com fonte única, vercel.json gerado, regras exclusivas
+- [Fases 4 e 5 da spec 003](gotcha-spec003-fase4-5.md) — guards em ordem, Leaflet, chip no hover, e2e simulado do tutor, causa do e2e vermelho

@@ -1,5 +1,7 @@
 import type { Page } from '@playwright/test';
 
+import { makePng } from './png';
+
 /**
  * Backend SIMULADO do tutor logado, para as telas de fluxo da 003 (ativação, novo pet, scans).
  *
@@ -50,7 +52,10 @@ export interface TutorState {
   /** Caminhos enviados ao bucket `pet-photos`. */
   uploads: string[];
   pendingCodes: string[];
+  /** Linhas simuladas de `my_scans` (colunas da visão). */
   scansRows: unknown[];
+  /** Consultas recebidas em `my_scans` (a parte depois do `?`). */
+  scanQueries: string[];
   blocked: string[];
 }
 
@@ -67,6 +72,7 @@ export function newTutorState(over: Partial<TutorState> = {}): TutorState {
     uploads: [],
     pendingCodes: [],
     scansRows: [],
+    scanQueries: [],
     blocked: [],
     ...over,
   };
@@ -137,6 +143,13 @@ export async function mockTutorBackend(page: Page, state: TutorState): Promise<T
     state.uploads.push(new URL(route.request().url()).pathname);
     return route.fulfill(json({ Key: 'pet-photos/simulado' }));
   });
+  await page.route('**/rest/v1/my_scans**', (route) => {
+    state.scanQueries.push(new URL(route.request().url()).search);
+    return route.fulfill(json(state.scansRows));
+  });
+  // Tiles do OpenStreetMap: um quadrado liso, sem sair da máquina.
+  const tile = makePng();
+  await page.route('https://tile.openstreetmap.org/**', (route) => route.fulfill({ status: 200, contentType: 'image/png', body: tile }));
   await page.route('**/rest/v1/pets**', (route) => {
     const req = route.request();
     if (req.method() === 'POST') {

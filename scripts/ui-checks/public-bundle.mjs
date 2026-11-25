@@ -26,6 +26,10 @@ const FORBIDDEN_IN_PUBLIC = [
   /src\/app\/shared\/components\/faro\/turnstile\//,
   /src\/app\/core\/(auth|account|supabase)\//,
   /node_modules\/@supabase\//,
+  // 003: ativação, pets e scans são do app autenticado; o Leaflet só baixa na tela de scans.
+  /src\/app\/core\/(pets|scans)\//,
+  /src\/app\/core\/tags\/(tag\.service|activation)/,
+  /node_modules\/leaflet\//,
 ];
 const GALLERY = /src\/app\/features\/dev-gallery\//;
 

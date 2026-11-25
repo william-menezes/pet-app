@@ -1,0 +1,126 @@
+<!--
+  Histórico de scans. Referência: design/telas-v2/V2-scans{,-tablet,-desktop}{,-escuro}.dc.html.
+  O tema escuro vem dos tokens da casca do tutor: nenhuma cor própria aqui.
+-->
+<div class="flex w-full flex-col gap-3 md:gap-4" data-testid="scans">
+  <app-screen-header title="Histórico de scans" i18n-title [back]="'back'" [backLink]="'/app'" />
+
+  <z-toggle-group
+    [zMode]="'single'"
+    zAriaLabel="Filtrar scans"
+    i18n-zAriaLabel
+    [zItems]="filterItems"
+    [zValue]="filter()"
+    (valueChange)="onFilter($event)"
+    data-testid="scans-filters" />
+
+  @if (pet()) {
+    <app-note icon="paw" data-testid="scans-pet-filter">
+      <span i18n>Mostrando só os scans de um pet.</span>&ngsp;<a class="font-medium text-link underline underline-offset-[3px]" routerLink="/app/scans" data-testid="scans-pet-clear" i18n>Ver todos</a>
+    </app-note>
+  }
+
+  <div aria-live="polite">
+    @switch (state()) {
+      @case ('loading') {
+        <p class="py-6 text-center text-text" role="status" aria-busy="true" data-testid="scans-loading" i18n>Um instante…</p>
+      }
+      @case ('error') {
+        <div class="flex flex-col items-start gap-3" data-testid="scans-error">
+          <z-alert
+            class="w-full"
+            zType="danger"
+            [zRole]="'status'"
+            zDescription="Não conseguimos carregar o histórico. Verifique sua conexão e tente de novo."
+            i18n-zDescription />
+          <button type="button" z-button zType="outline" (click)="load()" data-testid="scans-retry" i18n>Tentar de novo</button>
+        </div>
+      }
+    }
+  </div>
+
+  @if (state() === 'ready') {
+    @if (scans().length === 0) {
+      <div class="flex flex-col items-start gap-3 rounded-2xl bg-card p-5" data-testid="scans-empty">
+        @if (filtering()) {
+          <p class="font-display text-[19px] font-semibold text-foreground" i18n>Nenhum scan com este filtro</p>
+          <p class="text-[15px] leading-[1.45] text-text" i18n>Tente outro filtro ou veja todos os scans.</p>
+          @if (pet()) {
+            <a z-button zType="outline" routerLink="/app/scans" data-testid="scans-empty-all" i18n>Ver todos os scans</a>
+          } @else {
+            <button type="button" z-button zType="outline" (click)="showAll()" data-testid="scans-empty-all" i18n>Ver todos os scans</button>
+          }
+        } @else {
+          <p class="font-display text-[19px] font-semibold text-foreground" i18n>Ninguém escaneou a tag ainda</p>
+          <p class="text-[15px] leading-[1.45] text-text" i18n>
+            Quando alguém escanear o QR, o dia, a hora e o lugar aparecem aqui, e você recebe um aviso por e-mail.
+          </p>
+          <a z-button zType="outline" routerLink="/app" data-testid="scans-empty-panel" i18n>Voltar ao painel</a>
+        }
+      </div>
+    } @else {
+      <div class="flex flex-col gap-4 xl:grid xl:grid-cols-2 xl:items-start xl:gap-6">
+        @if (mapScan(); as scan) {
+          <section class="flex flex-col overflow-hidden rounded-2xl bg-card xl:sticky xl:top-6" data-testid="scans-map">
+            <div role="img" [attr.aria-label]="mapLabel()" class="relative h-[200px] md:h-[260px] xl:h-[360px]">
+              <app-scan-map [scan]="scan" />
+              <span
+                class="absolute bottom-3 left-3 z-[500] rounded-full bg-card px-3 py-1 text-[13px] font-semibold text-foreground shadow-sm"
+                data-testid="scans-map-radius">
+                {{ mapRadiusText() }}
+              </span>
+            </div>
+            <div class="flex items-center gap-3 px-4 py-3.5">
+              <span class="flex min-w-0 flex-1 flex-col">
+                <span class="text-[15px] font-semibold text-foreground" data-testid="scans-map-time">{{ time(scan) }}</span>
+                <span class="text-sm text-muted-foreground">{{ mapCaption(scan) }}</span>
+              </span>
+              @if (mapIsLatest()) {
+                <span class="rounded-full bg-inset px-2.5 py-1 text-xs font-semibold text-foreground" data-testid="scans-map-latest" i18n>Último</span>
+              }
+            </div>
+            <p class="px-4 pb-3 text-xs text-muted-foreground">
+              <a
+                class="text-link underline underline-offset-[3px]"
+                href="https://www.openstreetmap.org/copyright"
+                target="_blank"
+                rel="noopener noreferrer"
+                data-testid="scans-map-attribution" i18n>© OpenStreetMap</a>
+            </p>
+          </section>
+        }
+
+        <div class="flex flex-col gap-4">
+          @for (group of groups(); track group.key) {
+            <section class="flex flex-col gap-2" [attr.aria-label]="group.label" data-testid="scans-group">
+              <h2 class="px-1 text-[13px] font-semibold text-muted-foreground">{{ group.label }}</h2>
+              <ul class="m-0 flex list-none flex-col divide-y divide-divider overflow-hidden rounded-2xl bg-card p-0">
+                @for (scan of group.scans; track scan.id) {
+                  <li class="flex min-h-[64px] items-center gap-3 px-4 py-3" data-testid="scans-row">
+                    <app-icon-tile [icon]="scan.geoMethod === 'none' ? 'scan' : 'pin'" />
+                    <span class="flex min-w-0 flex-1 flex-col">
+                      <span class="text-[15px] font-semibold text-foreground">{{ time(scan) }}</span>
+                      <span class="text-sm text-muted-foreground">{{ what(scan) }}</span>
+                      @if (near(scan); as place) {
+                        <span class="text-[13px] text-muted-foreground">{{ place }}</span>
+                      }
+                    </span>
+                    <span
+                      class="shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold"
+                      [class]="scan.geoMethod === 'gps' ? 'bg-success-soft text-success-foreground' : 'bg-neutral-soft text-neutral-foreground'"
+                      data-testid="scans-row-badge">
+                      {{ badge(scan) }}
+                    </span>
+                  </li>
+                }
+              </ul>
+            </section>
+          }
+          <app-note icon="lock" data-testid="scans-privacy" i18n>
+            Os scans ficam com você. Se a tag mudar de dono, o histórico não vai junto.
+          </app-note>
+        </div>
+      </div>
+    }
+  }
+</div>

@@ -302,7 +302,7 @@ Igual à `004`: a máquina não tem Docker nem a CLI do Supabase. Todo "Feito qu
   Paçoca" abre `/<código>`. A primeira linha da lista reflete a escolha: "WhatsApp liberado para
   quem escanear" ou, se o tutor não marcou, "WhatsApp desligado" com o atalho "Ligar agora" (leva a
   "O que estranhos veem"). **Feito quando**: renderiza com o nome do pet, o código e os dois estados.
-- [ ] T048 [US2] [FE] Visão do dono na página pública conforme `V2-resgate-visao-dono*.dc.html`:
+- [x] T048 [US2] [FE] Visão do dono na página pública conforme `V2-resgate-visao-dono*.dc.html`:
   após hidratar, `POST /api/scan` com o token; se `owner: true`, mostra a faixa, desativa os botões
   e liga "Editar" a "O que estranhos veem". O token vem de `core/tags/owner-probe.service.ts`
   (`contracts/integration-002-004.contract.md` §5.2): sem chave de sessão no `localStorage`, nada é
@@ -330,13 +330,13 @@ Igual à `004`: a máquina não tem Docker nem a CLI do Supabase. Todo "Feito qu
   **Feito quando**: teste de snapshot dos dois modelos.
 - [x] T053 [US3] [BE] `0033_cron.sql`: `pg_cron` de reenvio (5 min) e limpeza de ativações
   pendentes vencidas (diária). **Feito quando**: os jobs aparecem em `cron.job`.
-- [ ] T054 [US3] [FE] Página de resgate: disparar `POST /api/scan` após hidratar; "Enviar onde estou"
+- [x] T054 [US3] [FE] Página de resgate: disparar `POST /api/scan` após hidratar; "Enviar onde estou"
   pede a localização do navegador e envia a `/api/scan/location`; estados de permissão negada e de
   sucesso ("Localização enviada para a Ana"). **Feito quando**: teste de componente com
   geolocalização simulada cobre permitir e negar.
-- [ ] T055 [P] [US3] [FE] `core/scans/scan.service.ts`: lista de `my_scans` com filtros.
+- [x] T055 [P] [US3] [FE] `core/scans/scan.service.ts`: lista de `my_scans` com filtros.
   **Feito quando**: teste unitário.
-- [ ] T056 [US3] [FE] Tela "Histórico de scans" conforme `V2-scans*.dc.html` (claro e escuro):
+- [x] T056 [US3] [FE] Tela "Histórico de scans" conforme `V2-scans*.dc.html` (claro e escuro):
   filtros, cartão do mapa com Leaflet carregado sob demanda (círculo para aproximada, pino com raio
   para precisa), lista agrupada por mês, nota de privacidade, estado vazio.
   **Feito quando**: teste de componente; o chunk do Leaflet não entra no bundle inicial.

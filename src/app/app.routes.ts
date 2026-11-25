@@ -92,7 +92,7 @@ export const routes: Routes = [
       },
       {
         path: 'scans',
-        loadComponent: shellFallback,
+        loadComponent: () => import('./features/scans/scans/scans').then((m) => m.Scans),
         data: { hub: true, home: '/app' },
         title: $localize`Histórico de scans — Faro`,
       },

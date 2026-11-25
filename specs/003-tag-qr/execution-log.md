@@ -322,3 +322,62 @@ compartilhados (fora do escopo). Número registrado; o script só informa, não 
 `npm run lint`, `npm test -- --watch=false` (96 arquivos, 892 testes, 1 pulado), `npm run build`, `check:ui`, `check:headers`, `check:bundle` (+ `--self-test`),
 e2e (`npm run e2e`, 166 passaram antes da fiação do scan; mais 5 novos em `e2e/tag-page-head.spec.ts`). Nenhum segredo em `dist/faro/browser`.
 O run 45530612559 (commit b09ad20) falhou porque aquele commit intermediário referenciava arquivos que só entraram no seguinte: não é defeito do código final.
+
+## Frontend: Phases 4 e 5 (T040 a T048, T054 a T056; 2026-11-25)
+
+Sem Supabase local; nada foi escrito no projeto hospedado. As telas foram vistas com o `ng serve` e o backend simulado em `e2e/support/mock-tutor.ts`
+(o `abort` barra tudo que vai para `*.supabase.co`); as capturas estão no scratchpad (`shots-003-fase4`). A prova contra o banco de verdade
+(PIN errado de verdade, bloqueio, concorrência, e-mail do scan) é do QA (T049, T057).
+
+### O job `e2e` vermelho do run 45532380623
+
+Causa: `e2e-real/account-a11y.spec.ts` dava `page.goto('/auth/celular')` logo depois do clique do login, sem esperar o app terminar de entrar; a navegação
+cortava o login e `/auth/celular` caía no `authGuard` (`phone-input` nunca aparecia, 4 testes de 109). A 004 já tinha a correção (`toHaveURL` depois do
+login e `networkidle` no `loginViaUi`); a 003 tinha mesclado a 004 antes dela. Não é defeito do frontend nem do backend: apliquei as mesmas duas edições de
+teste (`e2e-real/account-a11y.spec.ts` +1 linha, `e2e-real/support/flows.ts` +2 linhas), idênticas às da 004, de modo que o merge não conflita. Run
+45534441744 (commit `2732c10`): `app`, `supabase` e `e2e` verdes. Observação para o merge: o `e2e-real/support/flows.ts` da 004 tem mais uma alteração ainda
+sem commit (DEF-001).
+
+### O que foi feito
+
+- **T040** `core/tags/tag.service.ts` (+ `tag-errors.ts`): `check_tag_for_link`, `activate_tag` (cinco parâmetros, `p_enable_whatsapp` sempre explícito),
+  ativação pendente (`set`, `get`, `clear`) e `my_dashboard`. Normaliza e confere o dígito ANTES de chamar; PIN que não tem seis caracteres do alfabeto
+  nem sai do aparelho; devolve `{ ok:false, error }` e nunca lança; os 12 códigos do contrato têm teste e texto. Não é exportado por `core/tags/index.ts`.
+- **T041** `core/pets/pet.service.ts` (+ `image-resize.ts`): criar, editar, remover, listar, foto (1600 px, WebP, `pet-photos/<uid>/<pet>/<uuid>.webp`, limite de
+  5 MiB do bucket) e URLs assinadas. Só as colunas concedidas por privilégio de coluna. O redimensionamento é injetável (`PHOTO_PROCESSOR`); no e2e roda de verdade no Chromium.
+- **T042** `core/tags/activation.guard.ts` (carregado por `lazyCanMatch`) + `activation-links.ts`. Vai na frente de `authGuard`/`termsGuard`/`phoneConfirmedGuard`.
+  Sem sessão: `/auth/criar-conta?returnUrl=/ativar/<código normalizado>`; com sessão: `set_pending_activation` e segue. Teste com roteador real, endereço exato.
+- **T043, T046, T047** `features/activation/` (container + três passos, cada um com a própria casca de fluxo): escolher o pet (confirmação da troca ANTES do PIN, porque
+  a RPC só devolve `pet_has_tag` depois de conferir o PIN), PIN (seis células alfanuméricas, normalização, WhatsApp MARCADO com o aviso abaixo, visível sem rolar a 390x844;
+  erros `wrong_pin`, `locked`, `phone_not_confirmed` leva a `/auth/celular?returnUrl=/ativar/<código>?pet=<id>`), "Tag ativa!" (link `<a href="/<código>">`).
+  O painel de marca de cada passo usa a frase da tela de referência no desktop.
+- **T044, T045** `features/pets/new-pet/`: dois passos, o pet só é gravado no fim ("Salvar pet" ou "Pular por enquanto"); `?returnUrl=` interno devolve para a ativação com `?pet=<id>`;
+  sem destino, o painel. Foto que falha depois do pet salvo: "Tentar enviar a foto de novo" ou "Continuar sem a foto", sem duplicar o pet.
+- **T048 e T054** (adiantados na Phase 3): os testes do "Feito quando" existem em `tag-page.spec.ts` (`owner` verdadeiro e falso; geolocalização permitida e negada) e passam.
+  Marcados agora.
+- **T055** `core/scans/scan.service.ts`: `my_scans` com filtros (todos, este mês no horário de Brasília, localização precisa, pet), limite de 200.
+- **T056** `features/scans/` (claro e escuro): filtros, cartão do mapa com Leaflet 1.9.4 sob demanda (círculo para a aproximada, pino com o raio do erro para a precisa),
+  lista por mês, nota de privacidade, estado vazio, de erro e de carga. `?pet=<id>` filtra. O Leaflet vem num chunk da rota (o CSS dele também); `check:bundle` passou a reprovar
+  `leaflet`, `core/pets`, `core/scans` e `core/tags/tag.service` no fecho público.
+- Correção de componente compartilhado: chip marcado de `z-toggle-group` ficava cinza no hover (`toggle.variants.ts`).
+
+### Desvios, decisões e textos que não estavam no contrato nem na tela
+
+1. **Texto sem gênero**, como na Phase 3: "Quero que quem achar Paçoca possa me chamar no WhatsApp" (a tela diz "o Paçoca"), "Ver a página de Paçoca", "Cão"/"Gato" (a lista não traz o sexo, então não há "Gata"),
+   "Pronto. Paçoca tem como voltar." e "sobre o jeito do seu pet".
+2. **Textos inventados**: "Código válido" (leitor de tela), "Ao ativar esta, a anterior volta a ficar livre e o PIN do cartão dela continua valendo." (troca de tag; vem da regra do PIN mantido),
+   "Você ainda não tem nenhum pet cadastrado...", "Trocar a tag", "Escolher outro pet", "Perdeu o cartão? Fale com o suporte do Faro." (sem link: o repositório não tem contato de suporte; a tela de referência tem `href="#"`),
+   mensagens de `too_many_requests` e `replacement_limit`, erros do novo pet, "Não foi possível saber onde foi" e "Sem local" (scan sem localização), "Ninguém escaneou a tag ainda" e o estado de filtro vazio,
+   "Mostrando só os scans de um pet." e a linha "São Paulo, SP" quando o scan tem cidade.
+3. **"Ligar agora"** (T047) leva a `/app/pets/<id>/visibilidade`, rota que ainda é `ShellFallback` (Phase 7). O "Editar" da visão do dono continua indo a `/app` (Phase 3).
+4. **Espécie começa sem escolha** no novo pet (a tela de referência mostra "Cão" marcado, mas é dado de exemplo): evita cadastrar um gato como cão por descuido e dá sentido à validação de espécie.
+   Sexo e porte são opcionais e, uma vez escolhidos, não se desmarcam (a seleção única do Faro não permite).
+5. **Pet que já tem tag** usa o PIN vigente da tag nova (a RPC mantém o PIN da antiga); a tela não gera nem mostra PIN.
+6. **Mapa**: só o scan mais recente que tem localização, sem interação (não rouba a rolagem), `aria-hidden`; a atribuição do OpenStreetMap fica no cartão. A CSP já tem `img-src https:`, então não mudou
+   (a pesquisa pede "só nessa rota"; a política atual é mais larga, decisão do William). Sem paginação: até 200 scans.
+7. Dependências novas: `leaflet` 1.9.4 e `@types/leaflet` 1.9.21 (versões fixas).
+
+### Verificação
+
+`npm run lint` limpo; `npm test -- --watch=false` 104 arquivos, 1006 testes (1 pulado); `npm run build`; `check:ui`, `check:bundle` (+ `--self-test`), `check:headers`; `npm run e2e` 192 passaram
+(eram 166 + 5; acrescentei `activation-ui` 8, `new-pet-ui` 4, `scans-ui` 9, todos com axe e sem rolagem horizontal). Rota da tag segue em 132,4 kB gzip (meta de 100 kB não atingida, ver Phase 3).
