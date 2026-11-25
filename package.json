@@ -16,6 +16,12 @@
     "check:bundle": "node scripts/ui-checks/public-bundle.mjs",
     "check:boundary": "node scripts/ui-checks/boundary.mjs",
     "check:headers": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/security/check-headers.mjs",
+    "check:secrets": "node scripts/security/check-secrets.mjs",
+    "check:audit": "npm audit --omit=dev --audit-level=high",
+    "check:templates": "node scripts/security/check-templates.mjs",
+    "check:prod-config": "node scripts/security/check-prod-config.mjs",
+    "test:scripts": "node --test \"scripts/security/*.test.mjs\"",
+    "prepare": "git config core.hooksPath .githooks || exit 0",
     "check:ui": "npm run check:tokens && npm run check:stack && npm run check:boundary"
   },
   "private": true,

@@ -700,3 +700,22 @@ Progresso registrado a cada passo (a sessão caiu mais de uma vez). Nenhum teste
   `--package-lock-only --legacy-peer-deps` e depois normalizado por `npm install --package-lock-only` (sem a flag), e `npm ci` funciona.
 - Depois: `npm audit --omit=dev --audit-level=high` = 0 vulnerabilidades. Prova: `npm run lint`, `npm test` (80 arquivos, 701 testes), `npm run build`,
   `check:ui`, `check:headers` e os 166 e2e simulados passaram com as versoes novas.
+
+## T106 e T107 (parte de CI do job `app`)
+
+- `scripts/security/`: `check-secrets.mjs`, `check-templates.mjs`, `check-prod-config.mjs` e `checks.test.mjs` (9 testes com `node --test`, `npm run test:scripts`).
+  Scripts npm: `check:secrets`, `check:audit`, `check:templates`, `check:prod-config`, `test:scripts`, `prepare` (liga `.githooks`). Gancho `.githooks/pre-commit`
+  (modo executavel; varre so o conteudo preparado). **Nao rodei `npm run prepare` na maquina**: o `core.hooksPath` e do repositorio compartilhado e afetaria o
+  worktree da `003`; o gancho sai do `exit 0` se o script nao existir.
+- `check:secrets`: ao rodar pela primeira vez acusou valores de TESTE ja versionados (`HASH_SALT`/`PHONE_OTP_PEPPER` em `supabase-checks.sh`, `quickstart.md`,
+  `.env.local.example` e `env.test.ts`). Lista de excecoes por (arquivo, valor exato), nunca por pasta; teste prova que valor novo no mesmo arquivo reprova.
+  `:` conta so com valor entre aspas (evita texto corrido). `secret = "env(...)"` e as chaves publicas do Turnstile nao sao acusadas (teste). JWT service_role
+  e `pins.csv`/`lote*.csv`/`activation_pin` reprovam (arquivos criados em diretorio temporario e apagados pelo teste; os literais sao montados em tempo de execucao).
+- `check:templates`: **achado**: `src/app/shared/components/alert-dialog/alert-dialog-container.component.ts:110` usa `[innerHTML]="config.zDescription"` (ZardUI). O
+  Angular sanitiza e todo `zDescription` do Faro e texto fixo ou mensagem do proprio app. Excecao registrada por (arquivo, trecho) no script; qualquer outro uso reprova.
+  Recomendacao ao frontend: trocar por interpolacao na proxima passada e remover a excecao.
+- `check:prod-config`: **reprova hoje** o `turnstileSiteKey` vazio de `src/environments/environment.ts` (teste afirma isso). Fora do CI: entra quando a chave real do
+  Turnstile existir (conta Cloudflare).
+- `check:audit`: 0 vulnerabilidades de producao (secao acima). Passo bloqueante no CI.
+- CI, job `app`: `build:stats`, `check:ui`, `check:bundle`, `check:headers`, `check:secrets` (varre tambem `dist/`), `check:templates`, `test:scripts`, `check:audit`.
+  `.github/dependabot.yml` (`npm` e `github-actions`, semanal).
