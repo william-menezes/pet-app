@@ -1,6 +1,7 @@
 import {
   ApplicationConfig,
   ErrorHandler,
+  provideAppInitializer,
   isDevMode,
   provideBrowserGlobalErrorListeners,
   provideZonelessChangeDetection,
@@ -17,12 +18,16 @@ import { providePrimeNG } from 'primeng/config';
 import { routes } from './app.routes';
 import { FaroPreset } from '../theme/faro-preset';
 import { GlobalErrorHandler } from './core/error/global-error-handler';
+import { bootstrapSession } from './core/auth/session-bootstrap';
 
 export const appConfig: ApplicationConfig = {
   providers: [
     // Zoneless: detecção de mudança por signals (sem zone.js). Ver docs/frontend.md.
     provideZonelessChangeDetection(),
     provideBrowserGlobalErrorListeners(),
+
+    // Restaura a sessão do Supabase gravada no navegador antes de os guards decidirem.
+    provideAppInitializer(() => bootstrapSession()),
     { provide: ErrorHandler, useClass: GlobalErrorHandler },
 
     // Roteamento. `withComponentInputBinding` entrega params de rota (ex.: :codigo) como inputs.

@@ -17,7 +17,7 @@ import { isPlatformBrowser } from '@angular/common';
 import { Router } from '@angular/router';
 import { AuthStore, Role } from './auth.store';
 import { SupabaseService } from '../supabase/supabase.service';
-import { getSessionStorage } from './session-persistence';
+import { getSessionStorage, findPersistedStorage } from './session-persistence';
 import { environment } from '../../../environments/environment';
 
 export interface AuthResult {
@@ -60,10 +60,20 @@ export class AuthService {
   async restoreSession(): Promise<void> {
     if (!this.isBrowser) return;
 
-    const { data } = await this.supabase.client.auth.getSession();
+    // O cliente nasce lendo o localStorage. Se a sessão foi gravada no sessionStorage
+    // ("Manter conectado" desligado), aponta o cliente para ele antes de ler.
+    const persisted = findPersistedStorage();
+    if (persisted) {
+      (this.supabase.client.auth as unknown as { storage: Storage }).storage = persisted;
+    }
+
+    const { data, error } = await this.supabase.client.auth.getSession();
     if (data.session) {
       this.store.setSession(data.session);
       await this._resolveRole();
+    } else if (persisted && !error) {
+      // Havia credencial gravada, mas sem sessão válida: limpa só deste aparelho.
+      await this.supabase.client.auth.signOut({ scope: 'local' });
     }
 
     this.supabase.client.auth.onAuthStateChange(async (event, session) => {
