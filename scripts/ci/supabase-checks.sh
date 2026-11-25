@@ -915,6 +915,46 @@ rest DELETE "tag_pin_attempts?tag_code=in.($CODE_AV2,$CODE_AV3)" > /dev/null
 check "limpeza: available3 voltou a available" seed_status_is available3 available
 check "limpeza: nenhum vinculo ativo restou para a Mel" test "$(rest GET "tag_assignments?pet_id=eq.$MEL_ID&ended_at=is.null&select=id")" = "[]"
 
+echo "== T076: admin-create-batch pelo gateway (JWT de admin, pacote com pins.csv, PIN do CSV ativa o codigo) =="
+ADMIN_TOKEN="$(curl -s -X POST "$API_URL/auth/v1/token?grant_type=password" -H "apikey: $ANON_KEY" -H "Content-Type: application/json" \
+  -d '{"email":"admin@faro.test","password":"TesteSenha123!"}' | grep -oE '"access_token":"[^"]+"' | head -1 | cut -d'"' -f4)"
+check "login do admin do seed (token lido)" test -n "$ADMIN_TOKEN"
+batch_call() { # batch_call <token> <json> <arquivo de saida>  (imprime so o codigo HTTP; cabecalhos em /tmp/batch.headers)
+  curl -s -o "$3" -D /tmp/batch.headers -w '%{http_code}' -X POST "$API_URL/functions/v1/admin-create-batch" \
+    -H "apikey: $ANON_KEY" -H "Authorization: Bearer $1" -H "Content-Type: application/json" -d "$2"
+}
+check "admin-create-batch: chave anonima (sem admin) responde 401" test "$(batch_call "$ANON_KEY" '{"quantity":2}' /tmp/batch.none)" = "401"
+check "admin-create-batch: tutor comum responde 403" test "$(batch_call "$TOKEN_B" '{"quantity":2}' /tmp/batch.none)" = "403"
+check "admin-create-batch: quantidade invalida responde 400" test "$(batch_call "$ADMIN_TOKEN" '{"quantity":0}' /tmp/batch.none)" = "400"
+check "admin-create-batch: nenhum lote foi criado pelas chamadas recusadas" test "$(rest GET 'tag_batches?id=not.eq.lote-900&select=id')" = "[]"
+rm -f /tmp/batch.zip /tmp/batch-out
+BATCH_CODE="$(batch_call "$ADMIN_TOKEN" '{"quantity":3,"notes":"lote de teste do CI"}' /tmp/batch.zip)"
+check "admin-create-batch: admin cria um lote de 3 (200)" test "$BATCH_CODE" = "200"
+check "admin-create-batch: a resposta e application/zip" bash -c 'grep -iq "^content-type: application/zip" /tmp/batch.headers'
+check "admin-create-batch: Cache-Control: no-store" bash -c 'grep -iq "^cache-control: no-store" /tmp/batch.headers'
+check "admin-create-batch: o primeiro lote criado e lote-002 (o seed usa lote-900 e nao conta)" bash -c 'grep -iq "^x-batch-id: lote-002" /tmp/batch.headers'
+mkdir -p /tmp/batch-out && (cd /tmp/batch-out && unzip -o -q /tmp/batch.zip)
+check "admin-create-batch: o pacote tem so pins.csv" test "$(ls /tmp/batch-out)" = "pins.csv"
+check "admin-create-batch: pins.csv tem cabecalho e 3 linhas no formato XXXX-XXXX-X,PIN" \
+  bash -c 'head -1 /tmp/batch-out/pins.csv | grep -qx "code,pin" && [ "$(tail -n +2 /tmp/batch-out/pins.csv | grep -cE "^[0-9A-HJKMNP-TV-Z]{4}-[0-9A-HJKMNP-TV-Z]{4}-[0-9A-HJKMNP-TV-Z],[0-9A-HJKMNP-TV-Z]{6}$")" = "3" ]'
+check "admin-create-batch: 3 codigos available no lote-002, todos com hash bcrypt de custo 12 (nenhum PIN em tabela)" \
+  bash -c 'r="$1"; [ "$(printf "%s" "$r" | grep -o "\"status\":\"available\"" | wc -l)" = "3" ] && [ "$(printf "%s" "$r" | grep -oE "\"activation_pin_hash\":\"\\\$2[abxy]\\\$12\\\$" | wc -l)" = "3" ]' _ \
+  "$(rest GET 'tag_codes?batch_id=eq.lote-002&select=status,activation_pin_hash')"
+BATCH_ROW="$(sed -n 2p /tmp/batch-out/pins.csv)"
+BATCH_CODE_1="$(printf '%s' "${BATCH_ROW%%,*}" | tr -d '-')"
+BATCH_PIN_1="${BATCH_ROW##*,}"
+R="$(act_a "{\"p_code\":\"$BATCH_CODE_1\",\"p_pin\":\"$BATCH_PIN_1\",\"p_pet_id\":\"$MEL_ID\"}")"
+check "admin-create-batch: o PIN do pins.csv ativa o codigo correspondente" has "$R" '"ok": true'
+check "admin-create-batch: nenhum PIN do pacote aparece no log da funcao" bash -c '! grep -qF "$1" "$2"' _ "$BATCH_PIN_1" "$LOG_FILE"
+SECOND="$(batch_call "$ADMIN_TOKEN" '{"quantity":1}' /tmp/batch.second)"
+check "admin-create-batch: o segundo lote recebe outro id (lote-003)" bash -c 'test "$1" = "200" && grep -iq "^x-batch-id: lote-003" /tmp/batch.headers' _ "$SECOND"
+check "admin-create-batch: auditoria batch_created e batch_package_downloaded sem PIN" \
+  bash -c 'a="$(printf "%s" "$1")"; printf "%s" "$a" | grep -q "batch_created" && printf "%s" "$a" | grep -q "batch_package_downloaded" && ! printf "%s" "$a" | grep -qF "$2"' _ \
+  "$(rest GET 'audit_log?entity_id=in.(lote-002,lote-003)&select=event,detail')" "$BATCH_PIN_1"
+# Limpeza: encerra o vinculo da Mel com o codigo do lote (o resto fica: codigo nunca e apagado).
+rest PATCH "tag_assignments?tag_code=eq.$BATCH_CODE_1&ended_at=is.null" "{\"ended_at\":\"$(date -u -d '+1 minute' +%Y-%m-%dT%H:%M:%SZ)\",\"end_reason\":\"admin\"}" > /dev/null
+rm -rf /tmp/batch-out /tmp/batch.zip /tmp/batch.second /tmp/batch.none /tmp/batch.headers
+
 echo "== T099: guard:ip:m (60 chamadas por minuto por IP) =="
 FLOOD=0
 for _ in $(seq 1 80); do

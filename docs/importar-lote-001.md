@@ -136,5 +136,7 @@ nunca esteve em um comando, só no arquivo lido pelo `\copy`).
 
 ## Lotes novos
 
-Lotes depois do 001 **não** passam por este procedimento: o admin cria o lote pela tela, a Edge Function
-`admin-create-batch` gera códigos, PINs e máscaras e devolve o pacote uma única vez.
+Lotes depois do 001 **não** passam por este procedimento de leitura de máscara: o admin cria o lote pela tela e a Edge
+Function `admin-create-batch` gera códigos e PINs, grava só os hashes e devolve o pacote (hoje só `pins.csv`) uma única
+vez. A máscara calculada pelo servidor vale **apenas para lotes novos**; o lote-001 usa sempre a máscara lida das
+etiquetas impressas. Enquanto a etiqueta no servidor não existe (T084), veja `docs/producao-tags.md` para imprimir.
