@@ -20,3 +20,4 @@
 - [Fases 8 e 9 da spec 004](gotcha-spec004-fase8-9.md) — testid em z-toggle-group e sonner, modo troca de celular, CRLF em scripts, flake do ui-shells
 - [Fase 10 da spec 004](gotcha-spec004-fase10.md) — Turnstile sem chave some do layout, cabeçalhos com fonte única, vercel.json gerado, regras exclusivas
 - [Fases 4 e 5 da spec 003](gotcha-spec003-fase4-5.md) — guards em ordem, Leaflet, chip no hover, e2e simulado do tutor, causa do e2e vermelho
+- [Remover pet e PIN (003)](gotcha-spec003-remove-pet-pin.md) — PIN em seção da página, fluxo sempre claro, regex no node -e
