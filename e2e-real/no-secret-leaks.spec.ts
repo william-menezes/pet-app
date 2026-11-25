@@ -30,7 +30,9 @@ test('cadastro, codigo do SMS e login: senha e codigo fora de URL e de storage',
   expect(joined).not.toContain(SMS_STUB_CODE);
 
   // login pela tela
-  await page.goto('/auth/login');
+  await page.goto('/app/conta');
+  await page.locator(tid('account-logout')).click();
+  await expect(page).toHaveURL(/localhost:4200/auth(?|$|/)/);
   await loginViaUi(page, email, TEST_PASSWORD);
   await expect(page).toHaveURL(/localhost:4200\/app(\?|$|\/)/);
   const after = await page.evaluate(() => JSON.stringify({ l: { ...localStorage }, s: { ...sessionStorage } }));

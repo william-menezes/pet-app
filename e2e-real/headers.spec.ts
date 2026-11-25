@@ -3,7 +3,8 @@ import { expect, test } from '@playwright/test';
 /**
  * T108 (parte de cabecalhos, contrato security-hardening §3 e §9): cada cabecalho em `/`, em `/auth/login`, em um arquivo estatico
  * e na politica `tag`, servidos pelo `ng serve --configuration e2e` (o dev server aplica `src/security-headers.ts`).
- * O servidor construido e o motor da Vercel nao sao exercitados aqui: `npm run check:headers` confere o `vercel.json`, e o preview
+ * Arquivo estatico: o dev server (vite) serve `/favicon.ico` sem esses cabecalhos; a prova e um passo do job `app` contra o servidor
+ * construido. O motor da Vercel nao e exercitado aqui: `npm run check:headers` confere o `vercel.json`, e o preview
  * hospedado (T037A da 003) e a prova final.
  */
 
@@ -16,7 +17,7 @@ function expectCommon(h: Record<string, string>): void {
   expect(h['content-security-policy']).toContain(`default-src 'self'`);
 }
 
-for (const path of ['/', '/auth/login', '/favicon.ico']) {
+for (const path of ['/', '/auth/login']) {
   test(`cabecalhos da politica app em ${path}`, async ({ request }) => {
     const res = await request.get(path);
     expect(res.status()).toBe(200);
