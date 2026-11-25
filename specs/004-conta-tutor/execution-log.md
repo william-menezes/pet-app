@@ -683,3 +683,20 @@ Execução de 2026-11-22 pelo subagente `frontend-angular`. Commits: `signOut` a
 - **Servidor construído** (`node dist/faro/server/server.mjs`, não `ng serve`): `/`, `/auth/login`, `/favicon.ico` (arquivo estático) e uma rota inexistente saem com a política `app`; `/7K3M-Q9XA-C` sai com a `tag`; com `x-forwarded-proto: https` entram `upgrade-insecure-requests` e HSTS, e sem ele não.
 - E2E (backend simulado, o desafio desligado): suíte completa, **166 passam, 0 falham**, no código antes e depois do ajuste do host oculto do `app-turnstile`.
 - **Não verificado**: o widget real do Turnstile (script baixado, desenho, corte em 320 px, `connect-src`); o desafio ligado no Auth (parte final da T104); o motor da Vercel (sintaxe dos `source`, combinação de regras: só o preview prova); os cabeçalhos em `ng serve` (os e2e atuais não os conferem; o `e2e/security/headers.spec.ts` da T108 pode precisar do servidor construído); leitor de tela.
+
+---
+
+# QA — Phase 10 e gate (agente qa-engineer, 2026-11-22 a 2026-11-25)
+
+Progresso registrado a cada passo (a sessão caiu mais de uma vez). Nenhum teste escreve no projeto hospedado.
+
+## T106, triagem do `npm audit` (`--omit=dev --audit-level=high`)
+
+- Antes: 12 vulnerabilidades de produção (1 critica `proxy-addr`; altas: `@angular/*`, `body-parser`, `fast-uri`, `qs` e outras). Sem `--force`.
+- Atualizado, dentro dos intervalos semver: familia `@angular/*` 21.2.16 para 21.2.26 (`core`, `common`, `compiler`, `forms`, `platform-browser`,
+  `platform-server`, `router`, `compiler-cli`, `localize`), `@angular/ssr`, `@angular/build` e `@angular/cli` 21.2.31, mais as correcoes transitivas
+  do `npm audit fix` (`body-parser`, `fast-uri`, `proxy-addr`, `qs`, `vite`, `zod` etc.). `package.json` teve só o piso das faixas subido.
+- Os pacotes do Angular têm pares exatos entre si; o `npm install` comum devolve ERESOLVE por causa do lock antigo. O lock foi regenerado com
+  `--package-lock-only --legacy-peer-deps` e depois normalizado por `npm install --package-lock-only` (sem a flag), e `npm ci` funciona.
+- Depois: `npm audit --omit=dev --audit-level=high` = 0 vulnerabilidades. Prova: `npm run lint`, `npm test` (80 arquivos, 701 testes), `npm run build`,
+  `check:ui`, `check:headers` e os 166 e2e simulados passaram com as versoes novas.
