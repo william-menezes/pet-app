@@ -187,13 +187,46 @@ export class PetService {
     }
   }
 
-  /** Remove o pet. Pet com tag ativa: quem chama faz `release_tag` antes, com confirmação. */
+  /**
+   * Remove o pet e as fotos da pasta `<uid>/<pet>/`. Pet com tag ativa: quem chama faz `release_tag` antes, com
+   * confirmação. Ordem: lista as fotos, apaga a linha, apaga os arquivos. Se a linha não sai, nada se perdeu; se os
+   * arquivos não saem, o pet continua removido (sucesso parcial, registrado sem dado pessoal).
+   */
   async remove(petId: string): Promise<PetResult<object>> {
+    const tutorId = this.authStore.user()?.id;
+    let paths = tutorId === undefined ? null : await this.listPhotoPaths(tutorId, petId);
     try {
       const { error } = await this.supabase.client.from('pets').delete().eq('id', petId);
-      return error ? { ok: false, error: 'network' } : { ok: true };
+      if (error) return { ok: false, error: 'network' };
     } catch {
       return { ok: false, error: 'network' };
+    }
+    if (tutorId !== undefined) {
+      // A listagem falhou antes: tenta de novo agora que o pet já saiu.
+      paths ??= await this.listPhotoPaths(tutorId, petId);
+      let cleaned = paths !== null;
+      if (paths !== null && paths.length > 0) {
+        try {
+          const res = await this.supabase.client.storage.from('pet-photos').remove(paths);
+          cleaned = !res.error;
+        } catch {
+          cleaned = false;
+        }
+      }
+      if (!cleaned) console.warn('pet-photos: pet removido, mas as fotos não foram apagadas');
+    }
+    return { ok: true };
+  }
+
+  /** Caminhos dos objetos da pasta do pet; `null` se a listagem falhou. */
+  private async listPhotoPaths(tutorId: string, petId: string): Promise<string[] | null> {
+    try {
+      const folder = `${tutorId}/${petId}`;
+      const { data, error } = await this.supabase.client.storage.from('pet-photos').list(folder, { limit: 1000 });
+      if (error || !Array.isArray(data)) return null;
+      return data.filter((o) => typeof o.name === 'string' && o.name !== '').map((o) => `${folder}/${o.name}`);
+    } catch {
+      return null;
     }
   }
 

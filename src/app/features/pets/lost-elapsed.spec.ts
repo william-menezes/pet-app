@@ -15,8 +15,13 @@ describe('lostElapsedLabel', () => {
     expect(lostElapsedLabel(ago(47 * 60 + 59), NOW)).toBe('há 47 horas');
   });
 
+  it('limite de 48 h, igual à página pública (lostElapsed: 48 h ainda é hora)', () => {
+    expect(lostElapsedLabel(ago(48 * 60), NOW)).toBe('há 48 horas');
+    expect(lostElapsedLabel(ago(48 * 60 + 59), NOW)).toBe('há 48 horas');
+    expect(lostElapsedLabel(ago(49 * 60), NOW)).toBe('há 2 dias');
+  });
+
   it('depois de 48 h, dias', () => {
-    expect(lostElapsedLabel(ago(48 * 60), NOW)).toBe('há 2 dias');
     expect(lostElapsedLabel(ago(75 * 60), NOW)).toBe('há 3 dias');
   });
 

@@ -10,7 +10,7 @@ export function lostElapsedLabel(sinceIso: string, now: number = Date.now()): st
   if (minutes < -5) return null;
   if (minutes < 60) return $localize`há poucos minutos`;
   const hours = Math.floor(minutes / 60);
-  if (hours < 48) return hours === 1 ? $localize`há 1 hora` : $localize`há ${hours}:hours: horas`;
+  if (hours <= 48) return hours === 1 ? $localize`há 1 hora` : $localize`há ${hours}:hours: horas`;
   const days = Math.floor(hours / 24);
   return $localize`há ${days}:days: dias`;
 }

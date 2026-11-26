@@ -386,15 +386,24 @@ export class NewPet {
     }
 
     let petId = this.createdPetId();
-    if (petId === null) {
-      const created = await this.petService.create({
-        name: this.name(),
-        species,
-        breed: this.breed(),
-        sex: this.sex(),
-        size: this.size(),
-        ...(withExtras ? { temperament: this.temperament(), careNotes: this.careNotes() } : {}),
-      });
+    const draft = {
+      name: this.name(),
+      species,
+      breed: this.breed(),
+      sex: this.sex(),
+      size: this.size(),
+      ...(withExtras ? { temperament: this.temperament(), careNotes: this.careNotes() } : {}),
+    };
+    if (petId !== null) {
+      // O pet já existe (a foto falhou antes): o tutor pode ter corrigido os campos; grava antes de repetir a foto.
+      const updated = await this.petService.update(petId, draft);
+      if (!updated.ok) {
+        this.saving.set(false);
+        this.problem.set(updated.error === 'invalid' ? 'invalid' : 'create_failed');
+        return;
+      }
+    } else {
+      const created = await this.petService.create(draft);
       if (!created.ok) {
         this.saving.set(false);
         this.problem.set(created.error === 'invalid' || created.error === 'pet_limit' ? created.error : 'create_failed');

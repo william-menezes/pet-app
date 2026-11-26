@@ -135,6 +135,15 @@ describe('handleScanApi (T025, T104)', () => {
       expect(body).toEqual({ action: 'location', ...payload });
     });
 
+    it('precisão: teto de 100.000 m, o mesmo do banco (acima, 400 sem chamar a função)', async () => {
+      const fetchFn = vi.fn<typeof fetch>().mockImplementation(() => reply({ updated: true }));
+      const over = await handleScanApi(request('location', bytes({ ...payload, accuracy_m: 100_001 })), { env, fetchFn });
+      expect(over.status).toBe(400);
+      expect(fetchFn).not.toHaveBeenCalled();
+      const edge = await handleScanApi(request('location', bytes({ ...payload, accuracy_m: 100_000 })), { env, fetchFn });
+      expect(edge.status).toBe(200);
+    });
+
     it('token inválido ou falha: 200 { updated: false }', async () => {
       expect(await handleScanApi(request('location', bytes(payload)), { env, fetchFn: () => reply({ updated: false }) })).toEqual({
         status: 200,

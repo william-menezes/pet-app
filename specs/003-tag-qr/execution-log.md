@@ -750,3 +750,10 @@ Risco registrado, não defeito: o contador por conta é reiniciável por excluir
 ### Não verificado
 
 `deno test` (sem deno na máquina; o CI roda). O e2e real completo (precisa do `ng serve`); só os specs de API foram executados aqui, mais o de 500 e o de 54.
+
+## Rodada de frontend do /code-review (F1 a F4)
+
+- **F1 (confirmado)**: `PetService.remove` só apagava a linha. Agora lista `pet-photos/<uid>/<pet>/`, apaga a linha e depois remove os objetos listados (se a listagem falhou antes, tenta de novo depois da linha). Linha que não sai: nenhuma foto é apagada. Foto que não sai: o pet continua removido, sucesso parcial com `console.warn` sem dado pessoal; a tela não afirma nada depois da remoção, então o texto ficou. Trocar a foto já apagava a anterior (`uploadPhoto` com `previousPath`, melhor esforço); a pasta inteira é limpa na remoção. A política `pet_photos_tutor_delete` (0032) permite DELETE no próprio prefixo. Formato gravado: `<tutor_id>/<petId>/<crypto.randomUUID()>.(webp|jpg)`; o `jpg` só quando o processador devolve `image/jpeg` (nunca `jpeg`/`png`); o id do pet existe antes (criar, subir, gravar o caminho).
+- **F2 (confirmado)**: com `createdPetId`, `persist` chama `PetService.update` com os campos atuais antes de repetir a foto; erro do update mostra o erro e não repete a foto. Testes em `new-pet.spec.ts`.
+- **F3 (confirmado)**: teto de `accuracy_m` no servidor do app: 100.000 (`scan-api.ts`), igual ao banco; teste de 100.000 (aceita) e 100.001 (400).
+- **F4 (confirmado)**: app usava `< 48`, página pública `<= 48`. O app passa a `<= 48` (contrato: "horas até 48 h"). Sem função compartilhada (a pública não pode importar o app); os dois testes travam 48 h = horas e 49 h = 2 dias.

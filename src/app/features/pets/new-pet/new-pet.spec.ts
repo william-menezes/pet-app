@@ -11,6 +11,7 @@ describe('NewPet', () => {
   let el: HTMLElement;
   let create: ReturnType<typeof vi.fn>;
   let uploadPhoto: ReturnType<typeof vi.fn>;
+  let update: ReturnType<typeof vi.fn>;
   let navigateByUrl: ReturnType<typeof vi.spyOn>;
 
   const byId = (id: string) => el.querySelector<HTMLElement>(`[data-testid="${id}"]`);
@@ -26,11 +27,12 @@ describe('NewPet', () => {
   async function create$(returnUrl?: string) {
     create = vi.fn().mockResolvedValue({ ok: true, petId: 'p-novo' });
     uploadPhoto = vi.fn().mockResolvedValue({ ok: true, path: 'u/p/a.webp' });
+    update = vi.fn().mockResolvedValue({ ok: true });
     TestBed.configureTestingModule({
       providers: [
         provideZonelessChangeDetection(),
         provideRouter([]),
-        { provide: PetService, useValue: { create, uploadPhoto } },
+        { provide: PetService, useValue: { create, uploadPhoto, update } },
       ],
     });
     navigateByUrl = vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
@@ -229,6 +231,30 @@ describe('NewPet', () => {
       expect(create).toHaveBeenCalledTimes(1);
       expect(uploadPhoto).toHaveBeenCalledTimes(2);
       expect(navigateByUrl).toHaveBeenCalledWith('/app');
+    });
+
+    it('foto que falha: edições feitas antes de "Tentar de novo" são gravadas (update) antes de repetir a foto', async () => {
+      await pickPhoto(new File(['x'], 'foto.jpg', { type: 'image/jpeg' }));
+      uploadPhoto.mockResolvedValueOnce({ ok: false, error: 'network' });
+      await click(byId('new-pet-save'));
+      await type('new-pet-care', 'Toma remédio às 8h');
+      await click(byId('new-pet-retry'));
+      expect(create).toHaveBeenCalledTimes(1);
+      expect(update).toHaveBeenCalledTimes(1);
+      expect(update).toHaveBeenCalledWith('p-novo', expect.objectContaining({ name: 'Paçoca', careNotes: 'Toma remédio às 8h' }));
+      expect(uploadPhoto).toHaveBeenCalledTimes(2);
+      expect(navigateByUrl).toHaveBeenCalledWith('/app');
+    });
+
+    it('foto que falha: se o update falhar, mostra o erro e não repete a foto', async () => {
+      await pickPhoto(new File(['x'], 'foto.jpg', { type: 'image/jpeg' }));
+      uploadPhoto.mockResolvedValueOnce({ ok: false, error: 'network' });
+      await click(byId('new-pet-save'));
+      update.mockResolvedValueOnce({ ok: false, error: 'network' });
+      await click(byId('new-pet-retry'));
+      expect(uploadPhoto).toHaveBeenCalledTimes(1);
+      expect(navigateByUrl).not.toHaveBeenCalled();
+      expect(byId('new-pet-error')).not.toBeNull();
     });
 
     it('foto que falha: "Continuar sem a foto" segue sem enviar de novo', async () => {

@@ -47,7 +47,9 @@ type Rec = Record<string, unknown>;
 const isRec = (value: unknown): value is Rec => typeof value === 'object' && value !== null && !Array.isArray(value);
 
 const SCAN_KEYS = ['code'];
-const LOCATION_KEYS = ['scan_token', 'lat', 'lng', 'accuracy_m'];
+/** Mesmo teto de `set_scan_location` no banco: acima disso a RPC recusa e a localização some. */
+const MAX_ACCURACY_M = 100_000;
+const LOCATION_KEYS =['scan_token', 'lat', 'lng', 'accuracy_m'];
 
 const empty = (status: number): ScanApiResult => ({ status });
 
@@ -99,7 +101,7 @@ function validate(route: ScanRoute, body: Rec): Rec | null {
   const accuracy = body['accuracy_m'];
   if (typeof token !== 'string' || token.length === 0 || token.length > 128) return null;
   if (!finite(lat) || lat < -90 || lat > 90 || !finite(lng) || lng < -180 || lng > 180) return null;
-  if (!finite(accuracy) || accuracy < 0 || accuracy > 1_000_000) return null;
+  if (!finite(accuracy) || accuracy < 0 || accuracy > MAX_ACCURACY_M) return null;
   return { scan_token: token, lat, lng, accuracy_m: accuracy };
 }
 

@@ -24,9 +24,10 @@ function setup(opts: { user?: boolean; processor?: (f: Blob) => Promise<Blob> } 
   const upload = vi.fn().mockResolvedValue({ error: null });
   const remove = vi.fn().mockResolvedValue({ error: null });
   const createSignedUrls = vi.fn();
+  const list = vi.fn().mockResolvedValue({ data: [], error: null });
   const client = {
     from: vi.fn(() => chain),
-    storage: { from: vi.fn(() => ({ upload, remove, createSignedUrls })) },
+    storage: { from: vi.fn(() => ({ upload, remove, createSignedUrls, list })) },
   };
 
   TestBed.configureTestingModule({
@@ -43,6 +44,7 @@ function setup(opts: { user?: boolean; processor?: (f: Blob) => Promise<Blob> } 
     calls,
     upload,
     remove,
+    list,
     createSignedUrls,
     client,
     setResult: (r: { data: unknown; error: unknown }) => (result = r),
@@ -112,6 +114,44 @@ describe('PetService', () => {
     t.setResult({ data: [{ id: PET }], error: null });
     expect(await t.service.update(PET, { name: 'Mel' })).toEqual({ ok: true });
     expect(t.calls.some((c) => c.op === 'eq' && c.args[0] === 'id' && c.args[1] === PET)).toBe(true);
+  });
+
+  it('remove: apaga todos os arquivos da pasta <uid>/<pet>/ depois da linha', async () => {
+    const t = setup();
+    t.setResult({ data: null, error: null });
+    t.list.mockResolvedValue({ data: [{ name: 'a.webp' }, { name: 'velha.jpg' }], error: null });
+    expect(await t.service.remove(PET)).toEqual({ ok: true });
+    expect(t.list).toHaveBeenCalledWith(`${UID}/${PET}`, { limit: 1000 });
+    expect(t.remove).toHaveBeenCalledWith([`${UID}/${PET}/a.webp`, `${UID}/${PET}/velha.jpg`]);
+  });
+
+  it('remove: falha ao apagar as fotos não desfaz a remoção do pet (sucesso parcial)', async () => {
+    const t = setup();
+    t.setResult({ data: null, error: null });
+    t.list.mockResolvedValue({ data: [{ name: 'a.webp' }], error: null });
+    t.remove.mockResolvedValue({ error: { message: 'x' } });
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    expect(await t.service.remove(PET)).toEqual({ ok: true });
+    expect(warn).toHaveBeenCalled();
+    warn.mockRestore();
+  });
+
+  it('remove: se a linha não sai, nenhuma foto é apagada', async () => {
+    const t = setup();
+    t.setResult({ data: null, error: { message: 'x' } });
+    t.list.mockResolvedValue({ data: [{ name: 'a.webp' }], error: null });
+    expect(await t.service.remove(PET)).toEqual({ ok: false, error: 'network' });
+    expect(t.remove).not.toHaveBeenCalled();
+  });
+
+  it('remove: listagem que falhou antes é tentada de novo depois da linha', async () => {
+    const t = setup();
+    t.setResult({ data: null, error: null });
+    t.list
+      .mockResolvedValueOnce({ data: null, error: { message: 'x' } })
+      .mockResolvedValueOnce({ data: [{ name: 'a.webp' }], error: null });
+    expect(await t.service.remove(PET)).toEqual({ ok: true });
+    expect(t.remove).toHaveBeenCalledWith([`${UID}/${PET}/a.webp`]);
   });
 
   it('remove e list', async () => {
