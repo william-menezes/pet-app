@@ -36,7 +36,7 @@ function setup(
 const ok = (data: unknown): RpcReply => ({ data, error: null });
 const PROFILE = {
   code: "ABCD-EFGH-V",
-  pet: { name: "Paçoca", photo_path: "tutor/pet/foto.jpg" },
+  pet: { name: "Paçoca", photo_path: "11111111-2222-4333-8444-555555555555/66666666-7777-4888-8999-aaaaaaaaaaaa/bbbbbbbb-cccc-4ddd-8eee-ffffffffffff.jpg" },
   temperament: ["Dócil com pessoas", "Medo de barulho"],
   care_notes: "Toma remédio de manhã.",
   tutor_first_name: "Ana",
@@ -133,7 +133,7 @@ Deno.test("estado assigned: perfil campo a campo, foto assinada, sem piso de tem
     state: "assigned",
     profile: {
       code: "ABCD-EFGH-V",
-      pet: { name: "Paçoca", photo_url: "https://storage.test/assinada/tutor/pet/foto.jpg?token=t" },
+      pet: { name: "Paçoca", photo_url: "https://storage.test/assinada/11111111-2222-4333-8444-555555555555/66666666-7777-4888-8999-aaaaaaaaaaaa/bbbbbbbb-cccc-4ddd-8eee-ffffffffffff.jpg?token=t" },
       temperament: ["Dócil com pessoas", "Medo de barulho"],
       care_notes: "Toma remédio de manhã.",
       tutor_first_name: "Ana",
@@ -142,7 +142,7 @@ Deno.test("estado assigned: perfil campo a campo, foto assinada, sem piso de tem
       lost: { since: "2026-11-19T12:00:00Z", reward: true, message: "Ele se assusta." },
     },
   });
-  assertEquals(t.signed, ["tutor/pet/foto.jpg"]);
+  assertEquals(t.signed, ["11111111-2222-4333-8444-555555555555/66666666-7777-4888-8999-aaaaaaaaaaaa/bbbbbbbb-cccc-4ddd-8eee-ffffffffffff.jpg"]);
   assertEquals(t.slept, []);
 });
 
@@ -286,4 +286,55 @@ Deno.test("teto global: chamada sem a chave nao conta no teto", async () => {
   const t = setup(ok({ state: "not_found" }), { globalLimit: () => { counted++; return Promise.resolve(false); } });
   assertEquals((await t.handler(postJson({ code: CODE, ip_hash: "h" }))).status, 401);
   assertEquals(counted, 0);
+});
+
+// ── S1 (gate humano): o caminho da foto e lista de permissao antes de virar argumento do Storage ──────────────────────
+const U1 = "11111111-2222-4333-8444-555555555555";
+const U2 = "66666666-7777-4888-8999-aaaaaaaaaaaa";
+const U3 = "bbbbbbbb-cccc-4ddd-8eee-ffffffffffff";
+
+Deno.test("foto: caminho valido (tres UUIDs e .webp ou .jpg) e assinado", async () => {
+  for (const ext of ["webp", "jpg"]) {
+    const t = setup(ok({ state: "assigned", profile: { ...PROFILE, pet: { name: "Rex", photo_path: `${U1}/${U2}/${U3}.${ext}` } } }));
+    const body = await bodyOf(await t.handler(postJson({ code: CODE, ip_hash: "h" }, H))) as { profile: { pet: Record<string, unknown> } };
+    assertEquals(t.signed, [`${U1}/${U2}/${U3}.${ext}`]);
+    assert(typeof body.profile.pet.photo_url === "string");
+  }
+});
+
+Deno.test("foto: caminho fora do formato NAO chama signPhoto e a resposta sai sem foto (200, nunca erro)", async () => {
+  const bad = [
+    `${U1}/../../../../storage/v1/object/empty/pet-photos`,
+    `${U1}/${U2}/../../x.webp`,
+    `${U1}/${U2}/%2e%2e/${U3}.webp`,
+    `${U1}\${U2}\${U3}.webp`,
+    `${U1}/${U2}/${U3}.webp?x=1`,
+    `${U1}/${U2}/${U3}.webp#x`,
+    `${U1}/${U2}/${U3}.png`,
+    `${U1}/${U2}/${U3}.jpeg`,
+    `${U1}/${U2}/${U3.toUpperCase()}.webp`,
+    `${U1}/${U2}/foto.webp`,
+    `${U1}/${U3}.webp`,
+    `tutor/pet/foto.jpg`,
+    ` ${U1}/${U2}/${U3}.webp`,
+    `${U1}/${U2}/${U3}.webp\n`,
+    `${U1}/${U2}/${U3}.webp/x`,
+    `${"a".repeat(200)}`,
+  ];
+  for (const path of bad) {
+    const t = setup(ok({ state: "assigned", profile: { ...PROFILE, pet: { name: "Rex", photo_path: path } } }));
+    const res = await t.handler(postJson({ code: CODE, ip_hash: "h" }, H));
+    assertEquals(res.status, 200, `status para ${JSON.stringify(path)}`);
+    const body = await bodyOf(res) as { state: string; profile: { pet: Record<string, unknown> } };
+    assertEquals(body.state, "assigned");
+    assertEquals(body.profile.pet, { name: "Rex" }, `sem foto para ${JSON.stringify(path)}`);
+    assertEquals(t.signed.length, 0, `signPhoto nao pode ser chamado para ${JSON.stringify(path)}`);
+  }
+  // Valor que nem e texto: tambem sem foto.
+  for (const path of [123, {}, [], true]) {
+    const t = setup(ok({ state: "assigned", profile: { ...PROFILE, pet: { name: "Rex", photo_path: path } } }));
+    const body = await bodyOf(await t.handler(postJson({ code: CODE, ip_hash: "h" }, H))) as { profile: { pet: Record<string, unknown> } };
+    assertEquals(body.profile.pet, { name: "Rex" });
+    assertEquals(t.signed.length, 0);
+  }
 });

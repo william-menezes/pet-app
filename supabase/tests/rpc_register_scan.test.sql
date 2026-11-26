@@ -9,7 +9,7 @@
 
 BEGIN;
 
-SELECT plan(100);
+SELECT plan(102);
 
 CREATE SCHEMA IF NOT EXISTS tests;
 GRANT USAGE ON SCHEMA tests TO anon, authenticated, service_role;
@@ -152,6 +152,8 @@ SELECT is((SELECT status_at_scan FROM public.scan_events WHERE id = (SELECT (r -
 SELECT is((SELECT status_at_scan || ':' || coalesce(assignment_id::text, 'sem-vinculo') FROM public.scan_events WHERE id = (SELECT (r ->> 'scan_id')::uuid FROM t_res WHERE k = 'blkasg')),
   'blocked:e3e3e3e3-2222-0000-0000-00000000000b', 'tag bloqueada COM vinculo: grava com status blocked e o vinculo vigente');
 SELECT is((SELECT count(*)::integer FROM t_res WHERE k IN ('av', 'blk', 'void', 'blkasg') AND r ? 'notify'), 0, 'disponivel, bloqueada e anulada: nenhuma devolve notify (sem e-mail)');
+SELECT is((SELECT count(*)::integer FROM t_res WHERE k IN ('av', 'blk', 'void', 'blkasg') AND r ? 'scan_token'), 0, 'C2: disponivel, bloqueada e anulada nao devolvem scan_token (resposta igual a do codigo inexistente)');
+SELECT is((SELECT count(*)::integer FROM public.scan_events s WHERE s.id IN (SELECT (r ->> 'scan_id')::uuid FROM t_res WHERE k IN ('av', 'blk', 'void', 'blkasg')) AND (s.location_token_hash IS NOT NULL OR s.location_token_expires_at IS NOT NULL)), 0, 'C2: esses scans continuam gravados (fila do admin), mas sem token de localizacao');
 SELECT is((SELECT count(*)::integer FROM public.scan_events WHERE ip_hash IN ('h-5', 'h-7') AND (notify_attempts <> 0 OR notified_at IS NOT NULL)), 0, 'sem aviso: notify_attempts 0 e notified_at nulo');
 
 -- ═══════════════ Geolocalizacao ═══════════════
@@ -207,7 +209,7 @@ SELECT is(public.set_scan_location(tests.tok('exp'), -23.5, -46.6, 10), '{"ok":t
 -- Scan de tag bloqueada: a localizacao e gravada, mas nao ha aviso.
 INSERT INTO t_res VALUES ('blkloc', public.set_scan_location(tests.tok('blk'), -23.5, -46.6, 10));
 RESET ROLE;
-SELECT is((SELECT r ->> 'updated' FROM t_res WHERE k = 'blkloc'), 'true', 'scan de tag bloqueada: a localizacao e gravada (fila do admin)');
+SELECT is((SELECT r ->> 'updated' FROM t_res WHERE k = 'blkloc'), 'false', 'scan de tag bloqueada: nao ha token, a localizacao nao e aceita (C2)');
 SELECT ok(NOT ((SELECT r FROM t_res WHERE k = 'blkloc') ? 'notify'), 'scan de tag bloqueada: sem aviso ao tutor');
 
 -- ═══════════════ Deduplicacao depois de 10 minutos e entre vinculos ═══════════════

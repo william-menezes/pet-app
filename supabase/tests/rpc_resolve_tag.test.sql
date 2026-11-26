@@ -61,7 +61,7 @@ UPDATE public.perfis SET nome = 'Beto Resolve' WHERE id = 'c1c1c1c1-0000-0000-00
 INSERT INTO public.pets (id, tutor_id, name, species, temperament, care_notes, photo_path) VALUES
   ('c1c1c1c1-1111-0000-0000-000000000001', 'c1c1c1c1-0000-0000-0000-0000000000a1', 'Rex Teste', 'dog',
    ARRAY['Docil com pessoas', 'Medo de barulho'], 'Toma remedio de manha.',
-   'c1c1c1c1-0000-0000-0000-0000000000a1/c1c1c1c1-1111-0000-0000-000000000001/foto.jpg'),
+   'c1c1c1c1-0000-0000-0000-0000000000a1/c1c1c1c1-1111-0000-0000-000000000001/aaaaaaaa-1111-4222-8333-444444444444.jpg'),
   ('c1c1c1c1-1111-0000-0000-000000000002', 'c1c1c1c1-0000-0000-0000-0000000000a1', 'Mimi', 'cat', '{}', NULL, NULL),
   ('c1c1c1c1-1111-0000-0000-000000000003', 'c1c1c1c1-0000-0000-0000-0000000000b2', 'Bidu', 'dog', ARRAY['Arisco'], 'Nao dar petisco.', NULL);
 
@@ -96,7 +96,7 @@ SELECT is(public.resolve_tag('ABCDEFGHV', 'ip-r01') ->> 'state', 'assigned', 'ta
 SELECT is(public.resolve_tag('ABCDEFGHV', 'ip-r02') -> 'profile' ->> 'code', 'ABCD-EFGH-V', 'perfil: codigo no formato XXXX-XXXX-X');
 SELECT is(public.resolve_tag('ABCDEFGHV', 'ip-r03') -> 'profile' -> 'pet' ->> 'name', 'Rex Teste', 'perfil: nome do pet');
 SELECT is(public.resolve_tag('ABCDEFGHV', 'ip-r04') -> 'profile' -> 'pet' ->> 'photo_path',
-  'c1c1c1c1-0000-0000-0000-0000000000a1/c1c1c1c1-1111-0000-0000-000000000001/foto.jpg', 'perfil: photo_path para a funcao assinar');
+  'c1c1c1c1-0000-0000-0000-0000000000a1/c1c1c1c1-1111-0000-0000-000000000001/aaaaaaaa-1111-4222-8333-444444444444.jpg', 'perfil: photo_path para a funcao assinar');
 SELECT is(public.resolve_tag('ABCDEFGHV', 'ip-r05') -> 'profile' -> 'temperament', '["Docil com pessoas", "Medo de barulho"]'::jsonb, 'perfil: temperamento ligado aparece');
 SELECT is(public.resolve_tag('ABCDEFGHV', 'ip-r06') -> 'profile' ->> 'care_notes', 'Toma remedio de manha.', 'perfil: cuidados ligados aparecem');
 SELECT is(public.resolve_tag('ABCDEFGHV', 'ip-r07') -> 'profile' ->> 'tutor_first_name', 'Ana', 'perfil: so o primeiro nome da tutora');

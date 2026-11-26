@@ -36,8 +36,10 @@ Deno.serve(createResolveHandler({
     return { data: r.data, error: r.error };
   },
   signPhoto: async (path) => {
-    const { data, error } = await service().storage.from(PHOTOS_BUCKET).createSignedUrl(path, PHOTO_URL_TTL_SECONDS);
-    return error ? null : (data?.signedUrl ?? null);
+    // createSignedUrls manda o caminho no corpo JSON (nao concatenado na URL da chamada). O handler ja validou o formato.
+    const { data, error } = await service().storage.from(PHOTOS_BUCKET).createSignedUrls([path], PHOTO_URL_TTL_SECONDS);
+    const row = Array.isArray(data) ? data[0] : undefined;
+    return error || !row || row.error ? null : (row.signedUrl ?? null);
   },
   globalLimit: async (scope, limit, windowSeconds) => {
     const r = await service().rpc("global_rate_hit", { p_scope: scope, p_limit: limit, p_window_seconds: windowSeconds });

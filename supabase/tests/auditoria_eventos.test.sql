@@ -15,7 +15,7 @@
 
 BEGIN;
 
-SELECT plan(44);
+SELECT plan(47);
 
 CREATE SCHEMA IF NOT EXISTS tests;
 GRANT USAGE ON SCHEMA tests TO anon, authenticated, service_role;
@@ -105,6 +105,7 @@ SELECT is(public.release_tag('TVWXYZ01S', 'transferred') ->> 'ok', 'true', 'libe
 SELECT is(public.request_tag_replacement('ABCDEFGHV', 'damaged') ->> 'ok', 'true', '2a via (danificada) da T1');
 SELECT is(public.activate_tag('BZCH5NVX1', tests.pin(), 'a6a6a6a6-1111-0000-0000-0000000000a3') ->> 'ok', 'true', 'ativa a T8 no Tobi');
 SELECT is(public.request_tag_replacement('BZCH5NVX1', 'lost') ->> 'ok', 'true', '2a via (perdida) da T8: anula o codigo (tag_status_changed)');
+SELECT lives_ok($$ DELETE FROM public.pets WHERE id = 'a6a6a6a6-1111-0000-0000-0000000000a2' $$, 'a tutora remove a Mel, sem tag ativa (pet_deleted)');
 
 -- ═══════════════ O admin: status, reemissao, encerrar vinculo, resolver pedido, exportar ═══════════════
 SELECT tests.set_auth_uid('a6a6a6a6-0000-0000-0000-0000000000ad');
@@ -135,14 +136,16 @@ RESET ROLE;
 
 -- ═══════════════ 1. O conjunto de eventos e exatamente o esperado ═══════════════
 SELECT is((SELECT array_agg(DISTINCT event ORDER BY event)::text FROM tests.mine()),
-          '{account_tags_released,activation_failed,activation_locked_account,activation_locked_tag,admin_rate_limited,assignment_ended_by_admin,batch_created,batch_package_downloaded,codes_exported,lost_mode_off,lost_mode_on,pin_reissued,replacement_requested,replacement_resolved,tag_activated,tag_released,tag_status_changed}',
-          'os 17 eventos esperados foram gravados, e nenhum outro');
+          '{account_tags_released,activation_failed,activation_locked_account,activation_locked_tag,admin_rate_limited,assignment_ended_by_admin,batch_created,batch_package_downloaded,codes_exported,lost_mode_off,lost_mode_on,pet_deleted,pin_reissued,replacement_requested,replacement_resolved,tag_activated,tag_released,tag_status_changed}',
+          'os 18 eventos esperados foram gravados, e nenhum outro');
 SELECT is(tests.n('activation_failed'), 6, 'activation_failed: 5 (T2) + 1 (T7)');
 SELECT is(tests.n('tag_activated'), 5, 'tag_activated: T1, T3, T4, T8 e T6');
 SELECT is(tests.n('tag_released'), 2, 'tag_released: replaced e transferred');
 SELECT is(tests.n('tag_status_changed'), 3, 'tag_status_changed: anulacao pela 2a via perdida + bloquear + desbloquear');
 SELECT is(tests.n('replacement_requested'), 2, 'replacement_requested: damaged e lost');
 SELECT is(tests.n('batch_created'), 1, 'batch_created: um so por lote');
+SELECT is(tests.n('pet_deleted'), 1, 'C5: remover um pet grava pet_deleted');
+SELECT is((SELECT count(*)::integer FROM tests.mine() WHERE event = 'pet_deleted' AND entity = 'pet' AND entity_id = 'a6a6a6a6-1111-0000-0000-0000000000a2' AND detail = '{}'::jsonb AND actor_id = 'a6a6a6a6-0000-0000-0000-0000000000a1'), 1, 'C5: pet_deleted com a id do pet, ator do JWT e detalhe vazio (sem nome)');
 
 -- ═══════════════ 2. Detalhe: so chaves conhecidas; nada de PIN, telefone, e-mail ou IP ═══════════════
 SELECT is((SELECT count(*)::integer FROM tests.mine() a, LATERAL jsonb_object_keys(a.detail) k
@@ -171,7 +174,7 @@ SELECT is((SELECT count(*)::integer FROM (
               WHERE p.pronamespace = 'public'::regnamespace) s
             WHERE s.ev NOT IN ('activation_failed', 'activation_locked_account', 'activation_locked_tag', 'tag_activated', 'tag_released',
                                'lost_mode_on', 'lost_mode_off', 'tag_status_changed', 'replacement_requested', 'pin_reissued',
-                               'assignment_ended_by_admin', 'replacement_resolved', 'codes_exported')), 0,
+                               'assignment_ended_by_admin', 'replacement_resolved', 'codes_exported', 'pet_deleted')), 0,
           'inventario: toda chamada audit(''...'') do banco esta na lista deste teste');
 
 -- ═══════════════ 4. A tabela e so de insercao, ate para o servidor ═══════════════

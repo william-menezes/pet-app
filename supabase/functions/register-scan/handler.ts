@@ -82,6 +82,26 @@ function noticeFrom(v: unknown): (NoticeInfo & { scan_id: string }) | null {
   return info;
 }
 
+/** Tentativas de gravar notified_at depois de o e-mail ter saido. */
+export const MARK_ATTEMPTS = 3;
+
+/**
+ * Marca o aviso como enviado, conferindo o resultado: o e-mail JA saiu, e se a marcacao falhar em silencio o job de
+ * reenvio manda o mesmo e-mail de novo. Repete algumas vezes (erro devolvido ou excecao); nunca rejeita.
+ * O reenvio ainda e limitado pelo banco (3 tentativas por scan, so ate 24 h, reserva por scan_notices_pending).
+ */
+async function markNoticeSent(deps: RegisterDeps, scanId: string): Promise<boolean> {
+  for (let i = 0; i < MARK_ATTEMPTS; i++) {
+    try {
+      const r = await deps.rpc("scan_notice_sent", { p_scan_id: scanId });
+      if (!r.error && isRec(r.data) && r.data.ok === true) return true;
+    } catch {
+      // tenta de novo
+    }
+  }
+  return false;
+}
+
 /** Envia o aviso e, no de scan, marca `notified_at`. Nunca rejeita. Devolve se o e-mail saiu. */
 async function sendNotice(
   deps: RegisterDeps,
@@ -93,7 +113,7 @@ async function sendNotice(
     const content = kind === "scan" ? scanNoticeEmail(info, deps.siteUrl) : locationNoticeEmail(info, deps.siteUrl);
     const r = await sender.send({ to: info.to, ...content });
     if (!r.ok) return false;
-    if (kind === "scan") await deps.rpc("scan_notice_sent", { p_scan_id: info.scan_id });
+    if (kind === "scan") await markNoticeSent(deps, info.scan_id);
     return true;
   } catch {
     return false;

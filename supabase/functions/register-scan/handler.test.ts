@@ -411,3 +411,80 @@ Deno.test("teto global: chamada sem a chave nem conta no teto", async () => {
   assertEquals((await t.handler(postJson({ code: CODE, ip_hash: "h" }))).status, 401);
   assertEquals(counted, 0);
 });
+
+// ── C4 (gate humano): a marcacao notified_at e conferida e repetida; senao o job de reenvio duplicaria o e-mail ───────
+const NEW_SCAN_DATA = {
+  ok: true, owner: false, recorded: true, duplicate: false,
+  scan_id: NOTIFY.scan_id, scan_token: "a".repeat(64), notify: NOTIFY,
+};
+
+function setupFlaky(failures: Array<"error" | "throw" | "not_ok">) {
+  const calls: string[] = [];
+  let mark = 0;
+  const t = setup({ register_scan: NEW_SCAN }, {
+    extra: {
+      rpc: (fn, args) => {
+        calls.push(fn);
+        if (fn === "scan_notice_sent") {
+          const f = failures[mark++];
+          if (f === "throw") return Promise.reject(new Error("banco fora do ar"));
+          if (f === "error") return Promise.resolve({ data: null, error: { message: "falha" } });
+          if (f === "not_ok") return Promise.resolve({ data: { ok: false }, error: null });
+        }
+        void args;
+        return Promise.resolve({ data: fn === "register_scan" ? NEW_SCAN_DATA : { ok: true }, error: null });
+      },
+    },
+  });
+  return { t, calls };
+}
+
+Deno.test("aviso: se a 1a marcacao falhar (erro devolvido), repete e fecha com notified_at", async () => {
+  const { t, calls } = setupFlaky(["error"]);
+  await t.handler(postJson({ code: CODE, ip_hash: "h" }, H));
+  await t.flush();
+  assertEquals(t.sent.length, 1);
+  assertEquals(calls.filter((c) => c === "scan_notice_sent").length, 2);
+});
+
+Deno.test("aviso: marcacao que lanca excecao ou volta ok:false tambem e repetida", async () => {
+  const { t, calls } = setupFlaky(["throw", "not_ok"]);
+  await t.handler(postJson({ code: CODE, ip_hash: "h" }, H));
+  await t.flush();
+  assertEquals(t.sent.length, 1);
+  assertEquals(calls.filter((c) => c === "scan_notice_sent").length, 3);
+});
+
+Deno.test("aviso: se TODAS as marcacoes falharem, para em 3, nao rejeita e o e-mail saiu uma vez so", async () => {
+  const { t, calls } = setupFlaky(["error", "error", "error", "error"]);
+  const res = await t.handler(postJson({ code: CODE, ip_hash: "h" }, H));
+  assertEquals(res.status, 200);
+  await t.flush(); // se rejeitasse, falharia aqui
+  assertEquals(t.sent.length, 1);
+  assertEquals(calls.filter((c) => c === "scan_notice_sent").length, 3);
+});
+
+// ── C2 (gate humano): /api/scan nao distingue tag bloqueada, anulada ou disponivel de codigo inexistente ──────────────
+Deno.test("scan: inexistente, bloqueada, anulada e disponivel produzem MESMO status, corpo e cabecalhos", async () => {
+  const gravado = (extra: Record<string, unknown> = {}) =>
+    ok({ ok: true, owner: false, recorded: true, duplicate: false, scan_id: NOTIFY.scan_id, ...extra });
+  const cases: Record<string, Reply> = {
+    inexistente: ok({ ok: true, owner: false, recorded: false }),
+    bloqueada: gravado(),
+    anulada: gravado(),
+    disponivel: gravado(),
+    bloqueada_duplicada: gravado({ duplicate: true }),
+  };
+  const seen: Array<{ status: number; body: string; headers: string }> = [];
+  for (const reply of Object.values(cases)) {
+    const t = setup({ register_scan: reply });
+    const res = await t.handler(postJson({ code: CODE, ip_hash: "h" }, H));
+    seen.push({
+      status: res.status,
+      body: await res.text(),
+      headers: JSON.stringify([...res.headers.entries()].filter(([k]) => k !== "date").sort()),
+    });
+  }
+  for (const s of seen) assertEquals(s, seen[0]);
+  assertEquals(seen[0].body, JSON.stringify({ owner: false }));
+});

@@ -30,6 +30,18 @@ export const RESOLVE_GLOBAL_LIMIT = 3000;
 /** Validade da URL assinada da foto. */
 export const PHOTO_URL_TTL_SECONDS = 3600;
 
+const UUID = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
+/**
+ * Formato exato do caminho da foto: <tutor_id>/<id do pet>/<uuid>.(webp|jpg), tres UUIDs em minusculas (o mesmo que o
+ * CHECK pets_photo_path_formato do banco, migration 0037). Lista de permissao: o caminho vira argumento de uma chamada ao
+ * Storage com a chave de servico, entao nada fora disto e assinado (nem '..', '?', '#', barra invertida, % ou espaco).
+ */
+export const PHOTO_PATH_RE = new RegExp(`^${UUID}/${UUID}/${UUID}\\.(webp|jpg)$`);
+
+export function isSafePhotoPath(v: unknown): v is string {
+  return typeof v === 'string' && v.length <= 160 && PHOTO_PATH_RE.test(v);
+}
+
 export interface ResolveDeps {
   /** Chaves aceitas (`() => ssrKeysFromEnv()`); se lancar MisconfiguredError a resposta e 500. */
   keys(): readonly string[];
@@ -62,7 +74,8 @@ async function buildRescue(profile: unknown, code: string, deps: ResolveDeps): P
   if (!isRec(profile) || !isRec(profile.pet) || !nonEmpty(profile.pet.name)) return { ...RATE_LIMITED };
 
   const pet: Rec = { name: profile.pet.name };
-  if (nonEmpty(profile.pet.photo_path)) {
+  // Caminho fora do formato (ou foto ausente): a pagina sai sem foto, nunca com erro.
+  if (isSafePhotoPath(profile.pet.photo_path)) {
     try {
       const url = await deps.signPhoto(profile.pet.photo_path);
       if (nonEmpty(url)) pet.photo_url = url;
