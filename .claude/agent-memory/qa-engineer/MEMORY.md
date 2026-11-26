@@ -1,1 +1,3 @@
 - [E2E real da 004: armadilhas](project-004-e2e-real-armadilhas.md) — falsos vermelhos do job e2e, DEF-001, limites, cuidados de edicao no Windows
+- [E2E real da 003: harness e armadilhas](project-003-e2e-real-harness.md) — pool de tags, SSR no ng serve, prod build, limites por IP, DEF-003-01 a 03
+- [003: auditoria e contadores de PIN](project-003-rodada-auditoria-contadores.md) — gate vazio por \b (DEF-003-04), pgTAP via CLI, relogio fixo, grants de pets
