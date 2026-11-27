@@ -156,6 +156,52 @@
   /* --primary (lima), --ink, --brand, --lost, --amber, --destructive e --toast não mudam */
 }
 
+/* Volta ao claro dentro do app escuro: só a prévia "como estranhos verão" (a página pública é sempre clara).
+   Os valores são os de :root para cada variável que o .dark redefine; `npm run check:tokens` confere. */
+.faro-light {
+  color-scheme: light;
+  --background: #F7F8F8;
+  --foreground: #13201E;
+  --card: #FFFFFF;
+  --card-foreground: #13201E;
+  --popover: #FFFFFF;
+  --popover-foreground: #13201E;
+  --secondary: #EEF0F8;
+  --secondary-foreground: #25337A;
+  --muted: #EEF0F1;
+  --muted-foreground: #5E6C69;
+  --accent: #EEF0F8;
+  --accent-foreground: #25337A;
+  --border: #E2E5E7;
+  --input: #7F8B88;
+  --ring: #13201E;
+  --ring-gap: #FFFFFF;
+  --sidebar: #FFFFFF;
+  --sidebar-foreground: #13201E;
+  --sidebar-primary: #13201E;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #EEF0F8;
+  --sidebar-accent-foreground: #25337A;
+  --sidebar-border: #E2E5E7;
+  --sidebar-ring: #13201E;
+  --text: #33403D;
+  --inset: #F7F8F8;
+  --divider: #EEF0F1;
+  --link: #25337A;
+  --success-soft: #E4F4EA;
+  --success-foreground: #0F5E30;
+  --warning-soft: #FBF1DD;
+  --warning-foreground: #8A4A0C;
+  --danger-soft: #FBE7E4;
+  --danger-foreground: #A52E22;
+  --neutral-soft: #EEF0F1;
+  --neutral-foreground: #33403D;
+  --disabled: #E2E5E7;
+  --disabled-foreground: #5E6C69;
+  --dot: #C23A2B;
+  --photo: #E8E2D6;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);

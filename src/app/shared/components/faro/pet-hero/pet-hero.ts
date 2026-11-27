@@ -1,10 +1,10 @@
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { NgIcon } from '@ng-icons/core';
 
 /**
  * Capa com a foto do pet (contrato §5.11). A altura vem do pai (referência: 236 / 320 / 400px).
  * Projeção `[heroTop]`: canto de cima à esquerda, a 14px. O nome é um `<h1>`: a tela que usar
- * dois destes ou já tiver um título principal precisa avisar (decisão a confirmar com o William).
+ * dois destes ou já tiver um título principal usa `heading` (`h2` ou `none`).
  */
 @Component({
   selector: 'app-pet-hero',
@@ -40,13 +40,17 @@ import { NgIcon } from '@ng-icons/core';
     </div>
 
     <div class="absolute inset-x-[18px] bottom-4 z-10">
-      <h1
-        class="font-display text-[36px] leading-none font-bold tracking-[-0.03em] md:text-[48px] xl:text-[56px]"
-        [class]="photoUrl() ? 'text-white' : 'text-foreground'"
-        data-testid="pet-hero-name"
-      >
-        {{ name() }}
-      </h1>
+      @switch (heading()) {
+        @case ('h1') {
+          <h1 [class]="nameClasses()" data-testid="pet-hero-name">{{ name() }}</h1>
+        }
+        @case ('h2') {
+          <h2 [class]="nameClasses()" data-testid="pet-hero-name">{{ name() }}</h2>
+        }
+        @default {
+          <p [class]="nameClasses()" aria-hidden="true" data-testid="pet-hero-name">{{ name() }}</p>
+        }
+      }
       @if (subtitle()) {
         <p class="mt-1 text-sm" [class]="photoUrl() ? 'text-white' : 'text-foreground'" data-testid="pet-hero-subtitle">
           {{ subtitle() }}
@@ -65,4 +69,16 @@ export class PetHero {
   readonly alt = input('');
   /** `true`: `fetchpriority="high"` e `loading="eager"`. */
   readonly priority = input(false);
+  /**
+   * Como o nome entra na árvore de acessibilidade: `h1` (padrão), `h2` quando a tela já tem o próprio `h1`, ou `none`
+   * quando o nome já é o título da tela (na capa fica só o texto, escondido do leitor de tela).
+   */
+  readonly heading = input<'h1' | 'h2' | 'none'>('h1');
+
+  protected readonly nameClasses = computed(
+    () =>
+      `font-display text-[36px] leading-none font-bold tracking-[-0.03em] md:text-[48px] xl:text-[56px] ${
+        this.photoUrl() ? 'text-white' : 'text-foreground'
+      }`,
+  );
 }

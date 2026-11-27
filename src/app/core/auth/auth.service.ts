@@ -19,7 +19,7 @@ import { AuthStore, Role } from './auth.store';
 import { SupabaseService } from '../supabase/supabase.service';
 import { AccountStore } from '../account/account.store';
 import { ReturnUrlService } from './return-url';
-import { clearPersistedSessions, findPersistedStorage, getSessionStorage } from './session-persistence';
+import { clearPersistedSessions, findPersistedStorage, getSessionStorage } from '../session/session-persistence';
 import { environment } from '../../../environments/environment';
 
 export interface AuthResult {

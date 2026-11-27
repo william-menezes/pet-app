@@ -315,10 +315,12 @@ export class ZardInputOtpComponent implements ControlValueAccessor, AfterContent
 
   handlePaste(paste: string): void {
     const regex = this.patternRegex();
+    // Filtra ANTES de cortar: um PIN colado com hífen ou espaço ("K47-Q9M", "K47 Q9M") perdia o último caractere
+    // porque o corte em seis contava o separador. (Edição do Faro sobre o componente copiado do ZardUI.)
     const pastedCode = paste
-      .substring(0, this.effectiveMaxLength())
       .split('')
       .filter(char => regex.test(char))
+      .slice(0, this.effectiveMaxLength())
       .join('');
 
     this.tokens.set(pastedCode.split(''));

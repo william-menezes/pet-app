@@ -9,7 +9,7 @@ import {
 
 describe('security-headers', () => {
   describe('headerKindForPath', () => {
-    it.each(['/7K3MQ9XAC', '/7K3M-Q9XA-C', '/7k3m-q9xa-c/', '/7K3MQ9XAC/perdido', '/7K3M-Q9XA-C/perdido/'])(
+    it.each(['/7K3MQ9XAC', '/7K3M-Q9XA-C', '/7k3m-q9xa-c/', '/7k3m%20q9xa%20c', '/7K3M%20Q9XA%20C/'])(
       '%s é da tag',
       (path) => expect(headerKindForPath(path)).toBe('tag'),
     );
@@ -21,6 +21,8 @@ describe('security-headers', () => {
       '/admin',
       '/legal/termos',
       '/favicon.ico',
+      '/7K3MQ9XAC/perdido',
+      '/ativar/7K3MQ9XAC',
       '/12345678',
       '/123456789012',
       '/recuperar-senha',
@@ -43,6 +45,13 @@ describe('security-headers', () => {
       expect(tag['Referrer-Policy']).toBe('no-referrer');
       expect(tag['Cross-Origin-Opener-Policy']).toBe('same-origin');
       expect(tag['Cross-Origin-Resource-Policy']).toBe('same-origin');
+    });
+
+    it('tag: Cache-Control no-store e X-Robots-Tag noindex; o app não os manda', () => {
+      expect(tag['Cache-Control']).toBe('no-store');
+      expect(tag['X-Robots-Tag']).toBe('noindex');
+      expect(app['Cache-Control']).toBeUndefined();
+      expect(app['X-Robots-Tag']).toBeUndefined();
     });
 
     it('app: desafio em script-src e frame-src, câmera própria, popups permitidos', () => {

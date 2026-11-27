@@ -18,12 +18,20 @@ fi
 echo "::add-mask::$ANON_KEY"
 echo "::add-mask::$SERVICE_KEY"
 
+# Spec 003: chave do servidor do app e segredo do ip_hash, sorteados a cada rodada (nunca versionados).
+SSR_KEY="e2e-$(openssl rand -hex 24)"
+IPHASH_SECRET="e2e-$(openssl rand -hex 24)"
+echo "::add-mask::$SSR_KEY"
+echo "::add-mask::$IPHASH_SECRET"
+
 # Variaveis para os passos seguintes (o E2E real le daqui). Nada e impresso.
 {
   echo "E2E_SUPABASE_URL=$API_URL"
   echo "E2E_ANON_KEY=$ANON_KEY"
   echo "E2E_SERVICE_KEY=$SERVICE_KEY"
   echo "E2E_MAIL_URL=http://127.0.0.1:54324"
+  echo "E2E_SSR_KEY=$SSR_KEY"
+  echo "E2E_IPHASH_SECRET=$IPHASH_SECRET"
 } >> "$GITHUB_ENV"
 
 # Ambiente do app so no runner (o modelo versionado e src/environments/environment.e2e.example.ts).
@@ -46,6 +54,7 @@ FARO_ENV=test
 SMS_DRIVER=stub
 SMS_STUB_CODE=424242
 EOF
+{ echo "FARO_SSR_KEY=$SSR_KEY"; echo "EMAIL_DRIVER=log"; } >> supabase/.env.local
 setsid nohup supabase functions serve --env-file supabase/.env.local > /tmp/functions-serve.log 2>&1 &
 disown || true
 

@@ -1,0 +1,167 @@
+<!--
+  Página do pet. Referência: design/telas-v2/V2-pet{,-tablet,-desktop}{,-escuro}.dc.html.
+  O tema escuro vem dos tokens da casca do tutor. O título da tela é o nome do pet (cabeçalho); o nome sobre a foto
+  é só imagem (escondido do leitor de tela).
+-->
+<div class="flex w-full flex-col gap-3 md:gap-4 xl:gap-5" data-testid="pet-page">
+  <app-screen-header [title]="name()" [back]="'back'" [backLink]="'/app'">
+    @if (state() === 'ready') {
+      <a
+        action
+        z-button
+        zType="ghost"
+        zSize="icon"
+        class="bg-card"
+        [routerLink]="['/app/pets', petId(), 'editar']"
+        aria-label="Editar pet"
+        i18n-aria-label
+        data-testid="pet-page-edit">
+        <ng-icon name="edit" size="22" aria-hidden="true" />
+      </a>
+    }
+  </app-screen-header>
+
+  <div aria-live="polite">
+    @switch (state()) {
+      @case ('loading') {
+        <p class="py-6 text-center text-text" role="status" aria-busy="true" data-testid="pet-page-loading" i18n>Um instante…</p>
+      }
+      @case ('error') {
+        <div class="flex flex-col items-start gap-3" data-testid="pet-page-error">
+          <z-alert
+            class="w-full"
+            zType="danger"
+            [zRole]="'status'"
+            [zDescription]="errorText()" />
+          <button type="button" z-button zType="outline" (click)="load()" data-testid="pet-page-retry" i18n>Tentar de novo</button>
+        </div>
+      }
+      @case ('missing') {
+        <div class="flex flex-col items-start gap-3 rounded-2xl bg-card p-5" data-testid="pet-page-missing">
+          <p class="font-display text-[19px] font-semibold text-foreground" i18n>Não encontramos este pet.</p>
+          <a z-button zType="outline" routerLink="/app/pets" data-testid="pet-page-missing-pets" i18n>Ver meus pets</a>
+        </div>
+      }
+    }
+  </div>
+
+  @if (state() === 'ready') {
+    @if (dash(); as d) {
+      <div class="flex flex-col gap-3 md:gap-4 xl:grid xl:grid-cols-[440px_minmax(0,1fr)] xl:items-start xl:gap-5">
+        <div class="flex flex-col gap-3 md:gap-4 xl:gap-5">
+          <app-pet-hero
+            class="h-[200px] md:h-[320px] xl:h-[400px] xl:rounded-[28px]"
+            [name]="name()"
+            [subtitle]="coverLine()"
+            [photoUrl]="photoUrl()"
+            [alt]="photoAlt()"
+            [priority]="true"
+            [heading]="'none'" />
+          @if (chips().length > 0) {
+            <ul class="m-0 flex list-none flex-wrap gap-2 p-0" data-testid="pet-page-chips">
+              @for (chip of chips(); track chip) {
+                <li class="inline-flex h-8 items-center rounded-full border border-border bg-card px-3 text-[13px] font-semibold text-foreground">
+                  {{ chip }}
+                </li>
+              }
+            </ul>
+          }
+        </div>
+
+        <div class="flex flex-col gap-3 md:gap-4 xl:gap-5">
+          @if (tagState() === 'active') {
+            <app-pet-lost-row [petId]="petId()" [petName]="name()" [lostMode]="d.lostMode" [lostSince]="d.lostSince" (found)="onFound()" />
+          }
+
+          <div class="grid grid-cols-2 gap-3 md:gap-4 xl:gap-5">
+            @switch (tagState()) {
+              @case ('none') {
+                <div class="flex flex-col items-start gap-3 rounded-2xl bg-card p-4" data-testid="pet-page-no-tag">
+                  <div class="flex flex-col gap-1">
+                    <span class="text-[13px] text-muted-foreground" i18n>Tag</span>
+                    <span class="text-[15px] leading-[1.4] text-text" i18n>Este pet ainda não tem tag.</span>
+                  </div>
+                  <a z-button zSize="md" [routerLink]="['/vincular', petId()]" data-testid="pet-page-link-tag" i18n>Vincular tag</a>
+                </div>
+              }
+              @case ('blocked') {
+                <div class="flex flex-col items-start gap-2 rounded-2xl bg-card p-4" data-testid="pet-page-blocked">
+                  <span class="text-[13px] text-muted-foreground" i18n>Tag</span>
+                  <span class="font-display text-[19px] font-bold text-foreground" data-testid="pet-page-tag-code">{{ d.tagCode }}</span>
+                  <z-alert class="w-full" zType="neutral" [zRole]="'status'" [zDescription]="blockedMessage" data-testid="pet-page-blocked-alert" />
+                </div>
+              }
+              @default {
+                <a
+                  class="flex flex-col gap-1.5 rounded-2xl bg-card p-4 text-foreground"
+                  [routerLink]="['/app/pets', petId(), 'tag']"
+                  data-testid="pet-page-tag-card">
+                  <span class="text-[13px] text-muted-foreground" i18n>Tag</span>
+                  <span class="font-display text-[19px] font-bold" data-testid="pet-page-tag-code">{{ d.tagCode }}</span>
+                  <span><z-badge zType="success" i18n>Ativa</z-badge></span>
+                </a>
+              }
+            }
+
+            <a
+              class="flex flex-col gap-1.5 rounded-2xl bg-card p-4 text-foreground"
+              [routerLink]="['/app/scans']"
+              [queryParams]="{ pet: petId() }"
+              data-testid="pet-page-scan-card">
+              <span class="text-[13px] text-muted-foreground" i18n>Último scan</span>
+              <span class="font-display text-[19px] font-bold" data-testid="pet-page-scan-time">{{ lastScanTime() ?? '—' }}</span>
+              <span class="text-[13px] text-muted-foreground" data-testid="pet-page-scan-caption">{{ lastScanCaption() }}</span>
+            </a>
+          </div>
+
+          <nav aria-label="Sobre este pet" i18n-aria-label>
+            <ul class="m-0 flex list-none flex-col divide-y divide-divider overflow-hidden rounded-2xl bg-card p-0">
+              <li>
+                <a class="flex min-h-14 items-center gap-3 px-3.5 py-3 text-foreground" [routerLink]="['/app/pets', petId(), 'editar']" data-testid="pet-page-menu-edit">
+                  <app-icon-tile icon="paw" />
+                  <span class="flex min-w-0 flex-1 flex-col gap-0.5">
+                    <span class="text-[15px] font-semibold" i18n>Dados do pet</span>
+                    <span class="text-[13px] text-muted-foreground" i18n>Nome, foto, temperamento e cuidados</span>
+                  </span>
+                  <ng-icon name="chev" size="20" class="shrink-0 text-muted-foreground" aria-hidden="true" />
+                </a>
+              </li>
+              <li>
+                <a class="flex min-h-14 items-center gap-3 px-3.5 py-3 text-foreground" [routerLink]="['/app/pets', petId(), 'visibilidade']" data-testid="pet-page-menu-visibility">
+                  <app-icon-tile icon="eye" />
+                  <span class="flex min-w-0 flex-1 flex-col gap-0.5">
+                    <span class="text-[15px] font-semibold" i18n>O que estranhos veem</span>
+                    <span class="text-[13px] text-muted-foreground" data-testid="pet-page-visibility-hint">{{ visibilityHint() }}</span>
+                  </span>
+                  <ng-icon name="chev" size="20" class="shrink-0 text-muted-foreground" aria-hidden="true" />
+                </a>
+              </li>
+              @if (tagState() === 'active') {
+                <li>
+                  <a class="flex min-h-14 items-center gap-3 px-3.5 py-3 text-foreground" [routerLink]="['/app/pets', petId(), 'tag']" data-testid="pet-page-menu-tag">
+                    <app-icon-tile icon="tag" />
+                    <span class="flex min-w-0 flex-1 flex-col gap-0.5">
+                      <span class="text-[15px] font-semibold" i18n>Gerenciar tag</span>
+                      <span class="text-[13px] text-muted-foreground" i18n>Passar adiante ou pedir 2ª via</span>
+                    </span>
+                    <ng-icon name="chev" size="20" class="shrink-0 text-muted-foreground" aria-hidden="true" />
+                  </a>
+                </li>
+              }
+              <li>
+                <a class="flex min-h-14 items-center gap-3 px-3.5 py-3 text-foreground" [routerLink]="['/app/scans']" [queryParams]="{ pet: petId() }" data-testid="pet-page-menu-scans">
+                  <app-icon-tile icon="scan" />
+                  <span class="flex min-w-0 flex-1 flex-col gap-0.5">
+                    <span class="text-[15px] font-semibold" i18n>Histórico de scans</span>
+                    <span class="text-[13px] text-muted-foreground" data-testid="pet-page-scans-month">{{ scansMonthText() }}</span>
+                  </span>
+                  <ng-icon name="chev" size="20" class="shrink-0 text-muted-foreground" aria-hidden="true" />
+                </a>
+              </li>
+            </ul>
+          </nav>
+        </div>
+      </div>
+    }
+  }
+</div>

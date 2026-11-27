@@ -1,0 +1,87 @@
+<!--
+  Ativação, passo 2. Referência: design/telas-v2/V2-ativacao-pin{,-tablet,-desktop}.dc.html.
+  A região aria-live existe sempre (vazia) para que o leitor aprenda o erro quando ele entra.
+-->
+<app-flow-shell
+  [barTitle]="barTitle()"
+  [back]="'back'"
+  [step]="{ current: 2, total: 2 }"
+  [headline]="headline"
+  [sub]="sub"
+  (backClick)="changePet.emit()">
+  <div [attr.aria-busy]="submitting()">
+    <h1 tabindex="-1" class="font-display text-[32px] leading-[1.04] font-bold tracking-[-0.03em] text-foreground md:text-[42px]">
+      {{ title() }}
+    </h1>
+    <p class="mt-2.5 text-base leading-[1.45] text-text">{{ intro() }}</p>
+  </div>
+
+  <form id="activation-pin-form" (submit)="$event.preventDefault(); onSubmit()" novalidate>
+    <z-input-otp
+      [zMode]="'alphanumeric'"
+      [zMaxLength]="6"
+      zAriaLabel="PIN de 6 caracteres"
+      i18n-zAriaLabel
+      [zInvalid]="pinInvalid()"
+      [formControl]="pin"
+      data-testid="activation-pin" />
+  </form>
+
+  <div aria-live="polite" data-testid="activation-pin-live">
+    @if (message(); as text) {
+      <z-alert zType="danger" [zRole]="'status'" [zDescription]="text" data-testid="activation-pin-error" />
+    }
+  </div>
+
+  <div class="flex items-center gap-3 rounded-xl bg-card p-3" data-testid="activation-summary">
+    <app-pet-avatar [photoUrl]="pet().photoUrl" />
+    <span class="flex min-w-0 flex-1 flex-col">
+      <span class="truncate font-display text-[17px] font-semibold text-foreground">{{ pet().name }}</span>
+      <span class="text-sm text-muted-foreground" data-testid="activation-summary-code">{{ summaryLine() }}</span>
+    </span>
+    <button
+      type="button"
+      z-button
+      zType="link"
+      (click)="changePet.emit()"
+      data-testid="activation-change-pet"
+      i18n>
+      Trocar
+    </button>
+  </div>
+
+  <div class="flex flex-col gap-1" data-testid="activation-whatsapp-block">
+    <z-checkbox [formControl]="whatsapp" zId="activation-whatsapp-input" data-testid="activation-whatsapp">
+      <span i18n>Quero que quem achar {{ pet().name }} possa me chamar no WhatsApp</span>
+    </z-checkbox>
+    @if (variant() === 'link') {
+      <p class="pl-[34px] text-[13px] leading-[1.45] text-muted-foreground" data-testid="activation-whatsapp-notice" i18n>
+        Se você marcar, seu WhatsApp vai aparecer na página de {{ pet().name }} para quem escanear a tag. Você pode mudar depois em O que estranhos veem.
+      </p>
+    } @else {
+      <p class="pl-[34px] text-[13px] leading-[1.45] text-muted-foreground" data-testid="activation-whatsapp-notice" i18n>
+        Seu WhatsApp vai aparecer na página de {{ pet().name }} para quem escanear a tag. Você pode desligar depois em O que estranhos veem.
+      </p>
+    }
+  </div>
+
+  <app-note icon="lock" i18n>Por segurança, a tag é travada por alguns minutos depois de várias tentativas erradas.</app-note>
+
+  <button
+    footer
+    type="submit"
+    [attr.form]="'activation-pin-form'"
+    z-button
+    zSize="lg"
+    class="w-full text-lg"
+    [zLoading]="submitting()"
+    [zDisabled]="!canSubmit()"
+    data-testid="activation-submit"
+    i18n>
+    Ativar tag
+  </button>
+
+  <p footer class="text-center text-sm text-muted-foreground" data-testid="activation-lost-card" i18n>
+    Perdeu o cartão? Fale com o suporte do Faro.
+  </p>
+</app-flow-shell>

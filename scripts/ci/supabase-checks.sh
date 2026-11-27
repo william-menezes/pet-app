@@ -201,10 +201,14 @@ check "OPTIONS devolve 200 ou 204" bash -c 'printf "%s" "$1" | head -1 | grep -q
 echo "== T051 a T053: phone-verify-start e phone-verify-confirm (SMS_DRIVER=log, FARO_ENV=test) =="
 # Valores de teste descartaveis do stack local do CI. O pepper tem 32+ caracteres (exigencia de loadEnv).
 PEPPER="ci-test-pepper-0123456789-0123456789-abcdef"
+# Chave do servidor SSR do app (resolve-tag e register-scan, spec 003): 32+ caracteres, descartavel, so do stack local do CI.
+SSR_KEY="ci-ssr-key-0123456789-0123456789-abcdef"
 LOG_FILE=/tmp/functions-serve.log
 write_env() { # write_env <pepper|-> <FARO_ENV|-> <SMS_DRIVER|->   ("-" omite a variavel)
   {
     echo "HASH_SALT=ci-test-salt-0123456789"
+    echo "FARO_SSR_KEY=$SSR_KEY"
+    echo "EMAIL_DRIVER=log"
     echo "ALLOWED_ORIGINS=http://localhost:4200"
     echo "SITE_URL=http://localhost:4200"
     if [ "$1" != "-" ]; then echo "PHONE_OTP_PEPPER=$1"; fi
@@ -385,6 +389,29 @@ for f in phone-verify-start phone-verify-confirm; do
     bash -c 'printf "%s" "$1" | grep -qi "^access-control-allow-methods: POST, OPTIONS$"' _ "$H"
 done
 
+# CORS da admin-create-batch (spec 003: a tela do admin a chama direto do navegador). O Kong local responde o preflight e poe
+# 'Allow-Origin: *' em tudo; so a funcao poe 'Access-Control-Expose-Headers' (e so para origem da lista). Por isso a prova
+# do CORS da funcao e o Expose na resposta de POST: o tutor B nao e admin (403), entao vale tambem para resposta de erro.
+# (O valor exato do Allow-Origin e a regra da lista tem teste em handler.test.ts e http.test.ts; aqui o Kong o sobrepoe.)
+OC="$(curl -s -o /dev/null -w '%{http_code}' -X OPTIONS "$API_URL/functions/v1/admin-create-batch" -H "Origin: http://localhost:4200" \
+  -H "Access-Control-Request-Method: POST" -H "Access-Control-Request-Headers: authorization,content-type,apikey")"
+check "OPTIONS em admin-create-batch com origem permitida devolve 2xx ($OC)" bash -c 'printf "%s" "$1" | grep -qE "^2"' _ "$OC"
+acb_post() { # acb_post <origem>   (tutor comum: 403)
+  curl -s -i -X POST "$API_URL/functions/v1/admin-create-batch" -H "Origin: $1" -H "apikey: $ANON_KEY" \
+    -H "Authorization: Bearer $TOKEN_B" -H "Content-Type: application/json" -d '{"quantity":1}' | tr -d '\r'
+}
+H_OK="$(acb_post http://localhost:4200)"
+H_BAD="$(acb_post https://evil.example)"
+echo "POST em admin-create-batch, origem permitida:"; printf '%s\n' "$H_OK" | grep -iE '^(HTTP/|access-control-|vary:)' || true
+echo "POST em admin-create-batch, origem fora da lista:"; printf '%s\n' "$H_BAD" | grep -iE '^(HTTP/|access-control-|vary:)' || true
+check "tutor comum em admin-create-batch: 403 (CORS nao autoriza)" bash -c 'printf "%s" "$1" | head -1 | grep -q " 403"' _ "$H_OK"
+check "origem permitida: a funcao expoe X-Batch-Id e Content-Disposition" \
+  bash -c 'printf "%s" "$1" | grep -qi "^access-control-expose-headers: X-Batch-Id, Content-Disposition$"' _ "$H_OK"
+check "origem fora da lista: a funcao nao expoe nada (sem Expose)" \
+  bash -c '! printf "%s" "$1" | grep -qi "^access-control-expose-headers:"' _ "$H_BAD"
+check "origem fora da lista: Allow-Origin nunca e a origem recusada" \
+  bash -c '! printf "%s" "$1" | grep -qi "^access-control-allow-origin: https://evil.example"' _ "$H_BAD"
+
 # Tabela "Falha fechada" de quickstart.md §6. Cada linha reinicia o functions serve com o ambiente alterado.
 if restart_serve - test log; then
   R="$(fn phone-verify-start '{"phone":"(31) 97777-6666"}')"; C="$(fn_code phone-verify-start '{"phone":"(31) 97777-6666"}')"
@@ -535,31 +562,41 @@ check "o token antigo deixa de valer (401)" test "$(fn_code account-delete '{"co
 SU="$(signup "$D1_EMAIL" "$DEL_PASS")"
 check "o mesmo e-mail consegue se cadastrar de novo (200)" test "$(http_code "$SU")" = "200"
 
-# Segunda conta: com fotos no bucket pet-photos sob <uid>/. O CLI do CI nao traz a spec 003, entao o bucket e criado aqui.
+# Segunda conta: com fotos no bucket pet-photos sob <uid>/. A migration 0032 ja cria o bucket (com os limites da 0035); a chamada abaixo e idempotente e so cobre um banco sem a spec 003.
 curl -s -o /dev/null -X POST "$API_URL/storage/v1/bucket" -H "apikey: $SERVICE_KEY" -H "Authorization: Bearer $SERVICE_KEY" \
   -H "Content-Type: application/json" -d '{"id":"pet-photos","name":"pet-photos","public":false}' || true
 mk_del_user D2_EMAIL D2_ID D2_TOKEN
 check "usuario de exclusao 2 criado e autenticado" test -n "$D2_ID" -a -n "$D2_TOKEN"
-for f in foto-1.txt foto-2.txt; do
+for f in foto-1.png foto-2.png; do
   curl -s -o /dev/null -X POST "$API_URL/storage/v1/object/pet-photos/$D2_ID/$f" -H "apikey: $SERVICE_KEY" \
-    -H "Authorization: Bearer $SERVICE_KEY" -H "Content-Type: text/plain" --data-binary 'x'
+    -H "Authorization: Bearer $SERVICE_KEY" -H "Content-Type: image/png" --data-binary 'x'
 done
-curl -s -o /dev/null -X POST "$API_URL/storage/v1/object/pet-photos/$D2_ID/pasta/foto-3.txt" -H "apikey: $SERVICE_KEY" \
-  -H "Authorization: Bearer $SERVICE_KEY" -H "Content-Type: text/plain" --data-binary 'x'
+curl -s -o /dev/null -X POST "$API_URL/storage/v1/object/pet-photos/$D2_ID/pasta/foto-3.png" -H "apikey: $SERVICE_KEY" \
+  -H "Authorization: Bearer $SERVICE_KEY" -H "Content-Type: image/png" --data-binary 'x'
 OTHER_ID="00000000-0000-0000-0000-00000000aaaa"
-curl -s -o /dev/null -X POST "$API_URL/storage/v1/object/pet-photos/$OTHER_ID/de-outro.txt" -H "apikey: $SERVICE_KEY" \
-  -H "Authorization: Bearer $SERVICE_KEY" -H "Content-Type: text/plain" --data-binary 'x'
+curl -s -o /dev/null -X POST "$API_URL/storage/v1/object/pet-photos/$OTHER_ID/de-outro.png" -H "apikey: $SERVICE_KEY" \
+  -H "Authorization: Bearer $SERVICE_KEY" -H "Content-Type: image/png" --data-binary 'x'
+# Limites do bucket (spec 003, contrato de endurecimento secao 4, migration 0035): 5 MB e so jpeg, png e webp.
+BAD_TYPE="$(curl -s -o /dev/null -w '%{http_code}' -X POST "$API_URL/storage/v1/object/pet-photos/$D2_ID/tipo-errado.txt" \
+  -H "apikey: $SERVICE_KEY" -H "Authorization: Bearer $SERVICE_KEY" -H "Content-Type: text/plain" --data-binary 'x')"
+check "bucket pet-photos recusa tipo fora de jpeg/png/webp (4xx)" bash -c '[ "$1" -ge 400 ] && [ "$1" -lt 500 ]' _ "$BAD_TYPE"
+BIG_FILE="$(mktemp)"
+head -c 6291456 /dev/zero > "$BIG_FILE"
+BAD_SIZE="$(curl -s -o /dev/null -w '%{http_code}' -X POST "$API_URL/storage/v1/object/pet-photos/$D2_ID/grande.png" \
+  -H "apikey: $SERVICE_KEY" -H "Authorization: Bearer $SERVICE_KEY" -H "Content-Type: image/png" --data-binary "@$BIG_FILE")"
+rm -f "$BIG_FILE"
+check "bucket pet-photos recusa arquivo de 6 MB (4xx)" bash -c '[ "$1" -ge 400 ] && [ "$1" -lt 500 ]' _ "$BAD_SIZE"
 storage_list() { # storage_list <prefixo>
   curl -s -X POST "$API_URL/storage/v1/object/list/pet-photos" -H "apikey: $SERVICE_KEY" -H "Authorization: Bearer $SERVICE_KEY" \
     -H "Content-Type: application/json" -d "{\"prefix\":\"$1\",\"limit\":100,\"offset\":0}"
 }
-check "as fotos da conta 2 existem antes da exclusao" has "$(storage_list "$D2_ID")" 'foto-1.txt'
+check "as fotos da conta 2 existem antes da exclusao" has "$(storage_list "$D2_ID")" 'foto-1.png'
 R="$(fn account-delete '{"confirm":"EXCLUIR","password":"SenhaDeTeste12345"}' "$D2_TOKEN")"
 echo "exclusao 2: $R"
 check "conta com fotos: { ok: true }" has "$R" '{"ok":true}'
 check "as fotos da conta (e da subpasta) foram removidas" bash -c '! printf "%s" "$1" | grep -q "foto-"' _ "$(storage_list "$D2_ID")"
 check "a foto da subpasta tambem sumiu" bash -c '! printf "%s" "$1" | grep -q "foto-3"' _ "$(storage_list "$D2_ID/pasta")"
-check "a foto de OUTRA conta nao foi tocada" has "$(storage_list "$OTHER_ID")" 'de-outro.txt'
+check "a foto de OUTRA conta nao foi tocada" has "$(storage_list "$OTHER_ID")" 'de-outro.png'
 check "o usuario 2 sumiu de auth.users" test "$(admin_user_status "$D2_ID")" = "404"
 
 for f in password-recovery account-delete; do
@@ -649,6 +686,297 @@ GQ="$(curl -s -o /dev/null -w '%{http_code}' -X POST "$API_URL/graphql/v1" -H "a
   -H "Authorization: Bearer $ANON_KEY" -H "Content-Type: application/json" -d '{"query":"{__typename}"}')"
 echo "GraphQL: HTTP $GQ"
 check "o endpoint GraphQL nao responde 200" bash -c '[ "$1" != "200" ]' _ "$GQ"
+
+echo "== Spec 003 (T012 a T020): tabelas e funcoes de tag pela API, e o seed das tags =="
+anon_code() { # anon_code <caminho REST>  -> codigo HTTP de um GET com a chave anonima
+  curl -s -o /dev/null -w '%{http_code}' "$API_URL/rest/v1/$1" -H "apikey: $ANON_KEY" -H "Authorization: Bearer $ANON_KEY"
+}
+for T in pets rescue_profiles tag_batches tag_codes tag_assignments tag_pin_attempts pending_activations rate_limits scan_events tag_replacement_requests audit_log my_scans; do
+  TC="$(anon_code "$T?select=*&limit=1")"
+  check "anon lendo $T recebe 401 ou 403 (sem privilegio) [$TC]" bash -c '[ "$1" = "401" ] || [ "$1" = "403" ]' _ "$TC"
+done
+for F in end_assignments_for_account export_tutor_tag_data; do
+  FC="$(curl -s -o /dev/null -w '%{http_code}' -X POST "$API_URL/rest/v1/rpc/$F" -H "apikey: $ANON_KEY" \
+    -H "Authorization: Bearer $ANON_KEY" -H "Content-Type: application/json" -d '{"p_tutor":"00000000-0000-0000-0000-000000000001"}')"
+  check "anon chamando $F recebe 401 ou 403 [$FC]" bash -c '[ "$1" = "401" ] || [ "$1" = "403" ]' _ "$FC"
+done
+SEED_JSON="e2e/fixtures/seed-codes.json"
+seed_code() { sed -n "s/^  \"$1\": \"\([0-9A-Z]*\)\".*/\1/p" "$SEED_JSON" | head -1; }
+seed_status_is() { # seed_status_is <chave do JSON> <status esperado>: o codigo do JSON esta no banco com esse status
+  local code; code="$(seed_code "$1")"
+  [ -n "$code" ] && curl -s "$API_URL/rest/v1/tag_codes?code=eq.$code&select=status" \
+    -H "apikey: $SERVICE_KEY" -H "Authorization: Bearer $SERVICE_KEY" | grep -q "\"status\":\"$2\""
+}
+check "seed: $SEED_JSON existe e traz os codigos" test -s "$SEED_JSON"
+check "seed: o codigo 'assigned' do JSON esta no banco como assigned" seed_status_is assigned assigned
+check "seed: o codigo 'available' do JSON esta no banco como available" seed_status_is available available
+check "seed: o codigo 'available2' do JSON esta no banco como available" seed_status_is available2 available
+check "seed: o codigo 'available3' do JSON esta no banco como available" seed_status_is available3 available
+check "seed: o codigo 'blocked' do JSON esta no banco como blocked" seed_status_is blocked blocked
+check "seed: o codigo 'void' do JSON esta no banco como void" seed_status_is void void
+SEED_COUNT="$(curl -s -o /dev/null -D - "$API_URL/rest/v1/tag_codes?select=code" -H "apikey: $SERVICE_KEY" -H "Authorization: Bearer $SERVICE_KEY" \
+  -H "Prefer: count=exact" -H "Range: 0-0" | tr -d '\r' | sed -n 's/^[Cc]ontent-[Rr]ange: .*\///p')"
+check "seed: select count(*) from tag_codes devolve 6 [$SEED_COUNT]" test "$SEED_COUNT" = "6"
+# PINs DE DESENVOLVIMENTO (decisao de 2026-11-22): as tres tags available do seed (codigos sinteticos do lote-900, so em banco
+# local ou de CI) tem PIN fixo em `devPins`. Nenhum PIN de tag real entra aqui, e nenhuma outra tag do seed tem PIN no JSON.
+seed_pin() { sed -n "s/^    \"$1\": \"\([0-9A-Z]\{6\}\)\".*/\1/p" "$SEED_JSON" | head -1; }
+seed_display() { sed -n "s/^    \"$1\": \"\([0-9A-Z]\{4\}-[0-9A-Z]\{4\}-[0-9A-Z]\)\".*/\1/p" "$SEED_JSON" | head -1; }
+for K in available available2 available3; do
+  check "seed: devPins.$K e um PIN de 6 caracteres do alfabeto Crockford" test -n "$(seed_pin "$K")"
+done
+check "seed: so as tres tags available tem PIN no JSON (nenhum para assigned, blocked ou void)" \
+  bash -c '[ "$(grep -c "\"[0-9A-Z]\{6\}\"" "$1")" = "3" ]' _ "$SEED_JSON"
+check "seed: o JSON nao tem campo activation_pin" bash -c '! grep -qi "activation_pin" "$1"' _ "$SEED_JSON"
+# Os codigos do lote-900 e os PINs de desenvolvimento so podem aparecer em seed.sql, e2e/fixtures/ e nos testes. O codigo
+# 7K3M-Q9XA-C (vetor sintetico do contrato) e documentado em todo lugar e fica de fora desta verificacao.
+LEAK_PAT="$(mktemp)"
+for K in available available2 available3 blocked void; do
+  seed_code "$K"; seed_display "$K"
+done | grep . > "$LEAK_PAT"
+for K in available available2 available3; do seed_pin "$K"; done >> "$LEAK_PAT"
+check "seed: a lista de padroes do lote-900 tem 13 entradas (5 codigos, 5 formas de exibicao e 3 PINs)" test "$(wc -l < "$LEAK_PAT")" = "13"
+LEAK_HITS="$(git grep -n -i -F -f "$LEAK_PAT" -- . ':(exclude)supabase/seed.sql' ':(exclude)e2e' ':(exclude)supabase/tests' ':(exclude)*.test.ts' ':(exclude)*.spec.ts' | cut -d: -f1,2 || true)"
+echo "arquivos com codigo do lote-900 ou PIN de desenvolvimento fora do permitido: ${LEAK_HITS:-nenhum}"
+check "seed: nenhum codigo do lote-900 nem PIN de desenvolvimento fora de supabase/seed.sql, e2e/ e dos testes" test -z "$LEAK_HITS"
+rm -f "$LEAK_PAT"
+
+echo "== Spec 003 (T026, T027, T038, T050, T051): resolve-tag, register-scan e ativacao pela API =="
+# O servidor SSR NAO tem chave do Supabase: so a chave `x-faro-ssr-key`. As chamadas abaixo mandam tambem apikey/Authorization
+# (o gateway local aceita), mas a autorizacao de verdade e a chave do servidor.
+check "config.toml declara verify_jwt = false para resolve-tag" bash -c 'grep -A1 "^\[functions.resolve-tag\]" supabase/config.toml | grep -q "verify_jwt = false"'
+check "config.toml declara verify_jwt = false para register-scan" bash -c 'grep -A1 "^\[functions.register-scan\]" supabase/config.toml | grep -q "verify_jwt = false"'
+ssr_call() { # ssr_call <funcao> <json>   (corpo da resposta, com a chave do servidor)
+  curl -s -X POST "$API_URL/functions/v1/$1" -H "apikey: $ANON_KEY" -H "Authorization: Bearer $ANON_KEY" \
+    -H "Content-Type: application/json" -H "x-faro-ssr-key: $SSR_KEY" -d "$2"
+}
+ssr_head() { # ssr_head <funcao> <json>   (so os cabecalhos que precisam ser identicos)
+  curl -s -D - -o /dev/null -X POST "$API_URL/functions/v1/$1" -H "apikey: $ANON_KEY" -H "Authorization: Bearer $ANON_KEY" \
+    -H "Content-Type: application/json" -H "x-faro-ssr-key: $SSR_KEY" -d "$2" | tr -d '\r' \
+    | grep -iE '^(content-type|cache-control|content-length):' | tr 'A-Z' 'a-z' | sort
+}
+CODE_AS="$(seed_code assigned)"; CODE_AV="$(seed_code available)"; CODE_AV2="$(seed_code available2)"; CODE_AV3="$(seed_code available3)"
+CODE_BL="$(seed_code blocked)"; CODE_VD="$(seed_code void)"
+PIN_AV2="$(seed_pin available2)"; PIN_AV3="$(seed_pin available3)"
+NONEXISTENT="H8ZWE5XGH" # vetor sintetico valido (digito correto) que nao esta no seed
+
+RESOLVE_UP=0
+for _ in $(seq 1 40); do
+  R="$(ssr_call resolve-tag "{\"code\":\"$CODE_AV\",\"ip_hash\":\"ci-warm\"}" || true)"
+  if has "$R" '"state"'; then RESOLVE_UP=1; break; fi
+  sleep 2
+done
+check "resolve-tag responde com a chave do servidor" test "$RESOLVE_UP" = "1"
+if [ "$RESOLVE_UP" != "1" ]; then echo "ultima resposta do resolve-tag: $(printf '%s' "$R" | cut -c1-200)"; fi
+
+C="$(curl -s -o /tmp/resolve-nokey.out -w '%{http_code}' -X POST "$API_URL/functions/v1/resolve-tag" -H "apikey: $ANON_KEY" -H "Authorization: Bearer $ANON_KEY" \
+  -H "Content-Type: application/json" -d "{\"code\":\"$CODE_AS\",\"ip_hash\":\"x\"}")"
+check "resolve-tag sem a chave do servidor: 401 com corpo vazio ($C)" bash -c '[ "$1" = "401" ] && [ ! -s /tmp/resolve-nokey.out ]' _ "$C"
+C="$(curl -s -o /tmp/resolve-badkey.out -w '%{http_code}' -X POST "$API_URL/functions/v1/resolve-tag" -H "apikey: $ANON_KEY" -H "Authorization: Bearer $ANON_KEY" \
+  -H "Content-Type: application/json" -H "x-faro-ssr-key: chave-errada-0123456789-0123456789-abcdef" -d "{\"code\":\"$CODE_AS\",\"ip_hash\":\"x\"}")"
+check "resolve-tag com chave errada: 401 com corpo vazio ($C)" bash -c '[ "$1" = "401" ] && [ ! -s /tmp/resolve-badkey.out ]' _ "$C"
+# Diagnostico (nao reprova): o servidor SSR real chama SEM apikey/Authorization; confere se o gateway local deixa passar.
+C="$(curl -s -o /dev/null -w '%{http_code}' -X POST "$API_URL/functions/v1/resolve-tag" -H "Content-Type: application/json" -H "x-faro-ssr-key: $SSR_KEY" -d "{\"code\":\"$CODE_AV\",\"ip_hash\":\"ci-sem-apikey\"}")"
+echo "diagnostico: resolve-tag so com x-faro-ssr-key (sem apikey nem Authorization): HTTP $C"
+
+RA="$(ssr_call resolve-tag "{\"code\":\"$CODE_AS\",\"ip_hash\":\"ci-resolve-1\"}")"
+check "resolve-tag (tag vinculada do seed): state assigned com o nome do pet" bash -c 'printf "%s" "$1" | grep -q "\"state\":\"assigned\"" && printf "%s" "$1" | grep -qF "Paçoca"' _ "$RA"
+check "resolve-tag: devolve o primeiro nome (\"Tutor\", de \"Tutor A Teste\") e o link do WhatsApp liberados pela tutora do seed" bash -c 'printf "%s" "$1" | grep -qF "\"tutor_first_name\":\"Tutor\"" && printf "%s" "$1" | grep -qF "\"whatsapp_url\":\"https://wa.me/5511900000001?text="' _ "$RA"
+check "resolve-tag: o codigo sai no formato XXXX-XXXX-X" has "$RA" "\"code\":\"$(seed_display assigned)\""
+check "resolve-tag: nenhum identificador interno, ip_hash, hash de PIN nem photo_path" \
+  bash -c '! printf "%s" "$1" | grep -qiE "tutor_id|pet_id|assignment|ip_hash|activation_pin|photo_path|00000000-0000"' _ "$RA"
+check "resolve-tag: o telefone nao liberado (show_phone desligado) nao aparece" bash -c '! printf "%s" "$1" | grep -q "phone_display"' _ "$RA"
+RV="$(ssr_call resolve-tag "{\"code\":\"$CODE_AV\",\"ip_hash\":\"ci-resolve-2\"}")"
+check "resolve-tag (tag disponivel do seed): state available com o codigo formatado" test "$RV" = "{\"state\":\"available\",\"code\":\"$(seed_display available)\"}"
+B_BL="$(ssr_call resolve-tag "{\"code\":\"$CODE_BL\",\"ip_hash\":\"ci-resolve-3\"}")"
+B_VD="$(ssr_call resolve-tag "{\"code\":\"$CODE_VD\",\"ip_hash\":\"ci-resolve-4\"}")"
+B_NX="$(ssr_call resolve-tag "{\"code\":\"$NONEXISTENT\",\"ip_hash\":\"ci-resolve-5\"}")"
+B_BAD="$(ssr_call resolve-tag "{\"code\":\"7K3MQ9XAD\",\"ip_hash\":\"ci-inv-ip\"}")"
+check "anti-enumeracao: bloqueado, anulado, inexistente e digito invalido dao o mesmo corpo (not_found)" \
+  test "$B_BL" = '{"state":"not_found"}' -a "$B_VD" = '{"state":"not_found"}' -a "$B_NX" = '{"state":"not_found"}' -a "$B_BAD" = '{"state":"not_found"}'
+H_BL="$(ssr_head resolve-tag "{\"code\":\"$CODE_BL\",\"ip_hash\":\"ci-resolve-6\"}")"
+H_VD="$(ssr_head resolve-tag "{\"code\":\"$CODE_VD\",\"ip_hash\":\"ci-resolve-7\"}")"
+H_NX="$(ssr_head resolve-tag "{\"code\":\"$NONEXISTENT\",\"ip_hash\":\"ci-resolve-8\"}")"
+echo "cabecalhos do not_found: $(printf '%s' "$H_NX" | tr '\n' ' ')"
+check "anti-enumeracao: bloqueado, anulado e inexistente dao os mesmos cabecalhos" test -n "$H_BL" -a "$H_BL" = "$H_VD" -a "$H_VD" = "$H_NX"
+check "resolve-tag responde sem cache (Cache-Control: no-store)" has "$H_NX" 'cache-control: no-store'
+T_NX="$(curl -s -o /dev/null -w '%{time_total}' -X POST "$API_URL/functions/v1/resolve-tag" -H "apikey: $ANON_KEY" -H "Authorization: Bearer $ANON_KEY" \
+  -H "Content-Type: application/json" -H "x-faro-ssr-key: $SSR_KEY" -d "{\"code\":\"$NONEXISTENT\",\"ip_hash\":\"ci-resolve-9\"}")"
+check "resolve-tag: not_found respeita o piso de 150 ms ($T_NX s)" awk -v t="$T_NX" 'BEGIN { exit !(t >= 0.15) }'
+check "digito invalido nao toca o banco: nenhuma linha de limite para o ip_hash dele" test "$(rest GET 'rate_limits?key=eq.ci-inv-ip&select=key')" = "[]"
+RL_AT=0
+for i in $(seq 1 70); do
+  R="$(ssr_call resolve-tag "{\"code\":\"$CODE_AS\",\"ip_hash\":\"ci-flood-resolve\"}")"
+  if has "$R" '"state":"rate_limited"'; then RL_AT="$i"; break; fi
+done
+echo "resolve-tag: rate_limited apareceu na chamada $RL_AT do mesmo ip_hash (esperado 31, ou ate 61 se a janela de 1 minuto virou no meio)"
+check "resolve-tag: o limite por ip_hash (30 por minuto) e aplicado" bash -c '[ "$1" -ge 2 ] && [ "$1" -le 61 ]' _ "$RL_AT"
+
+# --- register-scan ---
+C="$(curl -s -o /tmp/scan-nokey.out -w '%{http_code}' -X POST "$API_URL/functions/v1/register-scan" -H "apikey: $ANON_KEY" -H "Authorization: Bearer $ANON_KEY" \
+  -H "Content-Type: application/json" -d "{\"code\":\"$CODE_AS\",\"ip_hash\":\"ci-scan-nokey\"}")"
+check "register-scan sem a chave do servidor: 401 com corpo vazio ($C)" bash -c '[ "$1" = "401" ] && [ ! -s /tmp/scan-nokey.out ]' _ "$C"
+check "register-scan sem a chave nao gravou scan" test "$(rest GET 'scan_events?ip_hash=eq.ci-scan-nokey&select=id')" = "[]"
+
+RS1="$(ssr_call register-scan "{\"code\":\"$CODE_AS\",\"ip_hash\":\"ci-scan-1\"}")"
+check "register-scan: scan novo responde owner false com scan_token" bash -c 'printf "%s" "$1" | grep -q "\"owner\":false" && printf "%s" "$1" | grep -qE "\"scan_token\":\"[0-9a-f]{64}\""' _ "$RS1"
+check "register-scan: a resposta nao traz scan_id, e-mail nem notify" bash -c '! printf "%s" "$1" | grep -qE "scan_id|notify|@faro.test"' _ "$RS1"
+SCAN_ROW="$(rest GET 'scan_events?ip_hash=eq.ci-scan-1&select=status_at_scan,geo_method,notify_attempts,assignment_id')"
+check "register-scan: o scan foi gravado (assigned, sem geo, com vinculo)" bash -c 'printf "%s" "$1" | grep -q "\"status_at_scan\":\"assigned\"" && printf "%s" "$1" | grep -q "\"geo_method\":\"none\"" && printf "%s" "$1" | grep -q "00000000-0000-0000-0000-0000000b0001"' _ "$SCAN_ROW"
+NOTIFIED=0
+for _ in $(seq 1 15); do
+  if has "$(rest GET 'scan_events?ip_hash=eq.ci-scan-1&select=notified_at')" '"notified_at":"20'; then NOTIFIED=1; break; fi
+  sleep 1
+done
+check "register-scan: o aviso saiu fora do caminho da resposta (driver de teste) e notified_at foi gravado" test "$NOTIFIED" = "1"
+check "register-scan: o aviso saiu no driver log (so o assunto)" bash -c 'grep -qF "[email:log] assunto=A tag do Paçoca foi escaneada" "$1"' _ "$LOG_FILE"
+RS2="$(ssr_call register-scan "{\"code\":\"$CODE_AS\",\"ip_hash\":\"ci-scan-1\"}")"
+check "register-scan: o mesmo codigo e origem em seguida e duplicado (devolve token novo)" has "$RS2" '"scan_token"'
+check "register-scan: duplicado nao cria outra linha" test "$(rest GET 'scan_events?ip_hash=eq.ci-scan-1&select=id' | grep -o '"id"' | wc -l)" = "1"
+TOKEN_SCAN="$(printf '%s' "$RS2" | grep -oE '"scan_token":"[0-9a-f]{64}"' | cut -d'"' -f4)"
+# Endurecimento (T103, contrato secao 3): scan_ip_min = 20 por minuto por ip_hash. Do 21o em diante: 200 sem efeito (o duplicado
+# normal devolve um scan_token novo; o limitado devolve so {"owner":false}, e nenhum aviso sai).
+# A janela e fixa (minuto cheio): comeca nos 30 primeiros segundos do minuto para as 21 chamadas cairem na mesma janela.
+while [ "$(date +%S)" -ge 30 ]; do sleep 1; done
+RS_LAST=""
+for i in $(seq 1 20); do RS_LAST="$(ssr_call register-scan "{\"code\":\"$CODE_AS\",\"ip_hash\":\"ci-scan-flood\"}")"; done
+check "scan_ip_min: a 20a chamada do mesmo ip_hash ainda e atendida (traz scan_token)" has "$RS_LAST" '"scan_token"'
+RS_21="$(ssr_call register-scan "{\"code\":\"$CODE_AS\",\"ip_hash\":\"ci-scan-flood\"}")"
+check "scan_ip_min: a 21a chamada em um minuto devolve 200 sem efeito ({\"owner\":false}, sem scan_token)" test "$RS_21" = '{"owner":false}'
+check "scan_ip_min: o limite nao criou linha de scan a mais (1 scan para o ip_hash)" test "$(rest GET 'scan_events?ip_hash=eq.ci-scan-flood&select=id' | grep -o '"id"' | wc -l)" = "1"
+check "scan_ip_min: o contador do banco chegou a 21" has "$(rest GET 'rate_limits?scope=eq.scan_ip_min&key=eq.ci-scan-flood&select=count')" '"count":21'
+RS3="$(ssr_call register-scan "{\"code\":\"$CODE_AS\",\"ip_hash\":\"ci-scan-geo\",\"geo\":{\"lat\":-23.5505,\"lng\":-46.6333,\"city\":\"São Paulo\",\"region\":\"SP\"}}")"
+check "register-scan: com coordenadas do cabecalho grava metodo ip com margem de 3000 m" \
+  bash -c 'printf "%s" "$1" | grep -q "\"geo_method\":\"ip\"" && printf "%s" "$1" | grep -q "\"accuracy_m\":3000"' _ "$(rest GET 'scan_events?ip_hash=eq.ci-scan-geo&select=geo_method,accuracy_m,city')"
+RS4="$(ssr_call register-scan "{\"code\":\"$CODE_AV\",\"ip_hash\":\"ci-scan-av\"}")"
+RS5="$(ssr_call register-scan "{\"code\":\"$CODE_BL\",\"ip_hash\":\"ci-scan-bl\"}")"
+RS6="$(ssr_call register-scan "{\"code\":\"$CODE_VD\",\"ip_hash\":\"ci-scan-vd\"}")"
+SCAN_Q="$(rest GET 'scan_events?ip_hash=in.(ci-scan-av,ci-scan-bl,ci-scan-vd)&select=status_at_scan,assignment_id,notified_at,notify_attempts')"
+check "register-scan: tag disponivel, bloqueada e anulada gravam para a fila do admin (sem vinculo, sem aviso)" \
+  bash -c 'for s in available blocked void; do printf "%s" "$1" | grep -q "\"status_at_scan\":\"$s\"" || exit 1; done; ! printf "%s" "$1" | grep -q "\"notified_at\":\"" && ! printf "%s" "$1" | grep -q "\"notify_attempts\":[1-9]"' _ "$SCAN_Q"
+RS7="$(ssr_call register-scan "{\"code\":\"7K3MQ9XAD\",\"ip_hash\":\"ci-scan-inv\"}")"
+check "register-scan: codigo com digito invalido responde owner false e nao grava" bash -c '[ "$1" = "{\"owner\":false}" ]' _ "$RS7"
+check "register-scan: o codigo invalido nao gravou scan" test "$(rest GET 'scan_events?ip_hash=eq.ci-scan-inv&select=id')" = "[]"
+# Localizacao precisa pelo token (uso unico) e aviso de localizacao.
+LOC_BODY="{\"action\":\"location\",\"scan_token\":\"$TOKEN_SCAN\",\"lat\":-23.5614,\"lng\":-46.6559,\"accuracy_m\":12}"
+RL1="$(ssr_call register-scan "$LOC_BODY")"
+check "register-scan (location): token valido atualiza o scan" test "$RL1" = '{"updated":true}'
+check "register-scan (location): o scan passou a gps com as coordenadas e a margem" \
+  bash -c 'printf "%s" "$1" | grep -q "\"geo_method\":\"gps\"" && printf "%s" "$1" | grep -q "\"accuracy_m\":12"' _ "$(rest GET 'scan_events?ip_hash=eq.ci-scan-1&select=geo_method,accuracy_m,lat,lng')"
+RL2="$(ssr_call register-scan "$LOC_BODY")"
+check "register-scan (location): o token e de uso unico (a segunda vez nao tem efeito)" test "$RL2" = '{"updated":false}'
+LOC_MAIL=0
+for _ in $(seq 1 15); do
+  if grep -qF "[email:log] assunto=Quem achou o Paçoca enviou a localização" "$LOG_FILE"; then LOC_MAIL=1; break; fi
+  sleep 1
+done
+check "register-scan (location): o aviso de localizacao saiu (driver log)" test "$LOC_MAIL" = "1"
+RL3="$(ssr_call register-scan '{"action":"location","scan_token":"0000000000000000000000000000000000000000000000000000000000000000","lat":-23.5,"lng":-46.6,"accuracy_m":10}')"
+check "register-scan (location): token inventado: 200 sem efeito" test "$RL3" = '{"updated":false}'
+# Dono logado: nada gravado, nenhum aviso.
+OWNER_LOGIN="$(curl -s -X POST "$API_URL/auth/v1/token?grant_type=password" -H "apikey: $ANON_KEY" -H "Content-Type: application/json" \
+  -d '{"email":"tutor.a@faro.test","password":"TesteSenha123!"}')"
+OWNER_TOKEN="$(printf '%s' "$OWNER_LOGIN" | grep -oE '"access_token":"[^"]+"' | head -1 | cut -d'"' -f4)"
+check "login da Ana (dona do Paçoca no seed)" test -n "$OWNER_TOKEN"
+RS8="$(ssr_call register-scan "{\"code\":\"$CODE_AS\",\"ip_hash\":\"ci-scan-owner\",\"user_jwt\":\"$OWNER_TOKEN\"}")"
+check "register-scan: o dono logado recebe owner true" test "$RS8" = '{"owner":true}'
+check "register-scan: o dono logado nao gera scan" test "$(rest GET 'scan_events?ip_hash=eq.ci-scan-owner&select=id')" = "[]"
+RS9="$(ssr_call register-scan "{\"code\":\"$CODE_AS\",\"ip_hash\":\"ci-scan-badjwt\",\"user_jwt\":\"token-invalido\"}")"
+check "register-scan: JWT invalido nao e dono (o scan e gravado)" has "$RS9" '"owner":false'
+RR="$(ssr_call register-scan '{"action":"resend"}')"
+check "register-scan (resend): responde {sent, failed} sem erro" bash -c 'printf "%s" "$1" | grep -qE "^\{\"sent\":[0-9]+,\"failed\":[0-9]+\}$"' _ "$RR"
+rest DELETE 'scan_events?ip_hash=like.ci-scan-*' > /dev/null
+rest DELETE 'scan_events?ip_hash=like.ci-resolve-*' > /dev/null
+check "limpeza: os scans de teste do CI foram removidos (o seed volta a ter so os 3 do Paçoca)" \
+  test "$(rest GET 'scan_events?select=id' | grep -o '"id"' | wc -l)" = "3"
+
+# --- activate_tag pela API: o PIN de desenvolvimento do seed, o contador que sobrevive ao erro e a corrida ---
+act_a() { # act_a <json do corpo>  (RPC activate_tag como a Ana)
+  curl -s -X POST "$API_URL/rest/v1/rpc/activate_tag" -H "apikey: $ANON_KEY" -H "Authorization: Bearer $OWNER_TOKEN" \
+    -H "Content-Type: application/json" -d "$1"
+}
+MEL_ID="00000000-0000-0000-0000-0000000a0002"
+AC="$(curl -s -o /dev/null -w '%{http_code}' -X POST "$API_URL/rest/v1/rpc/activate_tag" -H "apikey: $ANON_KEY" -H "Authorization: Bearer $ANON_KEY" \
+  -H "Content-Type: application/json" -d "{\"p_code\":\"$CODE_AV3\",\"p_pin\":\"$PIN_AV3\",\"p_pet_id\":\"$MEL_ID\"}")"
+check "anon chamando activate_tag recebe 401 ou 403 [$AC]" bash -c '[ "$1" = "401" ] || [ "$1" = "403" ]' _ "$AC"
+R="$(act_a "{\"p_code\":\"$CODE_AV2\",\"p_pin\":\"000000\",\"p_pet_id\":\"$MEL_ID\"}")"
+check "activate_tag: PIN errado devolve {ok:false, error:wrong_pin} (sem excecao)" has "$R" '"error": "wrong_pin"'
+check "activate_tag: depois do wrong_pin a tentativa FICOU gravada (a contagem sobrevive ao retorno)" \
+  has "$(rest GET "tag_pin_attempts?tag_code=eq.$CODE_AV2&select=fail_count")" '"fail_count":1'
+R="$(act_a "{\"p_code\":\"$CODE_AV2\",\"p_pin\":\"$PIN_AV2\",\"p_pet_id\":\"00000000-0000-0000-0000-0000000a0099\"}")"
+check "activate_tag: pet que nao e da conta: pet_not_found (antes do PIN)" has "$R" '"error": "pet_not_found"'
+R="$(act_a "{\"p_code\":\"$NONEXISTENT\",\"p_pin\":\"$PIN_AV2\",\"p_pet_id\":\"$MEL_ID\"}")"
+check "activate_tag: codigo inexistente: tag_unavailable" has "$R" '"error": "tag_unavailable"'
+R="$(act_a "{\"p_code\":\"$CODE_BL\",\"p_pin\":\"$PIN_AV2\",\"p_pet_id\":\"$MEL_ID\"}")"
+check "activate_tag: tag bloqueada: a mesma resposta (tag_unavailable)" has "$R" '"error": "tag_unavailable"'
+
+# Corrida: quatro ativacoes simultaneas da MESMA tag com o PIN certo: exatamente uma vence.
+RACE_BODY="{\"p_code\":\"$CODE_AV3\",\"p_pin\":\"$PIN_AV3\",\"p_pet_id\":\"$MEL_ID\"}"
+rm -f /tmp/race-*.out
+RACE_PIDS=()
+for i in 1 2 3 4; do
+  act_a "$RACE_BODY" > "/tmp/race-$i.out" &
+  RACE_PIDS+=("$!")
+done
+wait "${RACE_PIDS[@]}"
+RACE_ALL="$(for i in 1 2 3 4; do cat "/tmp/race-$i.out"; echo; done)"
+RACE_OK="$(printf '%s\n' "$RACE_ALL" | grep -cE '"ok": ?true' || true)"
+RACE_UNAV="$(printf '%s\n' "$RACE_ALL" | grep -c '"error": "tag_unavailable"' || true)"
+echo "corrida de 4 ativacoes: $RACE_OK com sucesso, $RACE_UNAV tag_unavailable"
+check "corrida: exatamente UMA das 4 ativacoes simultaneas vence" test "$RACE_OK" = "1"
+check "corrida: as outras 3 recebem tag_unavailable" test "$RACE_UNAV" = "3"
+check "corrida: a tag tem um unico vinculo ativo" test "$(rest GET "tag_assignments?tag_code=eq.$CODE_AV3&ended_at=is.null&select=id" | grep -o '"id"' | wc -l)" = "1"
+check "corrida: a tag ficou assigned" seed_status_is available3 assigned
+R="$(act_a "{\"p_code\":\"$CODE_AV2\",\"p_pin\":\"$PIN_AV2\",\"p_pet_id\":\"$MEL_ID\"}")"
+check "activate_tag: o PIN de desenvolvimento do segundo codigo confere (a Mel ja tem tag: pet_has_tag, depois do PIN)" has "$R" '"error": "pet_has_tag"'
+# Limpeza: devolve o seed ao estado de antes (vinculo da Mel encerrado, tag available, tentativas zeradas).
+# +1 minuto: ended_at tem de ser >= started_at, que tem fracao de segundo (a data com segundos inteiros podia ficar antes dele).
+NOW_ISO="$(date -u -d "+1 minute" +%Y-%m-%dT%H:%M:%SZ)"
+rest PATCH "tag_assignments?tag_code=eq.$CODE_AV3&ended_at=is.null" "{\"ended_at\":\"$NOW_ISO\",\"end_reason\":\"admin\"}" > /dev/null
+rest PATCH "tag_codes?code=eq.$CODE_AV3" '{"status":"available","pin_fail_count_24h":0,"pin_fail_window_start":null,"pin_locked_until":null}' > /dev/null
+rest PATCH "tag_codes?code=eq.$CODE_AV2" '{"pin_fail_count_24h":0,"pin_fail_window_start":null,"pin_locked_until":null}' > /dev/null
+rest DELETE "tag_pin_attempts?tag_code=in.($CODE_AV2,$CODE_AV3)" > /dev/null
+check "limpeza: available3 voltou a available" seed_status_is available3 available
+check "limpeza: nenhum vinculo ativo restou para a Mel" test "$(rest GET "tag_assignments?pet_id=eq.$MEL_ID&ended_at=is.null&select=id")" = "[]"
+
+echo "== T076: admin-create-batch pelo gateway (JWT de admin, pacote com pins.csv, PIN do CSV ativa o codigo) =="
+ADMIN_TOKEN="$(curl -s -X POST "$API_URL/auth/v1/token?grant_type=password" -H "apikey: $ANON_KEY" -H "Content-Type: application/json" \
+  -d '{"email":"admin@faro.test","password":"TesteSenha123!"}' | grep -oE '"access_token":"[^"]+"' | head -1 | cut -d'"' -f4)"
+check "login do admin do seed (token lido)" test -n "$ADMIN_TOKEN"
+batch_call() { # batch_call <token> <json> <arquivo de saida>  (imprime so o codigo HTTP; cabecalhos em /tmp/batch.headers)
+  curl -s -o "$3" -D /tmp/batch.headers -w '%{http_code}' -X POST "$API_URL/functions/v1/admin-create-batch" \
+    -H "apikey: $ANON_KEY" -H "Authorization: Bearer $1" -H "Content-Type: application/json" -d "$2"
+}
+check "admin-create-batch: chave anonima (sem admin) responde 401" test "$(batch_call "$ANON_KEY" '{"quantity":2}' /tmp/batch.none)" = "401"
+check "admin-create-batch: tutor comum responde 403" test "$(batch_call "$TOKEN_B" '{"quantity":2}' /tmp/batch.none)" = "403"
+check "admin-create-batch: quantidade invalida responde 400" test "$(batch_call "$ADMIN_TOKEN" '{"quantity":0}' /tmp/batch.none)" = "400"
+check "admin-create-batch: nenhum lote foi criado pelas chamadas recusadas" test "$(rest GET 'tag_batches?id=not.eq.lote-900&select=id')" = "[]"
+rm -f /tmp/batch.zip /tmp/batch-out
+BATCH_CODE="$(batch_call "$ADMIN_TOKEN" '{"quantity":3,"notes":"lote de teste do CI"}' /tmp/batch.zip)"
+check "admin-create-batch: admin cria um lote de 3 (200)" test "$BATCH_CODE" = "200"
+check "admin-create-batch: a resposta e application/zip" bash -c 'grep -iq "^content-type: application/zip" /tmp/batch.headers'
+check "admin-create-batch: Cache-Control: no-store" bash -c 'grep -iq "^cache-control: no-store" /tmp/batch.headers'
+check "admin-create-batch: o primeiro lote criado e lote-002 (o seed usa lote-900 e nao conta)" bash -c 'grep -iq "^x-batch-id: lote-002" /tmp/batch.headers'
+mkdir -p /tmp/batch-out && (cd /tmp/batch-out && unzip -o -q /tmp/batch.zip)
+check "admin-create-batch: o pacote tem so pins.csv" test "$(ls /tmp/batch-out)" = "pins.csv"
+check "admin-create-batch: pins.csv tem cabecalho e 3 linhas no formato XXXX-XXXX-X,PIN" \
+  bash -c 'head -1 /tmp/batch-out/pins.csv | grep -qx "code,pin" && [ "$(tail -n +2 /tmp/batch-out/pins.csv | grep -cE "^[0-9A-HJKMNP-TV-Z]{4}-[0-9A-HJKMNP-TV-Z]{4}-[0-9A-HJKMNP-TV-Z],[0-9A-HJKMNP-TV-Z]{6}$")" = "3" ]'
+check "admin-create-batch: 3 codigos available no lote-002, todos com hash bcrypt de custo 12 (nenhum PIN em tabela)" \
+  bash -c 'r="$1"; [ "$(printf "%s" "$r" | grep -o "\"status\":\"available\"" | wc -l)" = "3" ] && [ "$(printf "%s" "$r" | grep -oE "\"activation_pin_hash\":\"\\\$2[abxy]\\\$12\\\$" | wc -l)" = "3" ]' _ \
+  "$(rest GET 'tag_codes?batch_id=eq.lote-002&select=status,activation_pin_hash')"
+BATCH_ROW="$(sed -n 2p /tmp/batch-out/pins.csv)"
+BATCH_CODE_1="$(printf '%s' "${BATCH_ROW%%,*}" | tr -d '-')"
+BATCH_PIN_1="${BATCH_ROW##*,}"
+R="$(act_a "{\"p_code\":\"$BATCH_CODE_1\",\"p_pin\":\"$BATCH_PIN_1\",\"p_pet_id\":\"$MEL_ID\"}")"
+check "admin-create-batch: o PIN do pins.csv ativa o codigo correspondente" has "$R" '"ok": true'
+check "admin-create-batch: nenhum PIN do pacote aparece no log da funcao" bash -c '! grep -qF "$1" "$2"' _ "$BATCH_PIN_1" "$LOG_FILE"
+SECOND="$(batch_call "$ADMIN_TOKEN" '{"quantity":1}' /tmp/batch.second)"
+check "admin-create-batch: o segundo lote recebe outro id (lote-003)" bash -c 'test "$1" = "200" && grep -iq "^x-batch-id: lote-003" /tmp/batch.headers' _ "$SECOND"
+check "admin-create-batch: auditoria batch_created e batch_package_downloaded sem PIN" \
+  bash -c 'a="$(printf "%s" "$1")"; printf "%s" "$a" | grep -q "batch_created" && printf "%s" "$a" | grep -q "batch_package_downloaded" && ! printf "%s" "$a" | grep -qF "$2"' _ \
+  "$(rest GET 'audit_log?entity_id=in.(lote-002,lote-003)&select=event,detail')" "$BATCH_PIN_1"
+# Limpeza: encerra o vinculo da Mel com o codigo do lote (o resto fica: codigo nunca e apagado).
+rest PATCH "tag_assignments?tag_code=eq.$BATCH_CODE_1&ended_at=is.null" "{\"ended_at\":\"$(date -u -d '+1 minute' +%Y-%m-%dT%H:%M:%SZ)\",\"end_reason\":\"admin\"}" > /dev/null
+rm -rf /tmp/batch-out /tmp/batch.zip /tmp/batch.second /tmp/batch.none /tmp/batch.headers
 
 echo "== Chave publica nova (sb_publishable_..., nao e JWT) e verify_jwt por funcao =="
 # O app hospedado manda 'Authorization: Bearer sb_publishable_...' quando nao ha sessao. login-guard e password-recovery

@@ -18,6 +18,8 @@ import {
 import express from 'express';
 import { join } from 'node:path';
 import { headerKindForPath, isHttpsRequest, securityHeaders } from './security-headers';
+import { handleScanApi, SCAN_API_MAX_BODY, type ScanRoute } from './app/core/tags/server/scan-api';
+import { readServerEnv } from './app/core/tags/server/server-env';
 
 const browserDistFolder = join(import.meta.dirname, '../browser');
 
@@ -43,6 +45,57 @@ app.use((req, res, next) => {
   const headers = securityHeaders(headerKindForPath(req.path), { https, supabaseHost });
   for (const [name, value] of Object.entries(headers)) res.setHeader(name, value);
   next();
+});
+
+/**
+ * Registro de scan feito pelo navegador, depois da hidratação (T025/T104). A lógica está em
+ * `core/tags/server/scan-api.ts` (testável sem o Express); aqui só se lê o corpo, com teto de 2 KB, e
+ * se responde. A chave `FARO_SSR_KEY` vem de variável de ambiente do servidor e nunca sai daqui.
+ */
+const SCAN_ROUTES: Record<string, ScanRoute> = { '/api/scan': 'scan', '/api/scan/location': 'location' };
+
+function readBody(req: express.Request, limit: number): Promise<Buffer | 'too_large'> {
+  return new Promise((resolve, reject) => {
+    const declared = Number(req.headers['content-length']);
+    let tooLarge = Number.isFinite(declared) && declared > limit;
+    const chunks: Buffer[] = [];
+    let size = 0;
+    req.on('data', (chunk: Buffer) => {
+      size += chunk.length;
+      if (size > limit) tooLarge = true;
+      if (!tooLarge) chunks.push(chunk);
+    });
+    req.on('end', () => resolve(tooLarge ? 'too_large' : Buffer.concat(chunks)));
+    req.on('error', reject);
+  });
+}
+
+app.post(Object.keys(SCAN_ROUTES), async (req, res) => {
+  const route = SCAN_ROUTES[req.path];
+  const body = await readBody(req, SCAN_API_MAX_BODY).catch(() => null);
+  const result = await handleScanApi(
+    {
+      route,
+      headers: {
+        get: (name) => {
+          const value = req.headers[name.toLowerCase()];
+          return Array.isArray(value) ? value[0] : value;
+        },
+      },
+      body,
+    },
+    { env: readServerEnv(process.env) },
+  );
+  res.setHeader('Cache-Control', 'no-store');
+  res.status(result.status);
+  if (result.body === undefined) res.end();
+  else res.json(result.body);
+});
+
+/** Qualquer outro método ou caminho em `/api`: sem corpo, sem cair na página "não encontrada". */
+app.use('/api', (_req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  res.status(404).end();
 });
 
 /**

@@ -106,6 +106,7 @@ Out of the box ZardUI is a dense desktop kit. Four of its defaults break Faro ru
 - **Focus.** ZardUI draws a 3px ring at 50% opacity (`focus-visible:ring-3 focus-visible:ring-ring/50`), about 1.9:1 on white. Replace it in every `*.variants.ts` with Faro's solid ring: `focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background`. Same for `aria-invalid:ring-destructive/20` → `aria-invalid:ring-2 aria-invalid:ring-destructive`.
 - **Touch targets.** Buttons are 28–36px and inputs 32px; Faro needs 44px (`--tap`). Inputs: `h-8` → `h-11`, `border` → `border-[1.5px]`, `px-2.5` → `px-3.5`, and keep `text-base` (16px, which also stops iOS zooming into the field).
 - **Destructive.** ZardUI's destructive button is a pale red tint; Faro's is solid red with white text.
+- **Selected chip on hover (2026-11-25).** `toggle.variants.ts`: `hover:bg-background` beat `data-[state=on]:bg-foreground`, so a selected chip turned pale grey under the mouse. Both chip types now use `hover:not-data-[state=on]:bg-background`.
 - **Missing variants.** Faro needs `accent` (lime) and `whatsapp`, and a 60px `rescue` size for the rescue page.
 
 `button.variants.ts`, the parts that change:
@@ -134,6 +135,8 @@ zSize: {
 ```
 
 Then extend `ZardButtonTypeVariants` / `ZardButtonSizeVariants` (they derive from the cva, so nothing else changes). Microcopy stays verb + object ("Adicionar vacina"), never "OK".
+
+**`input-otp` (the activation PIN), paste fix.** `handlePaste` cut the pasted text at six characters and only then dropped the characters outside the pattern, so a PIN pasted as `K47-Q9M` or `K47 Q9M` lost its last character. It now filters first and cuts after (`.filter(...).slice(0, effectiveMaxLength())`). Re-apply this edit if the component is ever re-copied with `zard-cli`; `input-otp.component.spec.ts` has the test.
 
 ## 3. Which ZardUI component for which Faro component
 
@@ -248,6 +251,8 @@ Only the authenticated tutor app gets the dark theme. Add the class on the tutor
   /* --primary (lime), --lost and the navy scale do not change */
 }
 ```
+
+**Back to light inside the dark app (2026-11-25).** The "how strangers will see it" preview (`features/pets/visibility/`) is the public page itself, and the public page is never dark. Its full-screen panel carries `.faro-light`, a block in `src/styles.css` that sets every variable `.dark` redefines back to its `:root` value (a nested element's own declaration beats the inherited dark one). `npm run check:tokens` compares the two blocks, so a variable added to `.dark` without its light twin fails the check.
 
 Selection flips with the theme because it is written as `bg-foreground text-background`: an ink pill on light, a light pill on dark. Links use `text-indigo-700` on light and `dark:text-indigo-200`. Use the white-letter wordmark on dark grounds.
 

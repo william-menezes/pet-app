@@ -141,6 +141,18 @@ for (const name of FIXED_IN_DARK) {
   if (name in darkVars) errors.push(`.dark não pode redefinir ${name}`);
 }
 
+// 2B. `.faro-light` (a prévia dentro do app escuro) volta ao claro: mesmo valor de :root para cada variável do `.dark`,
+//     e nenhuma variável a mais nem a menos.
+const lightScopeVars = block('.faro-light');
+for (const name of Object.keys(darkVars)) {
+  if (!same(lightScopeVars[name], rootVars[name] ?? '')) {
+    errors.push(`.faro-light ${name}: esperado ${rootVars[name]}, achado ${lightScopeVars[name] ?? '(ausente)'}`);
+  }
+}
+for (const name of Object.keys(lightScopeVars)) {
+  if (!(name in darkVars)) errors.push(`.faro-light redefine ${name}, que o .dark não redefine`);
+}
+
 // 3. Contraste.
 function run(title, pairs, min) {
   console.log(`\n${title} (mínimo ${min}:1)`);

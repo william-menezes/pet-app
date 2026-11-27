@@ -179,11 +179,15 @@ module.exports = defineConfig([
             'zId',
             'zIcon',
             'rel',
+            'scope',
             'ariaCurrentWhenActive',
             'tone',
             'd',
             'variant',
             'decoding',
+            'loading',
+            'fetchpriority',
+            'referrerpolicy',
             'icon',
             'as',
             'aria-live',
@@ -202,13 +206,12 @@ module.exports = defineConfig([
   },
 
   // ── T063: a regra de i18n não vale para o código copiado do ZardUI, para a galeria de
-  // desenvolvimento e para a página de resgate (a spec 003 refaz essa tela) ──
+  // desenvolvimento ──
   {
     files: [
       'src/app/shared/components/**/*.html',
       'src/app/shared/core/**/*.html',
       'src/app/features/dev-gallery/**/*.html',
-      'src/app/features/public/rescue-page/**/*.html',
     ],
     ignores: ['src/app/shared/components/faro/**'],
     rules: {

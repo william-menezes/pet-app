@@ -1,23 +1,51 @@
 /**
- * Rotas da aplicação Faro.
+ * Rotas da aplicação Faro (tabela em specs/003-tag-qr/contracts/integration-002-004.contract.md §1).
  *
  * Invariantes:
  * - Two-bundle / Rescue-First: rotas em features/public/ NÃO importam core/auth nem painel.
  * - Render mode por rota em app.routes.server.ts (landing=Prerender; resgate=Server; painel=Client).
  * - Guards são só UX; autorização real é RLS no banco.
+ * - Princípio VIII: rota fixa de um segmento nunca pode ter 9 caracteres do alfabeto do código depois
+ *   de normalizada (teste em app.routes.spec.ts). O código é casado por `tagCodeMatcher`, depois das
+ *   fixas; qualquer outro caminho de um segmento cai no `**` do fim.
  */
 import { Routes } from '@angular/router';
-import { authGuard } from './core/auth/auth.guard';
-import { adminGuard } from './core/auth/admin.guard';
-import { anonGuard } from './core/auth/anon.guard';
-import { termsGuard } from './core/auth/terms.guard';
+import { lazyCanMatch } from './core/routing/lazy-guard';
+import { tagCodeMatcher } from './core/routing/tag-matcher';
+import { resolveTagRoute } from './core/routing/tag-route.resolver';
+
+// Guards carregados sob demanda (T034B): `core/auth` e `core/account` puxam o supabase-js e NÃO podem
+// entrar no pacote que a página pública baixa. Nenhum `import` estático deles neste arquivo.
+const authGuard = lazyCanMatch(() => import('./core/auth/auth.guard').then((m) => m.authGuard));
+const adminGuard = lazyCanMatch(() => import('./core/auth/admin.guard').then((m) => m.adminGuard));
+const anonGuard = lazyCanMatch(() => import('./core/auth/anon.guard').then((m) => m.anonGuard));
+const termsGuard = lazyCanMatch(() => import('./core/auth/terms.guard').then((m) => m.termsGuard));
+const activationGuard = lazyCanMatch(() =>
+  import('./core/tags/activation.guard').then((m) => m.activationGuard),
+);
+const phoneConfirmedGuard = lazyCanMatch(() =>
+  import('./core/account/phone-confirmed.guard').then((m) => m.phoneConfirmedGuard),
+);
+
+/** Tela "em construção" das rotas cujas telas chegam nas próximas fases da 003. */
+const shellFallback = () =>
+  import('./shared/shells/shell-fallback/shell-fallback').then((m) => m.ShellFallback);
 
 export const routes: Routes = [
   // ── Público (SSR/prerender) · Rescue-First: não depende de assinatura ativa ──
   {
     path: '',
     loadComponent: () => import('./features/public/landing/landing').then((m) => m.Landing),
-    title: 'Faro — O caminho de volta para casa',
+    title: $localize`Faro — O caminho de volta para casa`,
+  },
+
+  // ── Editar pet: os formulários do novo pet, na casca de fluxo (sempre clara). Fica antes de `app` para o caminho
+  // `/app/pets/:petId/editar` não cair nas filhas dentro da casca do tutor. ──
+  {
+    path: 'app/pets/:petId/editar',
+    canMatch: [authGuard, termsGuard],
+    loadComponent: () => import('./features/pets/new-pet/new-pet').then((m) => m.NewPet),
+    title: $localize`Editar pet — Faro`,
   },
 
   // ── Painel autenticado (CSR lazy, protegido por authGuard) ──
@@ -28,9 +56,55 @@ export const routes: Routes = [
     children: [
       {
         path: '',
-        loadComponent: () => import('./features/pets/pets/pets').then((m) => m.Pets),
+        pathMatch: 'full',
+        loadComponent: () => import('./features/pets/dashboard/dashboard').then((m) => m.Dashboard),
         data: { hub: true },
-        title: 'Meus pets — Faro',
+        title: $localize`Início — Faro`,
+      },
+      {
+        path: 'pets',
+        pathMatch: 'full',
+        loadComponent: () => import('./features/pets/pet-list/pet-list').then((m) => m.PetList),
+        data: { hub: true, home: '/app' },
+        title: $localize`Seus pets — Faro`,
+      },
+      {
+        path: 'pets/:petId',
+        pathMatch: 'full',
+        loadComponent: () => import('./features/pets/pet-page/pet-page').then((m) => m.PetPage),
+        data: { home: '/app/pets' },
+        title: $localize`Pet — Faro`,
+      },
+      {
+        path: 'pets/:petId/visibilidade',
+        loadComponent: () => import('./features/pets/visibility/visibility').then((m) => m.VisibilityPage),
+        data: { home: '/app/pets' },
+        title: $localize`O que estranhos veem — Faro`,
+      },
+      {
+        path: 'pets/:petId/modo-perdido',
+        loadComponent: () => import('./features/pets/lost-mode/lost-mode').then((m) => m.LostMode),
+        data: { home: '/app/pets' },
+        title: $localize`Modo perdido — Faro`,
+      },
+      {
+        path: 'pets/:petId/tag',
+        loadComponent: () => import('./features/pets/manage-tag/manage-tag').then((m) => m.ManageTag),
+        data: { home: '/app/pets' },
+        title: $localize`Gerenciar tag — Faro`,
+      },
+      {
+        // Do código da tag ao pet dono dele (o "Editar" da visão do dono só conhece o código).
+        path: 'tag/:code',
+        loadComponent: () => import('./features/pets/tag-redirect/tag-redirect').then((m) => m.TagRedirect),
+        data: { home: '/app' },
+        title: $localize`Abrindo a tag — Faro`,
+      },
+      {
+        path: 'scans',
+        loadComponent: () => import('./features/scans/scans/scans').then((m) => m.Scans),
+        data: { hub: true, home: '/app' },
+        title: $localize`Histórico de scans — Faro`,
       },
       {
         path: 'conta',
@@ -38,10 +112,9 @@ export const routes: Routes = [
       },
       {
         path: '**',
-        loadComponent: () =>
-          import('./shared/shells/shell-fallback/shell-fallback').then((m) => m.ShellFallback),
+        loadComponent: shellFallback,
         data: { home: '/app' },
-        title: 'Em construção — Faro',
+        title: $localize`Em construção — Faro`,
       },
     ],
   },
@@ -54,15 +127,36 @@ export const routes: Routes = [
     children: [
       {
         path: '',
-        loadComponent: () => import('./features/admin/admin/admin').then((m) => m.Admin),
-        title: 'Administração — Faro',
+        pathMatch: 'full',
+        loadComponent: () => import('./features/admin/batches/batches').then((m) => m.AdminBatches),
+        title: $localize`Lotes — Faro`,
+      },
+      {
+        path: 'codigos',
+        pathMatch: 'full',
+        loadComponent: () => import('./features/admin/codes/codes').then((m) => m.AdminCodes),
+        title: $localize`Códigos — Faro`,
+      },
+      {
+        path: 'codigos/:code',
+        loadComponent: () => import('./features/admin/code-detail/code-detail').then((m) => m.AdminCodeDetailPage),
+        title: $localize`Detalhe do código — Faro`,
+      },
+      {
+        path: 'fila',
+        loadComponent: () => import('./features/admin/queue/queue').then((m) => m.AdminQueuePage),
+        title: $localize`Fila — Faro`,
+      },
+      {
+        path: 'auditoria',
+        loadComponent: () => import('./features/admin/audit/audit').then((m) => m.AdminAuditPage),
+        title: $localize`Auditoria — Faro`,
       },
       {
         path: '**',
-        loadComponent: () =>
-          import('./shared/shells/shell-fallback/shell-fallback').then((m) => m.ShellFallback),
+        loadComponent: shellFallback,
         data: { home: '/admin' },
-        title: 'Em construção — Faro',
+        title: $localize`Em construção — Faro`,
       },
     ],
   },
@@ -140,7 +234,7 @@ export const routes: Routes = [
     ],
   },
 
-  // ── Páginas legais (prerender; dois segmentos de propósito: não colidem com `/:codigo`) ──
+  // ── Páginas legais (prerender; dois segmentos de propósito: não colidem com o código da tag) ──
   {
     path: 'legal/termos',
     loadComponent: () => import('./features/legal/terms/terms').then((m) => m.Terms),
@@ -154,7 +248,7 @@ export const routes: Routes = [
   },
 
   // ── Galeria de desenvolvimento (só em dev: o CLI troca `ngDevMode` por `false` em produção,
-  // e o `import()` dentro do ramo some do pacote) · antes de `:codigo/perdido` e `:codigo` ──
+  // e o `import()` dentro do ramo some do pacote) · antes do código da tag ──
   ...(ngDevMode
     ? [
         {
@@ -165,18 +259,43 @@ export const routes: Routes = [
       ]
     : []),
 
-  // ── Resgate público dinâmico (SSR) · `:codigo/perdido` antes de `:codigo` ──
+  // ── Fluxos (casca de fluxo, fora do pai `app`; CSR em app.routes.server.ts) ──
+  // O guard da ativação vai na frente: o roteador dá prioridade ao primeiro guard que não devolve true, e sem
+  // sessão a ativação leva ao cadastro (não à tela de entrada).
   {
-    path: ':codigo/perdido',
-    loadComponent: () =>
-      import('./features/public/rescue-page/rescue-page').then((m) => m.RescuePage),
-    data: { perdido: true },
-    title: 'Pet perdido — Faro',
+    path: 'ativar/:code',
+    canMatch: [activationGuard, authGuard, termsGuard, phoneConfirmedGuard],
+    loadComponent: () => import('./features/activation/activation').then((m) => m.Activation),
+    title: $localize`Ativar tag — Faro`,
   },
   {
-    path: ':codigo',
+    path: 'novo-pet',
+    canMatch: [authGuard, termsGuard],
+    loadComponent: () => import('./features/pets/new-pet/new-pet').then((m) => m.NewPet),
+    title: $localize`Novo pet — Faro`,
+  },
+  {
+    path: 'vincular/:petId',
+    canMatch: [authGuard, termsGuard, phoneConfirmedGuard],
+    loadComponent: () => import('./features/pets/link-tag/link-tag').then((m) => m.LinkTag),
+    title: $localize`Vincular tag — Faro`,
+  },
+
+  // ── Página da tag (SSR), `/<código>`: casa só segmento que normalizado tem 9 caracteres do
+  // alfabeto. Os dados vêm do resolvedor (servidor: `resolve-tag`; navegador: TransferState). Título
+  // genérico: nunca o nome do pet. ──
+  {
+    matcher: tagCodeMatcher,
+    resolve: { resolution: resolveTagRoute },
+    loadComponent: () => import('./features/public/tag-page/tag-page').then((m) => m.TagPage),
+    title: $localize`Faro · tag de identificação`,
+  },
+
+  // ── Qualquer outro caminho: página "não encontrada" (mesma tela da tag inexistente). ──
+  {
+    path: '**',
     loadComponent: () =>
-      import('./features/public/rescue-page/rescue-page').then((m) => m.RescuePage),
-    title: 'Perfil de resgate — Faro',
+      import('./features/public/not-found/not-found-page').then((m) => m.NotFoundPage),
+    title: $localize`Página não encontrada — Faro`,
   },
 ];

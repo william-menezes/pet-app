@@ -1,0 +1,67 @@
+<!-- Ativação, sucesso. Referência: design/telas-v2/V2-ativacao-sucesso{,-tablet,-desktop}.dc.html. -->
+<app-flow-shell [headline]="headline()" [sub]="sub">
+  <div class="flex flex-col items-center gap-3 pt-4 text-center md:pt-0" data-testid="activation-done">
+    <span class="flex size-16 items-center justify-center rounded-full bg-primary text-primary-foreground" aria-hidden="true">
+      <ng-icon name="check" size="34" />
+    </span>
+    <h1 tabindex="-1" class="font-display text-[34px] leading-[1.04] font-bold tracking-[-0.03em] text-foreground md:text-[42px]" i18n>Tag ativa!</h1>
+    <p class="text-base leading-[1.45] text-text" data-testid="activation-done-text">
+      <span i18n>A tag</span>&ngsp;<strong class="font-semibold whitespace-nowrap text-foreground">{{ code() }}</strong>
+      <span i18n> agora leva quem encontrar {{ petName() }} até você.</span>
+    </p>
+  </div>
+
+  <ul class="m-0 flex list-none flex-col gap-2 p-0" data-testid="activation-done-list">
+    <li class="flex min-h-12 items-center gap-3 rounded-xl bg-card px-4 py-2.5" data-testid="activation-done-whatsapp">
+      <ng-icon name="whats" size="22" class="shrink-0 text-foreground" aria-hidden="true" />
+      @if (whatsappEnabled()) {
+        <span class="flex-1 text-[15px] font-medium text-foreground" i18n>WhatsApp liberado para quem escanear</span>
+      } @else {
+        <span class="flex-1 text-[15px] font-medium text-foreground" i18n>WhatsApp desligado</span>
+        <a
+          z-button
+          zType="link"
+          [routerLink]="visibilityLink()"
+          data-testid="activation-done-whatsapp-on"
+          i18n>
+          Ligar agora
+        </a>
+      }
+    </li>
+    <li class="flex min-h-12 items-center gap-3 rounded-xl bg-card px-4 py-2.5">
+      <ng-icon name="bell" size="22" class="shrink-0 text-foreground" aria-hidden="true" />
+      <span class="flex-1 text-[15px] font-medium text-foreground" i18n>Você recebe um aviso a cada scan</span>
+    </li>
+  </ul>
+
+  <div class="flex items-start gap-3 rounded-xl bg-card px-4 py-3.5" data-testid="activation-done-test">
+    <app-icon-tile icon="scan" />
+    <div class="flex min-w-0 flex-col gap-0.5">
+      <p class="text-[15px] font-semibold text-foreground" i18n>Faça um teste</p>
+      <p class="text-sm leading-[1.45] text-text" i18n>
+        Escaneie a tag de novo para ver o que aparece para quem encontrar {{ petName() }}. Esse scan não dispara aviso.
+      </p>
+    </div>
+  </div>
+
+  <a
+    footer
+    z-button
+    zSize="lg"
+    class="w-full text-lg"
+    [attr.href]="pageHref()"
+    data-testid="activation-view-page">
+    <ng-icon name="eye" size="20" aria-hidden="true" />
+    <span i18n>Ver a página de {{ petName() }}</span>
+  </a>
+  <a
+    footer
+    z-button
+    zType="ghost"
+    class="w-full"
+    routerLink="/app"
+    data-testid="activation-go-panel"
+    i18n>
+    Ir para o painel
+  </a>
+</app-flow-shell>

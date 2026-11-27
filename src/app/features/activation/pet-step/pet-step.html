@@ -1,0 +1,170 @@
+<!--
+  Ativação, passo 1. Referência: design/telas-v2/V2-ativacao-pet{,-tablet,-desktop}.dc.html.
+  Cada elemento projetado em [footer] fica num bloco de raiz única (regra da projeção com @if).
+-->
+<app-flow-shell
+  barTitle="Ativar tag"
+  i18n-barTitle
+  [back]="'close'"
+  [backLink]="'/app'"
+  [step]="{ current: 1, total: 2 }"
+  [headline]="headline"
+  [sub]="sub">
+  <div>
+    <span
+      class="inline-flex min-h-9 items-center gap-2 rounded-full bg-card px-3.5 font-display text-[15px] font-semibold tracking-[0.04em] text-foreground"
+      data-testid="activation-code">
+      <ng-icon name="qr" size="18" aria-hidden="true" />
+      {{ code() }}
+      <ng-icon name="check" size="18" class="text-success-foreground" aria-hidden="true" />
+      <span class="sr-only" i18n>Código válido</span>
+    </span>
+  </div>
+
+  <div>
+    <h1 tabindex="-1" class="font-display text-[32px] leading-[1.04] font-bold tracking-[-0.03em] text-foreground md:text-[42px]" i18n>
+      Para qual pet é esta tag?
+    </h1>
+    <p class="mt-2.5 text-base leading-[1.45] text-text" i18n>Cada pet tem uma tag ativa por vez.</p>
+  </div>
+
+  @if (notice(); as text) {
+    <div aria-live="polite">
+      <z-alert zType="danger" [zRole]="'status'" [zDescription]="text" data-testid="activation-notice" />
+    </div>
+  }
+
+  @switch (state()) {
+    @case ('loading') {
+      <div role="status" aria-busy="true" class="py-6 text-center text-text" data-testid="activation-loading">
+        <span i18n>Um instante…</span>
+      </div>
+    }
+    @case ('error') {
+      <z-alert
+        zType="danger"
+        [zRole]="'status'"
+        [zDescription]="errorText() ?? loadFailed"
+        data-testid="activation-pets-error" />
+    }
+    @default {
+      @if (pets().length === 0) {
+        <p class="rounded-xl bg-card px-4 py-4 text-[15px] text-text" data-testid="activation-no-pets" i18n>
+          Você ainda não tem nenhum pet cadastrado. Cadastre o primeiro para ligar a tag a ele.
+        </p>
+      } @else {
+        <fieldset class="m-0 border-0 p-0" [attr.aria-describedby]="confirmReplace() ? 'activation-replace-note' : null">
+          <legend class="sr-only" i18n>Pet</legend>
+          <div class="flex flex-col gap-2.5" data-testid="activation-pet-list">
+            @for (pet of pets(); track pet.id) {
+              <label
+                class="flex min-h-[72px] cursor-pointer items-center gap-3 rounded-xl border-2 bg-card p-3 has-checked:border-foreground has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-ring"
+                [class.border-transparent]="selectedId() !== pet.id"
+                [attr.data-testid]="'activation-pet-' + pet.id">
+                <input
+                  type="radio"
+                  class="sr-only"
+                  name="activation-pet"
+                  [value]="pet.id"
+                  [checked]="selectedId() === pet.id"
+                  (change)="select(pet.id)" />
+                <app-pet-avatar [photoUrl]="pet.photoUrl" />
+                <span class="flex min-w-0 flex-1 flex-col">
+                  <span class="truncate font-display text-[17px] font-semibold text-foreground">{{ pet.name }}</span>
+                  <span class="text-sm text-muted-foreground">{{ petSub(pet) }}</span>
+                </span>
+                <span
+                  class="flex size-6 shrink-0 items-center justify-center rounded-full border-2 border-border"
+                  [class.border-foreground]="selectedId() === pet.id"
+                  [class.bg-ink]="selectedId() === pet.id"
+                  aria-hidden="true">
+                  @if (selectedId() === pet.id) {
+                    <ng-icon name="check" size="14" class="text-ink-foreground" />
+                  }
+                </span>
+              </label>
+            }
+          </div>
+        </fieldset>
+      }
+
+      <button
+        type="button"
+        z-button
+        zType="ghost"
+        class="w-full justify-start"
+        (click)="addPet.emit()"
+        data-testid="activation-add-pet">
+        <ng-icon name="plus" size="20" aria-hidden="true" />
+        <span i18n>Cadastrar um pet novo</span>
+      </button>
+
+      @if (confirmReplace() && selected(); as pet) {
+        <div class="flex flex-col gap-3 rounded-xl border border-border bg-card px-4 py-3.5" data-testid="activation-replace">
+          <p id="activation-replace-note" class="text-[15px] leading-[1.45] text-text" role="status">
+            <strong class="font-semibold">{{ pet.name }}</strong>
+            @if (pet.tagCode) {
+              <span i18n> já tem a tag </span><strong class="font-semibold whitespace-nowrap">{{ pet.tagCode }}</strong>.
+            } @else {
+              <span i18n> já tem uma tag.</span>
+            }
+            &ngsp;<span i18n>Ao ativar esta, a anterior volta a ficar livre e o PIN do cartão dela continua valendo.</span>
+          </p>
+        </div>
+      }
+    }
+  }
+
+  @if (state() === 'error') {
+    <button
+      footer
+      type="button"
+      z-button
+      zSize="lg"
+      class="w-full text-lg"
+      (click)="retry.emit()"
+      data-testid="activation-retry"
+      i18n>
+      Tentar de novo
+    </button>
+  } @else if (confirmReplace()) {
+    <button
+      footer
+      type="button"
+      z-button
+      zSize="lg"
+      class="w-full text-lg"
+      (click)="onContinue()"
+      data-testid="activation-replace-confirm"
+      i18n>
+      Trocar a tag
+    </button>
+  } @else {
+    <button
+      footer
+      type="button"
+      z-button
+      zSize="lg"
+      class="w-full text-lg"
+      [zDisabled]="selected() === null || state() === 'loading'"
+      (click)="onContinue()"
+      data-testid="activation-continue"
+      i18n>
+      Continuar
+    </button>
+  }
+
+  @if (confirmReplace()) {
+    <button
+      footer
+      type="button"
+      z-button
+      zType="ghost"
+      class="w-full"
+      (click)="confirmReplace.set(false)"
+      data-testid="activation-replace-cancel"
+      i18n>
+      Escolher outro pet
+    </button>
+  }
+</app-flow-shell>

@@ -2,7 +2,7 @@ import { Injectable, PLATFORM_ID, inject } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { environment } from '../../../environments/environment';
-import { findPersistedStorage } from '../auth/session-persistence';
+import { findPersistedStorage } from '../session/session-persistence';
 
 /**
  * Ponto único de acesso ao Supabase no cliente.

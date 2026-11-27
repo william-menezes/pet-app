@@ -1,0 +1,323 @@
+<!--
+  Novo pet. Referência: design/telas-v2/V2-novo-pet-dados{,-tablet,-desktop}.dc.html e V2-novo-pet-resgate*.dc.html.
+  Cada elemento projetado em [footer] fica num bloco de raiz única (regra da projeção com @if).
+-->
+@if (editing() && loadState() !== 'ready') {
+  <app-flow-shell [barTitle]="barTitle()" [back]="'close'" [backLink]="closeLink()">
+    <div aria-live="polite">
+      @switch (loadState()) {
+        @case ('missing') {
+          <div class="flex flex-col items-start gap-3" data-testid="new-pet-missing">
+            <h1 tabindex="-1" class="font-display text-[32px] leading-[1.04] font-bold tracking-[-0.03em] text-foreground md:text-[42px]" i18n>
+              Não encontramos este pet
+            </h1>
+            <a z-button zType="outline" href="/app/pets" data-testid="new-pet-missing-pets" i18n>Ver meus pets</a>
+          </div>
+        }
+        @case ('error') {
+          <div class="flex flex-col items-start gap-3" data-testid="new-pet-load-error">
+            <z-alert
+              class="w-full"
+              zType="danger"
+              [zRole]="'status'"
+              [zDescription]="loadError()" />
+            <button type="button" z-button zType="outline" (click)="loadExisting(petId() ?? '')" data-testid="new-pet-retry-load" i18n>
+              Tentar de novo
+            </button>
+          </div>
+        }
+        @default {
+          <p class="py-6 text-center text-text" role="status" aria-busy="true" data-testid="new-pet-loading" i18n>Um instante…</p>
+        }
+      }
+    </div>
+  </app-flow-shell>
+} @else if (step() === 1) {
+  <app-flow-shell
+    [barTitle]="barTitle()"
+    [back]="'close'"
+    [backLink]="closeLink()"
+    [step]="{ current: 1, total: 2 }"
+    [headline]="step1Headline"
+    [sub]="step1Sub">
+    <h1 tabindex="-1" class="font-display text-[32px] leading-[1.04] font-bold tracking-[-0.03em] text-foreground md:text-[42px]" i18n>
+      Conte sobre seu pet
+    </h1>
+
+    <div z-field>
+      <span id="new-pet-species-label" class="text-[13px] font-semibold text-muted-foreground" i18n>Espécie</span>
+      <z-toggle-group
+        [zMode]="'single'"
+        zAriaLabel="Espécie"
+        i18n-zAriaLabel
+        [zItems]="speciesItems"
+        [zValue]="species() ?? ''"
+        (valueChange)="onSpecies($event)"
+        data-testid="new-pet-species" />
+      @if (speciesError(); as message) {
+        <z-field-error data-testid="new-pet-species-error">{{ message }}</z-field-error>
+      }
+    </div>
+
+    <div z-field>
+      <label z-field-label for="new-pet-name-input" i18n>Nome</label>
+      <input
+        z-input
+        id="new-pet-name-input"
+        type="text"
+        autocomplete="off"
+        [value]="name()"
+        [attr.maxlength]="nameMax"
+        aria-required="true"
+        [attr.aria-invalid]="nameError() ? 'true' : null"
+        [attr.aria-describedby]="nameError() ? 'new-pet-name-error' : null"
+        (input)="onText('name', $event)"
+        data-testid="new-pet-name" />
+      @if (nameError(); as message) {
+        <z-field-error id="new-pet-name-error" data-testid="new-pet-name-error">{{ message }}</z-field-error>
+      }
+    </div>
+
+    <div z-field>
+      <label z-field-label for="new-pet-breed-input" i18n>Raça</label>
+      <input
+        z-input
+        id="new-pet-breed-input"
+        type="text"
+        autocomplete="off"
+        [value]="breed()"
+        [attr.maxlength]="breedMax"
+        [attr.aria-invalid]="breedError() ? 'true' : null"
+        (input)="onText('breed', $event)"
+        data-testid="new-pet-breed" />
+      @if (breedError(); as message) {
+        <z-field-error data-testid="new-pet-breed-error">{{ message }}</z-field-error>
+      }
+    </div>
+
+    <div z-field>
+      <span class="text-[13px] font-semibold text-muted-foreground" i18n>Sexo</span>
+      <z-toggle-group
+        [zMode]="'single'"
+        zAriaLabel="Sexo"
+        i18n-zAriaLabel
+        [zItems]="sexItems"
+        [zValue]="sex() ?? ''"
+        (valueChange)="onSex($event)"
+        data-testid="new-pet-sex" />
+    </div>
+
+    <div z-field>
+      <span class="text-[13px] font-semibold text-muted-foreground" i18n>Porte</span>
+      <z-toggle-group
+        [zMode]="'single'"
+        zAriaLabel="Porte"
+        i18n-zAriaLabel
+        [zItems]="sizeItems"
+        [zValue]="size() ?? ''"
+        (valueChange)="onSize($event)"
+        data-testid="new-pet-size" />
+    </div>
+
+    <button
+      footer
+      type="button"
+      z-button
+      zSize="lg"
+      class="w-full text-lg"
+      (click)="onContinue()"
+      data-testid="new-pet-continue"
+      i18n>
+      Continuar
+    </button>
+
+    @if (editing()) {
+      <app-remove-pet footer [petId]="petId() ?? ''" [petName]="name().trim()" [tagCode]="activeTagCode()" (removed)="onRemoved()" />
+    }
+  </app-flow-shell>
+} @else {
+  <app-flow-shell
+    [barTitle]="barTitle()"
+    [back]="'back'"
+    [step]="{ current: 2, total: 2 }"
+    [headline]="step2Headline"
+    [sub]="step2Sub"
+    (backClick)="onBack()">
+    <div [attr.aria-busy]="saving()">
+      <h1 tabindex="-1" class="font-display text-[32px] leading-[1.04] font-bold tracking-[-0.03em] text-foreground md:text-[42px]" i18n>
+        O que ajuda num resgate
+      </h1>
+      <p class="mt-2.5 text-base leading-[1.45] text-text" i18n>
+        Isso aparece para quem encontrar {{ name().trim() }}. Você escolhe o que mostrar depois.
+      </p>
+    </div>
+
+    <div class="flex items-center gap-4" data-testid="new-pet-photo-block">
+      <app-pet-avatar [photoUrl]="avatarUrl()" [sizeClass]="'size-20'" />
+      <div class="flex flex-col items-start gap-1">
+        <button
+          type="button"
+          z-button
+          zType="outline"
+          zSize="sm"
+          (click)="photoInput.click()"
+          data-testid="new-pet-photo-button">
+          <ng-icon name="camera" size="18" aria-hidden="true" />
+          @if (photoFile() || existingPhotoUrl()) {
+            <span i18n>Trocar foto</span>
+          } @else {
+            <span i18n>Escolher foto</span>
+          }
+        </button>
+        <input
+          #photoInput
+          type="file"
+          [attr.accept]="'image/*'"
+          class="hidden"
+          tabindex="-1"
+          aria-hidden="true"
+          (change)="onPhotoPicked($event)"
+          data-testid="new-pet-photo-input" />
+        @if (photoNotice(); as message) {
+          <p class="text-[13px] text-destructive" role="status" data-testid="new-pet-photo-notice">{{ message }}</p>
+        }
+      </div>
+    </div>
+
+    <div z-field>
+      <span id="new-pet-temperament-label" class="text-[13px] font-semibold text-muted-foreground" i18n>Temperamento</span>
+      <z-toggle-group
+        [zMode]="'multiple'"
+        zAriaLabel="Temperamento"
+        i18n-zAriaLabel
+        class="flex-wrap"
+        [zItems]="temperamentItems()"
+        [zValue]="temperament()"
+        (valueChange)="onTemperament($event)"
+        data-testid="new-pet-temperament" />
+      @if (addingCustom()) {
+        <div class="flex items-center gap-2" data-testid="new-pet-custom-row">
+          <input
+            z-input
+            type="text"
+            autocomplete="off"
+            aria-label="Outro jeito do seu pet"
+            i18n-aria-label
+            [value]="customDraft()"
+            [attr.maxlength]="customMax"
+            (input)="onText('custom', $event)"
+            (keydown.enter)="$event.preventDefault(); addCustom()"
+            data-testid="new-pet-custom-input" />
+          <button
+            type="button"
+            z-button
+            zType="outline"
+            [zDisabled]="customDraft().trim().length === 0"
+            (click)="addCustom()"
+            data-testid="new-pet-custom-add"
+            i18n>
+            Adicionar
+          </button>
+        </div>
+      } @else {
+        <div>
+          <button
+            type="button"
+            z-button
+            zType="link"
+            [zDisabled]="temperament().length >= maxTemperament"
+            (click)="startCustom()"
+            data-testid="new-pet-custom-open">
+            <ng-icon name="plus" size="16" aria-hidden="true" />
+            <span i18n>Outro</span>
+          </button>
+        </div>
+      }
+    </div>
+
+    <div z-field>
+      <label z-field-label for="new-pet-care-input" i18n>Cuidados importantes</label>
+      <textarea
+        z-textarea
+        id="new-pet-care-input"
+        rows="3"
+        [value]="careNotes()"
+        [attr.aria-invalid]="careError() ? 'true' : null"
+        [attr.aria-describedby]="'new-pet-care-count'"
+        (input)="onText('care', $event)"
+        data-testid="new-pet-care"></textarea>
+      <p
+        id="new-pet-care-count"
+        class="text-right text-[13px]"
+        [class]="careError() ? 'text-destructive' : 'text-muted-foreground'"
+        data-testid="new-pet-care-count">
+        {{ careNotes().length }}/{{ careMax }}
+      </p>
+    </div>
+
+    <div aria-live="polite">
+      @if (problemMessage(); as message) {
+        <z-alert zType="danger" [zRole]="'status'" [zDescription]="message" data-testid="new-pet-error" />
+      }
+    </div>
+
+    @if (problem() === 'photo_failed') {
+      <button
+        footer
+        type="button"
+        z-button
+        zSize="lg"
+        class="w-full text-lg"
+        [zLoading]="saving()"
+        (click)="onRetry()"
+        data-testid="new-pet-retry"
+        i18n>
+        Tentar enviar a foto de novo
+      </button>
+    } @else {
+      <button
+        footer
+        type="button"
+        z-button
+        zSize="lg"
+        class="w-full text-lg"
+        [zLoading]="saving()"
+        [zDisabled]="careError() !== null"
+        (click)="onSave()"
+        data-testid="new-pet-save">
+        @if (editing()) {
+          <span i18n>Salvar alterações</span>
+        } @else {
+          <span i18n>Salvar pet</span>
+        }
+      </button>
+    }
+
+    @if (problem() === 'photo_failed') {
+      <button
+        footer
+        type="button"
+        z-button
+        zType="ghost"
+        class="w-full"
+        (click)="onContinueWithoutPhoto()"
+        data-testid="new-pet-continue-without-photo"
+        i18n>
+        Continuar sem a foto
+      </button>
+    } @else if (!editing()) {
+      <button
+        footer
+        type="button"
+        z-button
+        zType="ghost"
+        class="w-full"
+        [zDisabled]="saving()"
+        (click)="onSkip()"
+        data-testid="new-pet-skip"
+        i18n>
+        Pular por enquanto
+      </button>
+    }
+  </app-flow-shell>
+}

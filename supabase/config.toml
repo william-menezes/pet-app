@@ -119,3 +119,19 @@ verify_jwt = false
 # Spec 004: exclusao da propria conta. Exige usuario autenticado (a funcao valida o JWT com getUser).
 [functions.account-delete]
 verify_jwt = true
+
+# Spec 003: chamadas de servidor para servidor. O servidor SSR do app (Vercel) NAO tem chave do Supabase (la ficam so a
+# FARO_SSR_KEY e o IP_HASH_SECRET), entao o gateway nao pode exigir JWT: a autorizacao e o cabecalho `x-faro-ssr-key`, comparado
+# em tempo constante dentro da funcao (_shared/auth.ts), e a funcao responde 401 de corpo vazio sem ele. register-scan valida
+# o JWT do tutor (campo `user_jwt` do corpo) por conta propria, so para saber se quem abriu a pagina e o dono.
+# O contrato nao diz qual valor de verify_jwt usar nestas duas (decisao registrada em execution-log.md).
+[functions.resolve-tag]
+verify_jwt = false
+
+[functions.register-scan]
+verify_jwt = false
+
+# Spec 003: criar lote e devolver o pacote (so admin). verify_jwt = true no gateway, e a funcao ainda confere o JWT e
+# is_admin() por conta propria (requireAdmin). So desenvolvimento ate a T011 e a T085 passarem.
+[functions.admin-create-batch]
+verify_jwt = true

@@ -72,6 +72,10 @@ jobs:
       - name: Conferencias de integracao (Auth, e-mail, CORS)
         if: ${{ !cancelled() }}
         run: bash scripts/ci/supabase-checks.sh
+      # Spec 003 (C1): o bloqueio de PIN nao pode ser furado por chamadas simultaneas (sessoes reais no Postgres local).
+      - name: Concorrencia do bloqueio de PIN
+        if: ${{ !cancelled() }}
+        run: bash scripts/ci/pin-lock-concurrency.sh
       - uses: denoland/setup-deno@22d081ff2d3a40755e97629de92e3bcbfa7cf2ed # v2.0.5
         if: ${{ !cancelled() }}
         with:
@@ -116,8 +120,40 @@ jobs:
         run: bash scripts/ci/e2e-prepare.sh
       - name: Instalar o Chromium do Playwright
         run: npx playwright install --with-deps chromium
+      # Spec 003 (T037, T092): a rota publica no servidor de PRODUCAO construido, uma instancia com as funcoes do stack local
+      # (porta 4300) e outra com a URL das funcoes morta (4301, contingencia). NG_ALLOWED_HOSTS: o build so aceita os hosts do
+      # produto (angular.json); sem isso o servidor responde 400 a localhost.
+      - name: Build de producao e servidor da rota publica
+        run: |
+          npm run build
+          export NG_ALLOWED_HOSTS=localhost SUPABASE_URL="$E2E_SUPABASE_URL" FARO_SSR_KEY="$E2E_SSR_KEY" IP_HASH_SECRET="$E2E_IPHASH_SECRET"
+          PORT=4300 SUPABASE_FUNCTIONS_URL="$E2E_SUPABASE_URL/functions/v1" node dist/faro/server/server.mjs > /tmp/ssr-prod.log 2>&1 &
+          PORT=4301 SUPABASE_FUNCTIONS_URL="http://127.0.0.1:9/functions/v1" node dist/faro/server/server.mjs > /tmp/ssr-prod-dead.log 2>&1 &
+          for p in 4300 4301; do
+            for i in $(seq 1 30); do curl -sf -o /dev/null "http://localhost:$p/favicon.ico" && break; sleep 1; done
+            curl -sf -o /dev/null "http://localhost:$p/favicon.ico" || { echo "::error::servidor de producao da porta $p nao subiu"; exit 1; }
+          done
       - name: E2E com backend real
+        env:
+          E2E_PROD_URL: http://localhost:4300
+          E2E_PROD_DEAD_URL: http://localhost:4301
         run: npx playwright test -c playwright.e2e-real.config.ts
+      # Gate (spec 003): nenhum PIN do pool do E2E nos logs das funcoes nem do servidor de producao.
+      # O PostgREST, o Auth, o gateway e o banco veem o PIN em claro a caminho da funcao: os logs dos containers tambem entram.
+      - name: Logs dos containers do Supabase
+        if: ${{ always() }}
+        run: |
+          for c in $(docker ps --format '{{.Names}}' | grep '^supabase_'); do docker logs "$c" > "/tmp/ctr-$c.log" 2>&1 || true; done
+          ls -l /tmp/ctr-*.log
+      - name: PINs nos logs
+        if: ${{ always() }}
+        run: node scripts/ci/check-pins-in-log.mjs /tmp/functions-serve.log /tmp/ssr-prod.log /tmp/ssr-prod-dead.log /tmp/ctr-*.log
+      # Os PINs do lote de 500 (criado em admin.spec.ts) nao estao no pool de 48: arquivo proprio, mesmos logs.
+      - name: PINs do lote de 500 nos logs
+        if: ${{ always() }}
+        env:
+          PIN_POOL_FILE: /tmp/faro-e2e-pool-lote500.json
+        run: node scripts/ci/check-pins-in-log.mjs /tmp/functions-serve.log /tmp/ssr-prod.log /tmp/ssr-prod-dead.log /tmp/ctr-*.log
       # Gate (T094/T108): senha e codigo de SMS nunca no log das Edge Functions. Valores de teste obvios, sem segredo real.
       - name: Segredos no log das Edge Functions
         if: ${{ always() }}

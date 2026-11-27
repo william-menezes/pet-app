@@ -1,0 +1,175 @@
+<!--
+  O que estranhos veem. Referência: design/telas-v2/V2-visibilidade{,-tablet,-desktop}{,-escuro}.dc.html.
+  O tema escuro vem dos tokens da casca do tutor; a prévia volta ao claro (.faro-light).
+-->
+<div class="flex w-full flex-col gap-3 md:gap-4" data-testid="visibility">
+  <app-screen-header title="O que estranhos veem" i18n-title [back]="'back'" [backLink]="backLink()" />
+
+  <div aria-live="polite">
+    @switch (state()) {
+      @case ('loading') {
+        <p class="py-6 text-center text-text" role="status" aria-busy="true" data-testid="visibility-loading" i18n>Um instante…</p>
+      }
+      @case ('error') {
+        <div class="flex flex-col items-start gap-3" data-testid="visibility-error">
+          <z-alert
+            class="w-full"
+            zType="danger"
+            [zRole]="'status'"
+            [zDescription]="errorText()" />
+          <button type="button" z-button zType="outline" (click)="load()" data-testid="visibility-retry" i18n>Tentar de novo</button>
+        </div>
+      }
+      @case ('missing') {
+        <div class="flex flex-col items-start gap-3 rounded-2xl bg-card p-5" data-testid="visibility-missing">
+          <p class="font-display text-[19px] font-semibold text-foreground" i18n>Não encontramos este pet.</p>
+          <a z-button zType="outline" routerLink="/app/pets" data-testid="visibility-missing-pets" i18n>Ver meus pets</a>
+        </div>
+      }
+    }
+  </div>
+
+  @if (state() === 'ready') {
+    @if (draft(); as d) {
+      <p class="text-[15px] leading-[1.45] text-text" i18n>Escolha o que aparece para quem escanear a tag de {{ name() }}.</p>
+
+      <div class="flex flex-col gap-3 md:gap-4 xl:grid xl:grid-cols-2 xl:items-start xl:gap-5">
+        <div class="flex flex-col gap-3 md:gap-4 xl:gap-5">
+          <section class="flex flex-col gap-2" aria-labelledby="visibility-group-pet">
+            <h2 id="visibility-group-pet" class="px-1 text-[13px] font-semibold text-muted-foreground" i18n>Sobre o pet</h2>
+            <div class="flex flex-col divide-y divide-divider overflow-hidden rounded-2xl bg-card">
+              <app-switch-row label="Nome e foto" i18n-label [hint]="name()" [locked]="true" data-testid="visibility-name" />
+              <app-switch-row
+                label="Temperamento"
+                i18n-label
+                [hint]="temperamentHint()"
+                [checked]="d.showTemperament"
+                (toggled)="set('showTemperament', $event)"
+                data-testid="visibility-temperament" />
+              <app-switch-row
+                label="Cuidados"
+                i18n-label
+                [hint]="careHint()"
+                [checked]="d.showCare"
+                (toggled)="set('showCare', $event)"
+                data-testid="visibility-care" />
+            </div>
+          </section>
+
+          <section class="flex flex-col gap-2" aria-labelledby="visibility-group-contact">
+            <h2 id="visibility-group-contact" class="px-1 text-[13px] font-semibold text-muted-foreground" i18n>Contato</h2>
+            <div class="flex flex-col divide-y divide-divider overflow-hidden rounded-2xl bg-card">
+              <app-switch-row
+                label="Seu primeiro nome"
+                i18n-label
+                [hint]="tutorFirstName()"
+                [checked]="d.showTutorFirstName"
+                (toggled)="set('showTutorFirstName', $event)"
+                data-testid="visibility-first-name" />
+              <app-switch-row
+                #whatsappRow
+                label="WhatsApp"
+                i18n-label
+                hint="Botão para falar com você"
+                i18n-hint
+                [checked]="d.showWhatsapp"
+                (toggled)="set('showWhatsapp', $event)"
+                data-testid="visibility-whatsapp" />
+              <app-switch-row
+                #phoneRow
+                label="Telefone"
+                i18n-label
+                [hint]="phoneHint()"
+                [checked]="d.showPhone"
+                (toggled)="set('showPhone', $event)"
+                data-testid="visibility-phone" />
+            </div>
+            @if (phoneNotice()) {
+              <div class="flex flex-col items-start gap-3" data-testid="visibility-phone-notice">
+                <z-alert class="w-full" zType="neutral" [zRole]="'status'" [zDescription]="phoneNoticeText" />
+                <a
+                  z-button
+                  zType="outline"
+                  [routerLink]="confirmRoute().commands"
+                  [queryParams]="confirmRoute().queryParams"
+                  data-testid="visibility-confirm-phone"
+                  i18n>
+                  Confirmar celular
+                </a>
+              </div>
+            }
+          </section>
+        </div>
+
+        <section class="flex flex-col gap-2" aria-labelledby="visibility-group-lost">
+          <h2 id="visibility-group-lost" class="px-1 text-[13px] font-semibold text-muted-foreground" i18n>Só no modo perdido</h2>
+          <div class="flex flex-col divide-y divide-divider overflow-hidden rounded-2xl bg-card">
+            <app-switch-row
+              label="Há quanto tempo sumiu"
+              i18n-label
+              hint="Por exemplo: longe de casa há 2 dias"
+              i18n-hint
+              [checked]="d.lostShowSince"
+              (toggled)="set('lostShowSince', $event)"
+              data-testid="visibility-lost-since" />
+            <app-switch-row
+              label="Selo de recompensa"
+              i18n-label
+              hint="Sem valor; você combina na conversa"
+              i18n-hint
+              [checked]="d.lostShowReward"
+              (toggled)="set('lostShowReward', $event)"
+              data-testid="visibility-lost-reward" />
+            <app-switch-row
+              label="Recado para quem achou"
+              i18n-label
+              hint="Escrito por você ao ativar o modo perdido"
+              i18n-hint
+              [checked]="d.lostShowMessage"
+              (toggled)="set('lostShowMessage', $event)"
+              data-testid="visibility-lost-message" />
+          </div>
+        </section>
+      </div>
+
+      <div aria-live="polite">
+        @if (problem(); as text) {
+          <z-alert zType="danger" [zRole]="'status'" [zDescription]="text" data-testid="visibility-problem" />
+        }
+      </div>
+
+      <div class="grid grid-cols-2 gap-2.5 md:flex md:justify-start md:gap-3 xl:justify-start">
+        <button
+          #previewButton
+          type="button"
+          z-button
+          zType="outline"
+          zSize="lg"
+          class="w-full md:w-auto"
+          (click)="openPreview()"
+          data-testid="visibility-preview-open">
+          <ng-icon name="eye" size="22" aria-hidden="true" />
+          <span i18n>Pré-visualizar</span>
+        </button>
+        <button
+          type="button"
+          z-button
+          zSize="lg"
+          class="w-full md:w-auto"
+          [zLoading]="saving()"
+          [zDisabled]="saving()"
+          (click)="save()"
+          data-testid="visibility-save"
+          i18n>
+          Salvar
+        </button>
+      </div>
+    }
+  }
+</div>
+
+@if (previewing()) {
+  @if (preview(); as profile) {
+    <app-visibility-preview [profile]="profile" [lostElapsed]="previewElapsed()" (closed)="closePreview()" />
+  }
+}

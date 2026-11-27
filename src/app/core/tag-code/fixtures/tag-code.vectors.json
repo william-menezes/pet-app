@@ -1,0 +1,368 @@
+{
+  "_": "Vetores SINTÉTICOS do código da tag. Gerados em 2026-11-21 com a regra de luhn_mod_n_check (tools/tag-generator/gerar_tags.py), conferida contra os 54 códigos do lote-001. Nenhum destes é um código real. Não edite à mão.",
+  "alphabet": "0123456789ABCDEFGHJKMNPQRSTVWXYZ",
+  "valid": [
+    {
+      "body": "7K3MQ9XA",
+      "check": "C",
+      "code": "7K3MQ9XAC",
+      "display": "7K3M-Q9XA-C"
+    },
+    {
+      "body": "00000000",
+      "check": "0",
+      "code": "000000000",
+      "display": "0000-0000-0"
+    },
+    {
+      "body": "ZZZZZZZZ",
+      "check": "8",
+      "code": "ZZZZZZZZ8",
+      "display": "ZZZZ-ZZZZ-8"
+    },
+    {
+      "body": "0123456Z",
+      "check": "3",
+      "code": "0123456Z3",
+      "display": "0123-456Z-3"
+    },
+    {
+      "body": "ABCDEFGH",
+      "check": "V",
+      "code": "ABCDEFGHV",
+      "display": "ABCD-EFGH-V"
+    },
+    {
+      "body": "JKMNPQRS",
+      "check": "R",
+      "code": "JKMNPQRSR",
+      "display": "JKMN-PQRS-R"
+    },
+    {
+      "body": "TVWXYZ01",
+      "check": "S",
+      "code": "TVWXYZ01S",
+      "display": "TVWX-YZ01-S"
+    },
+    {
+      "body": "10000000",
+      "check": "Z",
+      "code": "10000000Z",
+      "display": "1000-0000-Z"
+    },
+    {
+      "body": "00000001",
+      "check": "Y",
+      "code": "00000001Y",
+      "display": "0000-0001-Y"
+    },
+    {
+      "body": "1NDAN8EK",
+      "check": "S",
+      "code": "1NDAN8EKS",
+      "display": "1NDA-N8EK-S"
+    },
+    {
+      "body": "W030F52J",
+      "check": "1",
+      "code": "W030F52J1",
+      "display": "W030-F52J-1"
+    },
+    {
+      "body": "BZCH5NVX",
+      "check": "1",
+      "code": "BZCH5NVX1",
+      "display": "BZCH-5NVX-1"
+    },
+    {
+      "body": "T6EVBXPY",
+      "check": "W",
+      "code": "T6EVBXPYW",
+      "display": "T6EV-BXPY-W"
+    },
+    {
+      "body": "TJ279DDB",
+      "check": "B",
+      "code": "TJ279DDBB",
+      "display": "TJ27-9DDB-B"
+    },
+    {
+      "body": "00440X4N",
+      "check": "A",
+      "code": "00440X4NA",
+      "display": "0044-0X4N-A"
+    },
+    {
+      "body": "4N9YD7M5",
+      "check": "J",
+      "code": "4N9YD7M5J",
+      "display": "4N9Y-D7M5-J"
+    },
+    {
+      "body": "NSYTHTDN",
+      "check": "7",
+      "code": "NSYTHTDN7",
+      "display": "NSYT-HTDN-7"
+    },
+    {
+      "body": "3DETGDAV",
+      "check": "N",
+      "code": "3DETGDAVN",
+      "display": "3DET-GDAV-N"
+    },
+    {
+      "body": "TG8XG3K7",
+      "check": "B",
+      "code": "TG8XG3K7B",
+      "display": "TG8X-G3K7-B"
+    },
+    {
+      "body": "PDVJW084",
+      "check": "4",
+      "code": "PDVJW0844",
+      "display": "PDVJ-W084-4"
+    },
+    {
+      "body": "SYAZFWH8",
+      "check": "R",
+      "code": "SYAZFWH8R",
+      "display": "SYAZ-FWH8-R"
+    },
+    {
+      "body": "WAXPZGSW",
+      "check": "M",
+      "code": "WAXPZGSWM",
+      "display": "WAXP-ZGSW-M"
+    },
+    {
+      "body": "H8ZWE5XG",
+      "check": "H",
+      "code": "H8ZWE5XGH",
+      "display": "H8ZW-E5XG-H"
+    },
+    {
+      "body": "5909VKAR",
+      "check": "T",
+      "code": "5909VKART",
+      "display": "5909-VKAR-T"
+    },
+    {
+      "body": "G59WE8K9",
+      "check": "1",
+      "code": "G59WE8K91",
+      "display": "G59W-E8K9-1"
+    },
+    {
+      "body": "ZXDJ8EEC",
+      "check": "A",
+      "code": "ZXDJ8EECA",
+      "display": "ZXDJ-8EEC-A"
+    },
+    {
+      "body": "J1PHHBMY",
+      "check": "V",
+      "code": "J1PHHBMYV",
+      "display": "J1PH-HBMY-V"
+    },
+    {
+      "body": "RVZB508F",
+      "check": "H",
+      "code": "RVZB508FH",
+      "display": "RVZB-508F-H"
+    },
+    {
+      "body": "BBJQ3MQY",
+      "check": "Y",
+      "code": "BBJQ3MQYY",
+      "display": "BBJQ-3MQY-Y"
+    },
+    {
+      "body": "P541YVDT",
+      "check": "3",
+      "code": "P541YVDT3",
+      "display": "P541-YVDT-3"
+    },
+    {
+      "body": "9EFXB5G3",
+      "check": "6",
+      "code": "9EFXB5G36",
+      "display": "9EFX-B5G3-6"
+    },
+    {
+      "body": "Q5Q1WDCX",
+      "check": "9",
+      "code": "Q5Q1WDCX9",
+      "display": "Q5Q1-WDCX-9"
+    },
+    {
+      "body": "1NG9QRHK",
+      "check": "J",
+      "code": "1NG9QRHKJ",
+      "display": "1NG9-QRHK-J"
+    },
+    {
+      "body": "W5197ST9",
+      "check": "1",
+      "code": "W5197ST91",
+      "display": "W519-7ST9-1"
+    },
+    {
+      "body": "T7PTPHN7",
+      "check": "H",
+      "code": "T7PTPHN7H",
+      "display": "T7PT-PHN7-H"
+    },
+    {
+      "body": "SFRPR9VM",
+      "check": "P",
+      "code": "SFRPR9VMP",
+      "display": "SFRP-R9VM-P"
+    },
+    {
+      "body": "Q3G5V2V2",
+      "check": "B",
+      "code": "Q3G5V2V2B",
+      "display": "Q3G5-V2V2-B"
+    },
+    {
+      "body": "J68PF6SD",
+      "check": "Z",
+      "code": "J68PF6SDZ",
+      "display": "J68P-F6SD-Z"
+    },
+    {
+      "body": "MMXYWWPF",
+      "check": "0",
+      "code": "MMXYWWPF0",
+      "display": "MMXY-WWPF-0"
+    },
+    {
+      "body": "7YKK0A7F",
+      "check": "9",
+      "code": "7YKK0A7F9",
+      "display": "7YKK-0A7F-9"
+    },
+    {
+      "body": "EC2F1A3X",
+      "check": "7",
+      "code": "EC2F1A3X7",
+      "display": "EC2F-1A3X-7"
+    },
+    {
+      "body": "BTYQNYV2",
+      "check": "2",
+      "code": "BTYQNYV22",
+      "display": "BTYQ-NYV2-2"
+    },
+    {
+      "body": "3G9ADGR9",
+      "check": "7",
+      "code": "3G9ADGR97",
+      "display": "3G9A-DGR9-7"
+    },
+    {
+      "body": "SAD941QF",
+      "check": "S",
+      "code": "SAD941QFS",
+      "display": "SAD9-41QF-S"
+    },
+    {
+      "body": "SZVJ6AFH",
+      "check": "W",
+      "code": "SZVJ6AFHW",
+      "display": "SZVJ-6AFH-W"
+    },
+    {
+      "body": "YJFK0KDR",
+      "check": "2",
+      "code": "YJFK0KDR2",
+      "display": "YJFK-0KDR-2"
+    },
+    {
+      "body": "8TWC3YSM",
+      "check": "D",
+      "code": "8TWC3YSMD",
+      "display": "8TWC-3YSM-D"
+    },
+    {
+      "body": "C9R3AS71",
+      "check": "Y",
+      "code": "C9R3AS71Y",
+      "display": "C9R3-AS71-Y"
+    }
+  ],
+  "invalid": [
+    "7K3MQ9XAD",
+    "8K3MQ9XAC",
+    "7K3MR9XAC",
+    "000000001",
+    "100000000",
+    "000010000",
+    "ZZZZZZZZ9",
+    "0ZZZZZZZ8",
+    "ZZZZ0ZZZ8",
+    "0123456Z4",
+    "1123456Z3",
+    "0123556Z3",
+    "ABCDEFGHW",
+    "BBCDEFGHV",
+    "ABCDFFGHV",
+    "JKMNPQRSS",
+    "KKMNPQRSR",
+    "JKMNQQRSR",
+    "TVWXYZ01T",
+    "VVWXYZ01S",
+    "TVWXZZ01S",
+    "100000000",
+    "20000000Z",
+    "10001000Z",
+    "00000001Z",
+    "10000001Y",
+    "00001001Y",
+    "1NDAN8EKT",
+    "2NDAN8EKS",
+    "1NDAP8EKS",
+    "W030F52J2",
+    "X030F52J1",
+    "W030G52J1",
+    "BZCH5NVX2",
+    "CZCH5NVX1",
+    "BZCH6NVX1",
+    "7K3MQ9XA",
+    "7K3MQ9XACX",
+    "",
+    "U2345678X",
+    "7K3MQ9X?C",
+    "7K3MQ9XA-"
+  ],
+  "normalize": [
+    [
+      "7K3M-Q9XA-C",
+      "7K3MQ9XAC"
+    ],
+    [
+      "7k3m q9xa c",
+      "7K3MQ9XAC"
+    ],
+    [
+      " 7k3m-q9xa-c ",
+      "7K3MQ9XAC"
+    ],
+    [
+      "OIL0-1111-?",
+      "01101111?"
+    ],
+    [
+      "oOiIlL",
+      "001111"
+    ],
+    [
+      "https",
+      "HTTPS"
+    ],
+    [
+      "",
+      ""
+    ]
+  ]
+}

@@ -60,6 +60,7 @@ supabase/.temp/
 # então a lista de códigos e as folhas de etiquetas de lotes reais também ficam fora do git.
 lote.csv
 lote*.csv
+lote-*/
 tools/tag-generator/lote*/
 tools/tag-generator/*.ttf
 
