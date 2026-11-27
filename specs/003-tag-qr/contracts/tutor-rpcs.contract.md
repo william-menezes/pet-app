@@ -87,6 +87,9 @@ Ordem das verificações (a ordem importa para não vazar informação):
 - `p_kind = 'lost'`: cria o pedido, encerra o vínculo com `lost`, `status = 'void'`, desliga o modo
   perdido. Irreversível; a tela pede confirmação explicando que o endereço antigo deixa de funcionar.
 - Grava `replacement_requested`. Saída: `{ "request_id": "…" }`.
+- Idempotente: pedido aberto da mesma tag e do mesmo tipo devolve o existente, sem novo pedido nem novo
+  evento. `lost` sobre um `damaged` aberto da mesma tag converte o pedido em `lost` (mesmo id); o limite
+  de pedidos abertos nunca barra "perdi a tag" por causa de pedidos da própria tag.
 
 ## `set_lost_mode(p_pet_id uuid, p_on boolean, p_message text, p_show_since boolean, p_show_reward boolean) returns void`
 
